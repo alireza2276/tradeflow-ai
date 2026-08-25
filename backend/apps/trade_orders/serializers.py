@@ -4,6 +4,10 @@ from rest_framework import serializers
 
 from apps.trade_orders.models import RegistrationOrder
 
+from apps.trade_orders.models import (
+    PaymentInstrument,
+    RegistrationOrder,
+)
 
 class RegistrationOrderSerializer(serializers.ModelSerializer):
     company_name = serializers.CharField(
@@ -50,3 +54,35 @@ class RegistrationOrderSerializer(serializers.ModelSerializer):
             )
 
         return value
+
+class PaymentInstrumentSerializer(serializers.ModelSerializer):
+    order_number = serializers.CharField(
+        source="registration_order.order_number",
+        read_only=True,
+    )
+
+    company_name = serializers.CharField(
+        source="registration_order.company.name",
+        read_only=True,
+    )
+
+    class Meta:
+        model = PaymentInstrument
+
+        fields = (
+            "id",
+            "registration_order",
+            "order_number",
+            "company_name",
+            "instrument_number",
+            "created_at",
+            "updated_at",
+        )
+
+        read_only_fields = (
+            "id",
+            "order_number",
+            "company_name",
+            "created_at",
+            "updated_at",
+        )

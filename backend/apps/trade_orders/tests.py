@@ -30,6 +30,10 @@ from apps.trade_orders.services.balance_service import (
     get_purchase_balance,
 )
 
+from apps.trade_orders.models import (
+    PaymentInstrument,
+    RegistrationOrder,
+)
 
 class PaymentInstrumentServiceTests(TestCase):
 
@@ -752,4 +756,107 @@ class RegistrationOrderAPITests(APITestCase):
             RegistrationOrder.objects.filter(
                 order_number="API-ORDER-CURRENCY",
             ).exists()
+        )
+
+class PaymentInstrumentAPITests(APITestCase):
+
+    def setUp(self):
+        self.url = "/api/trade/payment-instruments/"
+
+        self.company = Company.objects.create(
+            name="Payment API Company",
+            national_id="6677889900",
+            company_type="COMMERCIAL",
+        )
+
+        self.order = RegistrationOrder.objects.create(
+            company=self.company,
+            order_number="PAY-API-001",
+            registered_amount=Decimal("100000"),
+            currency="USD",
+        )
+
+    def test_payment_instrument_can_be_created(self):
+        payload = {
+            "registration_order": str(self.order.id),
+            "instrument_number": "PI-API-001",
+        }
+
+        response = self.client.post(
+            self.url,
+            payload,
+            format="json",
+        )
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_201_CREATED,
+        )
+
+        self.assertTrue(
+            PaymentInstrument.objects.filter(
+                registration_order=self.order,
+                instrument_number="PI-API-001",
+            ).exists()
+        )
+
+        self.assertEqual(
+            response.data["order_number"],
+            "PAY-API-001",
+        )
+
+        self.assertEqual(
+            response.data["company_name"],
+            "Payment API Company",
+        )
+
+    def test_second_payment_instrument_for_same_order_is_rejected(self):
+        create_payment_instrument(
+            registration_order=self.order,
+            instrument_number="PI-API-001",
+        )
+
+        payload = {
+            "registration_order": str(self.order.id),
+            "instrument_number": "PI-API-002",
+        }
+
+        response = self.client.post(
+            self.url,
+            payload,
+            format="json",
+        )
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_400_BAD_REQUEST,
+        )
+
+    def test_duplicate_instrument_number_is_rejected(self):
+        create_payment_instrument(
+            registration_order=self.order,
+            instrument_number="PI-API-001",
+        )
+
+        second_order = RegistrationOrder.objects.create(
+            company=self.company,
+            order_number="PAY-API-002",
+            registered_amount=Decimal("50000"),
+            currency="USD",
+        )
+
+        payload = {
+            "registration_order": str(second_order.id),
+            "instrument_number": "PI-API-001",
+        }
+
+        response = self.client.post(
+            self.url,
+            payload,
+            format="json",
+        )
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_400_BAD_REQUEST,
         )
