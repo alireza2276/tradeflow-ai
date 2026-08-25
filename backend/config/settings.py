@@ -45,6 +45,7 @@ INSTALLED_APPS = [
     'apps.trade_orders',
     'apps.documents',
     'apps.notifications',
+    'rest_framework',
 ]
 
 MIDDLEWARE = [
