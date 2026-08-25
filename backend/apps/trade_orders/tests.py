@@ -1,3 +1,6 @@
+from rest_framework import status
+from rest_framework.test import APITestCase
+
 from datetime import date, timedelta
 from decimal import Decimal
 
@@ -613,4 +616,140 @@ class DeadlineStatusTests(TestCase):
         self.assertEqual(
             status,
             DeadlineStatus.COMPLETED,
+        )
+
+
+class RegistrationOrderAPITests(APITestCase):
+
+    def setUp(self):
+        self.url = "/api/trade/registration-orders/"
+
+        self.company = Company.objects.create(
+            name="API Test Company",
+            national_id="4455667788",
+            company_type="COMMERCIAL",
+        )
+
+        self.order = RegistrationOrder.objects.create(
+            company=self.company,
+            order_number="API-ORDER-001",
+            registered_amount=Decimal("100000"),
+            currency="USD",
+        )
+
+    def test_registration_order_list_returns_success(self):
+        response = self.client.get(self.url)
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_200_OK,
+        )
+
+        self.assertEqual(
+            len(response.data),
+            1,
+        )
+
+        self.assertEqual(
+            response.data[0]["company_name"],
+            "API Test Company",
+        )
+
+    def test_registration_order_can_be_created(self):
+        payload = {
+            "company": str(self.company.id),
+            "order_number": "API-ORDER-002",
+            "registered_amount": "50000",
+            "currency": "EUR",
+            "is_active": True,
+        }
+
+        response = self.client.post(
+            self.url,
+            payload,
+            format="json",
+        )
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_201_CREATED,
+        )
+
+        self.assertTrue(
+            RegistrationOrder.objects.filter(
+                company=self.company,
+                order_number="API-ORDER-002",
+            ).exists()
+        )
+
+    def test_duplicate_order_number_for_same_company_is_rejected(self):
+        payload = {
+            "company": str(self.company.id),
+            "order_number": "API-ORDER-001",
+            "registered_amount": "50000",
+            "currency": "USD",
+            "is_active": True,
+        }
+
+        response = self.client.post(
+            self.url,
+            payload,
+            format="json",
+        )
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_400_BAD_REQUEST,
+        )
+
+    def test_zero_registered_amount_is_rejected(self):
+        payload = {
+            "company": str(self.company.id),
+            "order_number": "API-ORDER-ZERO",
+            "registered_amount": "0",
+            "currency": "USD",
+            "is_active": True,
+        }
+
+        response = self.client.post(
+            self.url,
+            payload,
+            format="json",
+        )
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_400_BAD_REQUEST,
+        )
+
+        self.assertFalse(
+            RegistrationOrder.objects.filter(
+                order_number="API-ORDER-ZERO",
+            ).exists()
+        )
+
+    def test_invalid_currency_is_rejected(self):
+        payload = {
+            "company": str(self.company.id),
+            "order_number": "API-ORDER-CURRENCY",
+            "registered_amount": "50000",
+            "currency": "USDD",
+            "is_active": True,
+        }
+
+        response = self.client.post(
+            self.url,
+            payload,
+            format="json",
+        )
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_400_BAD_REQUEST,
+        )
+
+        self.assertFalse(
+            RegistrationOrder.objects.filter(
+                order_number="API-ORDER-CURRENCY",
+            ).exists()
         )
