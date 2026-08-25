@@ -42,7 +42,6 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
 
     'apps.companies',
-    'apps.trade_cases',
     'apps.trade_orders',
     'apps.documents',
     'apps.notifications',
