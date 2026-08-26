@@ -34,6 +34,7 @@ from apps.trade_orders.models import (
     CurrencyPurchase,
     PaymentInstrument,
     RegistrationOrder,
+    ShipmentPart,
 )
 
 class PaymentInstrumentServiceTests(TestCase):
@@ -1105,4 +1106,210 @@ class CurrencyPurchaseAPITests(APITestCase):
             CurrencyPurchase.objects.filter(
                 registration_order=self.order,
             ).exists()
+        )
+
+class ShipmentPartAPITests(APITestCase):
+
+    def setUp(self):
+        self.url = "/api/trade/shipment-parts/"
+
+        self.company = Company.objects.create(
+            name="Shipment API Company",
+            national_id="9900112233",
+            company_type="COMMERCIAL",
+        )
+
+        self.order = RegistrationOrder.objects.create(
+            company=self.company,
+            order_number="SHIP-API-001",
+            registered_amount=Decimal("100000"),
+            currency="USD",
+        )
+
+        self.purchase = create_currency_purchase(
+            registration_order=self.order,
+            amount=Decimal("40000"),
+            currency="USD",
+            purchase_date=date(2026, 8, 22),
+        )
+
+    def test_shipment_part_can_be_created(self):
+        payload = {
+            "currency_purchase": str(self.purchase.id),
+            "amount": "20000",
+            "shipment_date": "2026-09-01",
+            "received_date": "2026-09-10",
+            "reference_number": "SHIP-REF-001",
+            "notes": "First shipment part",
+        }
+
+        response = self.client.post(
+            self.url,
+            payload,
+            format="json",
+        )
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_201_CREATED,
+        )
+
+        self.assertEqual(
+            response.data["amount"],
+            "20000.0000",
+        )
+
+        self.assertEqual(
+            response.data["reference_number"],
+            "SHIP-REF-001",
+        )
+
+        self.assertEqual(
+            response.data["order_number"],
+            "SHIP-API-001",
+        )
+
+        self.assertEqual(
+            response.data["company_name"],
+            "Shipment API Company",
+        )
+
+        self.assertEqual(
+            response.data["purchase_currency"],
+            "USD",
+        )
+
+    def test_multiple_shipment_parts_up_to_purchase_amount_are_allowed(self):
+        first_payload = {
+            "currency_purchase": str(self.purchase.id),
+            "amount": "20000",
+        }
+
+        second_payload = {
+            "currency_purchase": str(self.purchase.id),
+            "amount": "20000",
+        }
+
+        first_response = self.client.post(
+            self.url,
+            first_payload,
+            format="json",
+        )
+
+        second_response = self.client.post(
+            self.url,
+            second_payload,
+            format="json",
+        )
+
+        self.assertEqual(
+            first_response.status_code,
+            status.HTTP_201_CREATED,
+        )
+
+        self.assertEqual(
+            second_response.status_code,
+            status.HTTP_201_CREATED,
+        )
+
+        self.assertEqual(
+            self.purchase.shipment_parts.count(),
+            2,
+        )
+
+    def test_shipment_parts_cannot_exceed_purchase_amount(self):
+        self.client.post(
+            self.url,
+            {
+                "currency_purchase": str(self.purchase.id),
+                "amount": "30000",
+            },
+            format="json",
+        )
+
+        response = self.client.post(
+            self.url,
+            {
+                "currency_purchase": str(self.purchase.id),
+                "amount": "10001",
+            },
+            format="json",
+        )
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_400_BAD_REQUEST,
+        )
+
+    def test_zero_shipment_amount_is_rejected(self):
+        response = self.client.post(
+            self.url,
+            {
+                "currency_purchase": str(self.purchase.id),
+                "amount": "0",
+            },
+            format="json",
+        )
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_400_BAD_REQUEST,
+        )
+
+    def test_negative_shipment_amount_is_rejected(self):
+        response = self.client.post(
+            self.url,
+            {
+                "currency_purchase": str(self.purchase.id),
+                "amount": "-100",
+            },
+            format="json",
+        )
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_400_BAD_REQUEST,
+        )
+
+    def test_shipment_details_are_saved(self):
+        response = self.client.post(
+            self.url,
+            {
+                "currency_purchase": str(self.purchase.id),
+                "amount": "10000",
+                "shipment_date": "2026-09-01",
+                "received_date": "2026-09-10",
+                "reference_number": "  SHIP-DETAIL-001  ",
+                "notes": "Documents received.",
+            },
+            format="json",
+        )
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_201_CREATED,
+        )
+
+        shipment = ShipmentPart.objects.get(
+            currency_purchase=self.purchase,
+        )
+
+        self.assertEqual(
+            shipment.reference_number,
+            "SHIP-DETAIL-001",
+        )
+
+        self.assertEqual(
+            shipment.shipment_date,
+            date(2026, 9, 1),
+        )
+
+        self.assertEqual(
+            shipment.received_date,
+            date(2026, 9, 10),
+        )
+
+        self.assertEqual(
+            shipment.notes,
+            "Documents received.",
         )

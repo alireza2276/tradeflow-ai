@@ -10,6 +10,7 @@ from apps.trade_orders.models import (
     CurrencyPurchase,
     PaymentInstrument,
     RegistrationOrder,
+    ShipmentPart,
 )
 
 class RegistrationOrderSerializer(serializers.ModelSerializer):
@@ -141,4 +142,47 @@ class CurrencyPurchaseSerializer(serializers.ModelSerializer):
     def get_deadline_dual(self, obj):
         return format_dual_date(
             obj.deadline,
+        )
+
+class ShipmentPartSerializer(serializers.ModelSerializer):
+    order_number = serializers.CharField(
+        source="currency_purchase.registration_order.order_number",
+        read_only=True,
+    )
+
+    company_name = serializers.CharField(
+        source="currency_purchase.registration_order.company.name",
+        read_only=True,
+    )
+
+    purchase_currency = serializers.CharField(
+        source="currency_purchase.currency",
+        read_only=True,
+    )
+
+    class Meta:
+        model = ShipmentPart
+
+        fields = (
+            "id",
+            "currency_purchase",
+            "order_number",
+            "company_name",
+            "purchase_currency",
+            "amount",
+            "shipment_date",
+            "received_date",
+            "reference_number",
+            "notes",
+            "created_at",
+            "updated_at",
+        )
+
+        read_only_fields = (
+            "id",
+            "order_number",
+            "company_name",
+            "purchase_currency",
+            "created_at",
+            "updated_at",
         )

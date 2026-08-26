@@ -13,12 +13,18 @@ from apps.trade_orders.models import (
     CurrencyPurchase,
     PaymentInstrument,
     RegistrationOrder,
+    ShipmentPart,
 )
 
 from apps.trade_orders.serializers import (
     CurrencyPurchaseSerializer,
     PaymentInstrumentSerializer,
     RegistrationOrderSerializer,
+    ShipmentPartSerializer,
+)
+
+from apps.trade_orders.services.shipment_service import (
+    create_shipment_part,
 )
 
 from apps.trade_orders.services.purchase_service import (
@@ -155,6 +161,70 @@ class CurrencyPurchaseViewSet(viewsets.ModelViewSet):
 
         output_serializer = self.get_serializer(
             purchase,
+        )
+
+        return Response(
+            output_serializer.data,
+            status=status.HTTP_201_CREATED,
+        )
+
+class ShipmentPartViewSet(viewsets.ModelViewSet):
+    queryset = (
+        ShipmentPart.objects
+        .select_related(
+            "currency_purchase",
+            "currency_purchase__registration_order",
+            "currency_purchase__registration_order__company",
+        )
+        .all()
+    )
+
+    serializer_class = ShipmentPartSerializer
+
+    search_fields = (
+        "reference_number",
+        "currency_purchase__registration_order__order_number",
+        "currency_purchase__registration_order__company__name",
+        "currency_purchase__registration_order__company__national_id",
+    )
+
+    ordering_fields = (
+        "shipment_date",
+        "received_date",
+        "amount",
+        "created_at",
+    )
+
+    def create(self, request, *args, **kwargs):
+        serializer = self.get_serializer(
+            data=request.data,
+        )
+
+        serializer.is_valid(
+            raise_exception=True,
+        )
+
+        data = serializer.validated_data
+
+        try:
+            shipment = create_shipment_part(
+                currency_purchase=data["currency_purchase"],
+                amount=data["amount"],
+                shipment_date=data.get("shipment_date"),
+                received_date=data.get("received_date"),
+                reference_number=data.get(
+                    "reference_number",
+                    "",
+                ),
+                notes=data.get("notes", ""),
+            )
+        except DjangoValidationError as exc:
+            raise DRFValidationError(
+                {"detail": exc.messages}
+            )
+
+        output_serializer = self.get_serializer(
+            shipment,
         )
 
         return Response(

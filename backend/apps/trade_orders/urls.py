@@ -4,7 +4,9 @@ from apps.trade_orders.views import (
     CurrencyPurchaseViewSet,
     PaymentInstrumentViewSet,
     RegistrationOrderViewSet,
+    ShipmentPartViewSet,
 )
+
 
 router = DefaultRouter()
 
@@ -24,6 +26,12 @@ router.register(
     "currency-purchases",
     CurrencyPurchaseViewSet,
     basename="currency-purchase",
+)
+
+router.register(
+    "shipment-parts",
+    ShipmentPartViewSet,
+    basename="shipment-part",
 )
 
 urlpatterns = router.urls

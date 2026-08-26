@@ -14,6 +14,10 @@ def create_shipment_part(
     *,
     currency_purchase: CurrencyPurchase,
     amount: Decimal,
+    shipment_date=None,
+    received_date=None,
+    reference_number="",
+    notes="",
 ) -> ShipmentPart:
 
     if amount <= Decimal("0"):
@@ -42,4 +46,8 @@ def create_shipment_part(
     return ShipmentPart.objects.create(
         currency_purchase=currency_purchase,
         amount=amount,
+        shipment_date=shipment_date,
+        received_date=received_date,
+        reference_number=reference_number.strip(),
+        notes=notes,
     )
