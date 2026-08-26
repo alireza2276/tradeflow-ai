@@ -30,4 +30,9 @@ urlpatterns = [
         "api/trade/",
         include("apps.trade_orders.urls"),
     ),
+
+    path(
+        "api/documents/",
+        include("apps.documents.urls"),
+    ),
 ]
