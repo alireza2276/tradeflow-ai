@@ -22,6 +22,7 @@ def create_currency_purchase(
     validate_purchase_amount(
         registration_order=registration_order,
         purchase_amount=amount,
+        purchase_currency=currency,
     )
 
     company_type = registration_order.company.company_type

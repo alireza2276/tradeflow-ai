@@ -25,8 +25,14 @@ def get_total_purchased_amount(
 def validate_purchase_amount(
     registration_order: RegistrationOrder,
     purchase_amount: Decimal,
+    purchase_currency: str,
     current_purchase: CurrencyPurchase | None = None,
 ) -> None:
+    if purchase_currency != registration_order.currency:
+        raise ValidationError(
+            "Purchase currency must match registration order currency."
+        )
+
     if purchase_amount <= 0:
         raise ValidationError(
             "Purchase amount must be greater than zero."

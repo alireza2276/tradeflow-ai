@@ -31,6 +31,7 @@ from apps.trade_orders.services.balance_service import (
 )
 
 from apps.trade_orders.models import (
+    CurrencyPurchase,
     PaymentInstrument,
     RegistrationOrder,
 )
@@ -859,4 +860,249 @@ class PaymentInstrumentAPITests(APITestCase):
         self.assertEqual(
             response.status_code,
             status.HTTP_400_BAD_REQUEST,
+        )
+
+class CurrencyPurchaseAPITests(APITestCase):
+
+    def setUp(self):
+        self.url = "/api/trade/currency-purchases/"
+
+        self.company = Company.objects.create(
+            name="Purchase API Company",
+            national_id="7788990011",
+            company_type="COMMERCIAL",
+        )
+
+        self.order = RegistrationOrder.objects.create(
+            company=self.company,
+            order_number="PURCHASE-API-001",
+            registered_amount=Decimal("100000"),
+            currency="USD",
+        )
+
+    def test_currency_purchase_can_be_created(self):
+        payload = {
+            "registration_order": str(self.order.id),
+            "amount": "40000",
+            "currency": "USD",
+            "purchase_date": "2026-08-22",
+        }
+
+        response = self.client.post(
+            self.url,
+            payload,
+            format="json",
+        )
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_201_CREATED,
+        )
+
+        self.assertEqual(
+            response.data["amount"],
+            "40000.0000",
+        )
+
+        self.assertEqual(
+            response.data["deadline"],
+            "2027-02-22",
+        )
+
+    def test_multiple_purchases_up_to_order_amount_are_allowed(self):
+        first_payload = {
+            "registration_order": str(self.order.id),
+            "amount": "40000",
+            "currency": "USD",
+            "purchase_date": "2026-08-22",
+        }
+
+        second_payload = {
+            "registration_order": str(self.order.id),
+            "amount": "60000",
+            "currency": "USD",
+            "purchase_date": "2026-08-23",
+        }
+
+        first_response = self.client.post(
+            self.url,
+            first_payload,
+            format="json",
+        )
+
+        second_response = self.client.post(
+            self.url,
+            second_payload,
+            format="json",
+        )
+
+        self.assertEqual(
+            first_response.status_code,
+            status.HTTP_201_CREATED,
+        )
+
+        self.assertEqual(
+            second_response.status_code,
+            status.HTTP_201_CREATED,
+        )
+
+    def test_total_purchases_cannot_exceed_order_amount(self):
+        first_payload = {
+            "registration_order": str(self.order.id),
+            "amount": "100000",
+            "currency": "USD",
+            "purchase_date": "2026-08-22",
+        }
+
+        self.client.post(
+            self.url,
+            first_payload,
+            format="json",
+        )
+
+        second_payload = {
+            "registration_order": str(self.order.id),
+            "amount": "1",
+            "currency": "USD",
+            "purchase_date": "2026-08-23",
+        }
+
+        response = self.client.post(
+            self.url,
+            second_payload,
+            format="json",
+        )
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_400_BAD_REQUEST,
+        )
+
+    def test_zero_purchase_amount_is_rejected(self):
+        payload = {
+            "registration_order": str(self.order.id),
+            "amount": "0",
+            "currency": "USD",
+            "purchase_date": "2026-08-22",
+        }
+
+        response = self.client.post(
+            self.url,
+            payload,
+            format="json",
+        )
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_400_BAD_REQUEST,
+        )
+
+    def test_commercial_deadline_is_six_months(self):
+        payload = {
+            "registration_order": str(self.order.id),
+            "amount": "40000",
+            "currency": "USD",
+            "purchase_date": "2026-08-22",
+        }
+
+        response = self.client.post(
+            self.url,
+            payload,
+            format="json",
+        )
+
+        self.assertEqual(
+            response.data["deadline"],
+            "2027-02-22",
+        )
+
+    def test_production_deadline_is_nine_months(self):
+        production_company = Company.objects.create(
+            name="Production API Company",
+            national_id="8899001122",
+            company_type="PRODUCTION",
+        )
+
+        production_order = RegistrationOrder.objects.create(
+            company=production_company,
+            order_number="PRODUCTION-API-001",
+            registered_amount=Decimal("100000"),
+            currency="USD",
+        )
+
+        payload = {
+            "registration_order": str(production_order.id),
+            "amount": "40000",
+            "currency": "USD",
+            "purchase_date": "2026-08-22",
+        }
+
+        response = self.client.post(
+            self.url,
+            payload,
+            format="json",
+        )
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_201_CREATED,
+        )
+
+        self.assertEqual(
+            response.data["deadline"],
+            "2027-05-22",
+        )
+
+    def test_response_contains_dual_dates(self):
+        payload = {
+            "registration_order": str(self.order.id),
+            "amount": "40000",
+            "currency": "USD",
+            "purchase_date": "2026-08-22",
+        }
+
+        response = self.client.post(
+            self.url,
+            payload,
+            format="json",
+        )
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_201_CREATED,
+        )
+
+        self.assertEqual(
+            response.data["purchase_date_dual"],
+            "1405/05/31 (2026/08/22)",
+        )
+
+        self.assertEqual(
+            response.data["deadline_dual"],
+            "1405/12/03 (2027/02/22)",
+        )
+
+    def test_purchase_currency_must_match_registration_order_currency(self):
+        payload = {
+            "registration_order": str(self.order.id),
+            "amount": "40000",
+            "currency": "EUR",
+            "purchase_date": "2026-08-22",
+        }
+
+        response = self.client.post(
+            self.url,
+            payload,
+            format="json",
+        )
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_400_BAD_REQUEST,
+        )
+
+        self.assertFalse(
+            CurrencyPurchase.objects.filter(
+                registration_order=self.order,
+            ).exists()
         )

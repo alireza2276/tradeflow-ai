@@ -4,7 +4,10 @@ from rest_framework import serializers
 
 from apps.trade_orders.models import RegistrationOrder
 
+from apps.common.services.date_service import format_dual_date
+
 from apps.trade_orders.models import (
+    CurrencyPurchase,
     PaymentInstrument,
     RegistrationOrder,
 )
@@ -85,4 +88,57 @@ class PaymentInstrumentSerializer(serializers.ModelSerializer):
             "company_name",
             "created_at",
             "updated_at",
+        )
+
+class CurrencyPurchaseSerializer(serializers.ModelSerializer):
+    order_number = serializers.CharField(
+        source="registration_order.order_number",
+        read_only=True,
+    )
+
+    company_name = serializers.CharField(
+        source="registration_order.company.name",
+        read_only=True,
+    )
+
+    purchase_date_dual = serializers.SerializerMethodField()
+    deadline_dual = serializers.SerializerMethodField()
+
+    class Meta:
+        model = CurrencyPurchase
+
+        fields = (
+            "id",
+            "registration_order",
+            "order_number",
+            "company_name",
+            "amount",
+            "currency",
+            "purchase_date",
+            "purchase_date_dual",
+            "deadline",
+            "deadline_dual",
+            "created_at",
+            "updated_at",
+        )
+
+        read_only_fields = (
+            "id",
+            "order_number",
+            "company_name",
+            "deadline",
+            "purchase_date_dual",
+            "deadline_dual",
+            "created_at",
+            "updated_at",
+        )
+
+    def get_purchase_date_dual(self, obj):
+        return format_dual_date(
+            obj.purchase_date,
+        )
+
+    def get_deadline_dual(self, obj):
+        return format_dual_date(
+            obj.deadline,
         )
