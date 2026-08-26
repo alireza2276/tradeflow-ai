@@ -35,4 +35,9 @@ urlpatterns = [
         "api/documents/",
         include("apps.documents.urls"),
     ),
+
+    path(
+        "api/notifications/",
+        include("apps.notifications.urls"),
+    ),
 ]

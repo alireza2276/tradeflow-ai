@@ -1,3 +1,7 @@
+from rest_framework import status
+from rest_framework.test import APITestCase
+
+
 from datetime import date
 from decimal import Decimal
 
@@ -267,4 +271,118 @@ class NotificationServiceTests(TestCase):
         self.assertIn(
             "مبلغ باقی‌مانده: 20000 EUR",
             message,
+        )
+
+class NotificationLogAPITests(APITestCase):
+
+    def setUp(self):
+        self.company = Company.objects.create(
+            name="Notification API Company",
+            national_id="1122334455",
+            company_type="COMMERCIAL",
+        )
+
+        self.order = RegistrationOrder.objects.create(
+            company=self.company,
+            order_number="NOTIF-API-001",
+            registered_amount=Decimal("100000"),
+            currency="USD",
+        )
+
+        self.purchase = create_currency_purchase(
+            registration_order=self.order,
+            amount=Decimal("40000"),
+            currency="USD",
+            purchase_date=date(2026, 8, 22),
+        )
+
+        self.notification = NotificationLog.objects.create(
+            currency_purchase=self.purchase,
+            notification_type="THIRTY_DAYS",
+        )
+
+        self.list_url = "/api/notifications/logs/"
+        self.detail_url = (
+            f"/api/notifications/logs/{self.notification.id}/"
+        )
+
+    def test_notification_log_list_can_be_read(self):
+        response = self.client.get(
+            self.list_url,
+        )
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_200_OK,
+        )
+
+        self.assertEqual(
+            len(response.data),
+            1,
+        )
+
+        self.assertEqual(
+            response.data[0]["notification_type"],
+            "THIRTY_DAYS",
+        )
+
+        self.assertEqual(
+            response.data[0]["company_name"],
+            "Notification API Company",
+        )
+
+        self.assertEqual(
+            response.data[0]["order_number"],
+            "NOTIF-API-001",
+        )
+
+    def test_notification_log_detail_can_be_read(self):
+        response = self.client.get(
+            self.detail_url,
+        )
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_200_OK,
+        )
+
+        self.assertEqual(
+            response.data["notification_type"],
+            "THIRTY_DAYS",
+        )
+
+    def test_notification_log_cannot_be_created_through_api(self):
+        response = self.client.post(
+            self.list_url,
+            {
+                "currency_purchase": str(self.purchase.id),
+                "notification_type": "SIXTY_DAYS",
+            },
+            format="json",
+        )
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_405_METHOD_NOT_ALLOWED,
+        )
+
+        self.assertEqual(
+            NotificationLog.objects.count(),
+            1,
+        )
+
+    def test_notification_log_cannot_be_deleted_through_api(self):
+        response = self.client.delete(
+            self.detail_url,
+        )
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_405_METHOD_NOT_ALLOWED,
+        )
+
+        self.assertTrue(
+            NotificationLog.objects.filter(
+                id=self.notification.id,
+            ).exists()
         )
