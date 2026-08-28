@@ -1544,3 +1544,91 @@ class DashboardServiceTests(APITestCase):
             ),
             Decimal("30000"),
         )
+
+    def test_dashboard_returns_attention_cases(self):
+        overdue_purchase = create_currency_purchase(
+            registration_order=self.order,
+            amount=Decimal("50000"),
+            currency="USD",
+            purchase_date=date(2025, 1, 1),
+        )
+
+        due_soon_order = RegistrationOrder.objects.create(
+            company=self.company,
+            order_number="DASH-DUE-001",
+            registered_amount=Decimal("70000"),
+            currency="USD",
+        )
+
+        due_soon_purchase = create_currency_purchase(
+            registration_order=due_soon_order,
+            amount=Decimal("30000"),
+            currency="USD",
+            purchase_date=date.today(),
+        )
+
+        due_soon_purchase.deadline = date.today() + timedelta(days=10)
+        due_soon_purchase.save(update_fields=["deadline"])
+
+        completed_order = RegistrationOrder.objects.create(
+            company=self.company,
+            order_number="DASH-COMPLETE-001",
+            registered_amount=Decimal("60000"),
+            currency="USD",
+        )
+
+        completed_purchase = create_currency_purchase(
+            registration_order=completed_order,
+            amount=Decimal("20000"),
+            currency="USD",
+            purchase_date=date(2025, 1, 1),
+        )
+
+        create_shipment_part(
+            currency_purchase=completed_purchase,
+            amount=Decimal("20000"),
+        )
+
+        summary = get_dashboard_summary()
+
+        attention_cases = summary["attention_cases"]
+
+        self.assertEqual(
+            len(attention_cases),
+            2,
+        )
+
+        statuses = {
+            case["status"]
+            for case in attention_cases
+        }
+
+        self.assertIn(
+            "OVERDUE",
+            statuses,
+        )
+
+        self.assertIn(
+            "DUE_SOON",
+            statuses,
+        )
+
+        purchase_ids = {
+            case["purchase_id"]
+            for case in attention_cases
+        }
+
+        self.assertIn(
+            str(overdue_purchase.id),
+            purchase_ids,
+        )
+
+        self.assertIn(
+            str(due_soon_purchase.id),
+            purchase_ids,
+        )
+
+        self.assertNotIn(
+            str(completed_purchase.id),
+            purchase_ids,
+        )

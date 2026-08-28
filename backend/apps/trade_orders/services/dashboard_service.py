@@ -37,6 +37,8 @@ def get_dashboard_summary():
 
     currency_totals = {}
 
+    attention_cases = []
+
     for purchase in active_purchases:
         balance = get_purchase_balance(
             purchase=purchase,
@@ -73,11 +75,33 @@ def get_dashboard_summary():
             purchase.deadline - today
         ).days
 
+        if days_remaining <= 30:
+            attention_cases.append(
+                {
+                    "purchase_id": str(purchase.id),
+                    "company_name": purchase.registration_order.company.name,
+                    "order_number": purchase.registration_order.order_number,
+                    "currency": purchase.currency,
+                    "remaining_amount": remaining_amount,
+                    "deadline": purchase.deadline,
+                    "days_remaining": days_remaining,
+                    "status": (
+                        "OVERDUE"
+                        if days_remaining < 0
+                        else "DUE_SOON"
+                    ),
+                }
+            )
+
         if days_remaining < 0:
             overdue_count += 1
 
         elif days_remaining <= 30:
             due_soon_count += 1
+
+    attention_cases.sort(
+        key=lambda case: case["days_remaining"]
+    )
 
     return {
         "active_orders_count": active_orders.count(),
@@ -85,4 +109,5 @@ def get_dashboard_summary():
         "due_soon_count": due_soon_count,
         "overdue_count": overdue_count,
         "currency_totals": currency_totals,
+        "attention_cases": attention_cases,
     }
