@@ -27,20 +27,38 @@ function Dashboard() {
   }, [])
 
   if (loading) {
-    return (
-      <div className="dashboard-page">
-        <p>Loading dashboard...</p>
+  return (
+    <div className="dashboard-page">
+      <div className="page-state">
+        <div className="loading-spinner" />
+
+        <h2>Loading dashboard</h2>
+
+        <p>
+          Fetching the latest trade finance data.
+        </p>
       </div>
-    )
-  }
+    </div>
+  )
+}
 
   if (error) {
-    return (
-      <div className="dashboard-page">
-        <p>{error}</p>
+  return (
+    <div className="dashboard-page">
+      <div className="page-state page-state--error">
+        <div className="error-icon">
+          !
+        </div>
+
+        <h2>Unable to load dashboard</h2>
+
+        <p>
+          {error}
+        </p>
       </div>
-    )
-  }
+    </div>
+  )
+}
 
   const currencyEntries = Object.entries(
     dashboardData.currency_totals || {}
