@@ -37,6 +37,12 @@ from apps.trade_orders.models import (
     ShipmentPart,
 )
 
+from django.test import TestCase
+
+from apps.trade_orders.services.dashboard_service import (
+    get_dashboard_summary,
+)
+
 class PaymentInstrumentServiceTests(TestCase):
 
     def setUp(self):
@@ -1312,4 +1318,229 @@ class ShipmentPartAPITests(APITestCase):
         self.assertEqual(
             shipment.notes,
             "Documents received.",
+        )
+
+class DashboardServiceTests(APITestCase):
+
+    def setUp(self):
+        self.company = Company.objects.create(
+            name="Dashboard Company",
+            national_id="9988776655",
+            company_type="COMMERCIAL",
+        )
+
+        self.order = RegistrationOrder.objects.create(
+            company=self.company,
+            order_number="DASH-001",
+            registered_amount=Decimal("100000"),
+            currency="USD",
+        )
+
+    def test_dashboard_summary_counts_active_order_and_purchase(self):
+        create_currency_purchase(
+            registration_order=self.order,
+            amount=Decimal("50000"),
+            currency="USD",
+            purchase_date=date.today(),
+        )
+
+        summary = get_dashboard_summary()
+
+        self.assertEqual(
+            summary["active_orders_count"],
+            1,
+        )
+
+        self.assertEqual(
+            summary["active_purchases_count"],
+            1,
+        )
+
+    def test_dashboard_summary_calculates_currency_totals(self):
+        purchase = create_currency_purchase(
+            registration_order=self.order,
+            amount=Decimal("50000"),
+            currency="USD",
+            purchase_date=date.today(),
+        )
+
+        create_shipment_part(
+            currency_purchase=purchase,
+            amount=Decimal("20000"),
+        )
+
+        summary = get_dashboard_summary()
+
+        usd_totals = summary["currency_totals"]["USD"]
+
+        self.assertEqual(
+            usd_totals["purchased_amount"],
+            Decimal("50000"),
+        )
+
+        self.assertEqual(
+            usd_totals["documented_amount"],
+            Decimal("20000"),
+        )
+
+        self.assertEqual(
+            usd_totals["remaining_amount"],
+            Decimal("30000"),
+        )
+
+    def test_dashboard_summary_detects_overdue_purchase(self):
+        purchase = create_currency_purchase(
+            registration_order=self.order,
+            amount=Decimal("50000"),
+            currency="USD",
+            purchase_date=date(2025, 1, 1),
+        )
+
+        summary = get_dashboard_summary()
+
+        self.assertEqual(
+            summary["overdue_count"],
+            1,
+        )
+
+    def test_completed_purchase_is_not_counted_as_overdue(self):
+        purchase = create_currency_purchase(
+            registration_order=self.order,
+            amount=Decimal("50000"),
+            currency="USD",
+            purchase_date=date(2025, 1, 1),
+        )
+
+        create_shipment_part(
+            currency_purchase=purchase,
+            amount=Decimal("50000"),
+        )
+
+        summary = get_dashboard_summary()
+
+        self.assertEqual(
+            summary["overdue_count"],
+            0,
+        )
+
+        self.assertEqual(
+            summary["currency_totals"]["USD"]["remaining_amount"],
+            Decimal("0"),
+        )
+
+    def test_dashboard_keeps_currency_totals_separate(self):
+        usd_purchase = create_currency_purchase(
+            registration_order=self.order,
+            amount=Decimal("50000"),
+            currency="USD",
+            purchase_date=date.today(),
+        )
+
+        create_shipment_part(
+            currency_purchase=usd_purchase,
+            amount=Decimal("20000"),
+        )
+
+        eur_order = RegistrationOrder.objects.create(
+            company=self.company,
+            order_number="DASH-EUR-001",
+            registered_amount=Decimal("80000"),
+            currency="EUR",
+        )
+
+        eur_purchase = create_currency_purchase(
+            registration_order=eur_order,
+            amount=Decimal("40000"),
+            currency="EUR",
+            purchase_date=date.today(),
+        )
+
+        create_shipment_part(
+            currency_purchase=eur_purchase,
+            amount=Decimal("10000"),
+        )
+
+        summary = get_dashboard_summary()
+
+        self.assertEqual(
+            summary["currency_totals"]["USD"]["purchased_amount"],
+            Decimal("50000"),
+        )
+
+        self.assertEqual(
+            summary["currency_totals"]["USD"]["documented_amount"],
+            Decimal("20000"),
+        )
+
+        self.assertEqual(
+            summary["currency_totals"]["USD"]["remaining_amount"],
+            Decimal("30000"),
+        )
+
+        self.assertEqual(
+            summary["currency_totals"]["EUR"]["purchased_amount"],
+            Decimal("40000"),
+        )
+
+        self.assertEqual(
+            summary["currency_totals"]["EUR"]["documented_amount"],
+            Decimal("10000"),
+        )
+
+        self.assertEqual(
+            summary["currency_totals"]["EUR"]["remaining_amount"],
+            Decimal("30000"),
+        )
+
+    def test_dashboard_api_returns_summary(self):
+        purchase = create_currency_purchase(
+            registration_order=self.order,
+            amount=Decimal("50000"),
+            currency="USD",
+            purchase_date=date.today(),
+        )
+
+        create_shipment_part(
+            currency_purchase=purchase,
+            amount=Decimal("20000"),
+        )
+
+        response = self.client.get(
+            "/api/trade/dashboard/",
+        )
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_200_OK,
+        )
+
+        self.assertEqual(
+            response.data["active_orders_count"],
+            1,
+        )
+
+        self.assertEqual(
+            response.data["active_purchases_count"],
+            1,
+        )
+
+        self.assertEqual(
+            Decimal(
+                response.data["currency_totals"]["USD"]["purchased_amount"]
+            ),
+            Decimal("50000"),
+        )
+
+        self.assertEqual(
+            Decimal(
+                response.data["currency_totals"]["USD"]["documented_amount"]
+            ),
+            Decimal("20000"),
+        )
+
+        self.assertEqual(
+            Decimal(
+                response.data["currency_totals"]["USD"]["remaining_amount"]
+            ),
+            Decimal("30000"),
         )

@@ -1,4 +1,5 @@
-from rest_framework import viewsets
+from rest_framework import status, viewsets
+from rest_framework.views import APIView
 
 from django.core.exceptions import ValidationError as DjangoValidationError
 from rest_framework.exceptions import ValidationError as DRFValidationError
@@ -33,6 +34,10 @@ from apps.trade_orders.services.purchase_service import (
 
 from apps.trade_orders.services.payment_instrument_service import (
     create_payment_instrument,
+)
+
+from apps.trade_orders.services.dashboard_service import (
+    get_dashboard_summary,
 )
 
 class RegistrationOrderViewSet(viewsets.ModelViewSet):
@@ -230,4 +235,14 @@ class ShipmentPartViewSet(viewsets.ModelViewSet):
         return Response(
             output_serializer.data,
             status=status.HTTP_201_CREATED,
+        )
+
+class DashboardSummaryAPIView(APIView):
+
+    def get(self, request):
+        summary = get_dashboard_summary()
+
+        return Response(
+            summary,
+            status=status.HTTP_200_OK,
         )

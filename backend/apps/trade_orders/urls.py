@@ -1,11 +1,14 @@
 from rest_framework.routers import DefaultRouter
 
 from apps.trade_orders.views import (
-    CurrencyPurchaseViewSet,
-    PaymentInstrumentViewSet,
     RegistrationOrderViewSet,
+    PaymentInstrumentViewSet,
+    CurrencyPurchaseViewSet,
     ShipmentPartViewSet,
+    DashboardSummaryAPIView,
 )
+
+from django.urls import path
 
 
 router = DefaultRouter()
@@ -35,3 +38,11 @@ router.register(
 )
 
 urlpatterns = router.urls
+
+urlpatterns += [
+    path(
+        "dashboard/",
+        DashboardSummaryAPIView.as_view(),
+        name="dashboard-summary",
+    ),
+]
