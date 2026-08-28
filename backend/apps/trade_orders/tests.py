@@ -1632,3 +1632,28 @@ class DashboardServiceTests(APITestCase):
             str(completed_purchase.id),
             purchase_ids,
         )
+
+    def test_dashboard_attention_case_includes_dual_deadline(self):
+        purchase = create_currency_purchase(
+            registration_order=self.order,
+            amount=Decimal("50000"),
+            currency="USD",
+            purchase_date=date.today(),
+        )
+
+        purchase.deadline = date.today() + timedelta(days=10)
+        purchase.save(update_fields=["deadline"])
+
+        summary = get_dashboard_summary()
+
+        attention_case = next(
+            case
+            for case in summary["attention_cases"]
+            if case["purchase_id"] == str(purchase.id)
+        )
+
+        self.assertIn("deadline_dual", attention_case)
+        self.assertIn(
+            purchase.deadline.strftime("%Y/%m/%d"),
+            attention_case["deadline_dual"],
+        )

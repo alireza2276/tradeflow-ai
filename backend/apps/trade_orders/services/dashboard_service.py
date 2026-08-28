@@ -1,5 +1,7 @@
 from decimal import Decimal
 
+from apps.common.services.date_service import format_dual_date
+
 from django.utils import timezone
 
 from apps.trade_orders.models import (
@@ -84,6 +86,7 @@ def get_dashboard_summary():
                     "currency": purchase.currency,
                     "remaining_amount": remaining_amount,
                     "deadline": purchase.deadline,
+                    "deadline_dual": format_dual_date(purchase.deadline),
                     "days_remaining": days_remaining,
                     "status": (
                         "OVERDUE"

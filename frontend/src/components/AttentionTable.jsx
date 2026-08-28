@@ -21,7 +21,6 @@ function AttentionTable({ cases }) {
             <th>Currency</th>
             <th>Remaining</th>
             <th>Deadline</th>
-            <th>Days</th>
             <th>Status</th>
           </tr>
         </thead>
@@ -43,23 +42,41 @@ function AttentionTable({ cases }) {
                 {formatAmount(item.remaining_amount)}
               </td>
 
-              <td>{item.deadline}</td>
-
               <td>
-                {item.days_remaining}
+                <div className="deadline-cell">
+                  <strong>
+                    {item.deadline_dual}
+                  </strong>
+
+                  <span
+                      className={
+                        item.status === 'OVERDUE'
+                            ? 'deadline-text deadline-text--danger'
+                            : 'deadline-text deadline-text--warning'
+                      }
+                  >
+                            {item.days_remaining < 0
+                        ? `${Math.abs(item.days_remaining)} days overdue`
+                        : item.days_remaining === 0
+                            ? 'Due today'
+                            : `${item.days_remaining} days left`}
+                  </span>
+                </div>
               </td>
+
+
 
               <td>
                 <span
-                  className={
-                    item.status === 'OVERDUE'
-                      ? 'status-badge status-badge--danger'
-                      : 'status-badge status-badge--warning'
-                  }
+                    className={
+                      item.status === 'OVERDUE'
+                          ? 'status-badge status-badge--danger'
+                          : 'status-badge status-badge--warning'
+                    }
                 >
                   {item.status === 'OVERDUE'
-                    ? 'Overdue'
-                    : 'Due Soon'}
+                      ? 'Overdue'
+                      : 'Due Soon'}
                 </span>
               </td>
             </tr>

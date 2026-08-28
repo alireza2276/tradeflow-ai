@@ -461,3 +461,30 @@
   background: #fee2e2;
   color: #b91c1c;
 }
+
+/* Deadline Cell */
+
+.deadline-cell {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.deadline-cell strong {
+  font-size: 13px;
+  font-weight: 600;
+  color: #334155;
+}
+
+.deadline-text {
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.deadline-text--warning {
+  color: #c2410c;
+}
+
+.deadline-text--danger {
+  color: #b91c1c;
+}
