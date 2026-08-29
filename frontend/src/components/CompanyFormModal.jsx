@@ -1,7 +1,8 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 
 
 function CompanyFormModal({
+  company = null,
   onClose,
   onSubmit,
 }) {
@@ -13,6 +14,19 @@ function CompanyFormModal({
 
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState('')
+
+  const isEditMode = Boolean(company)
+
+  useEffect(() => {
+    if (company) {
+      setFormData({
+        name: company.name || '',
+        national_id: company.national_id || '',
+        company_type:
+          company.company_type || 'COMMERCIAL',
+      })
+    }
+  }, [company])
 
   function handleChange(event) {
     const { name, value } = event.target
@@ -44,9 +58,16 @@ function CompanyFormModal({
 
         <div className="modal-header">
           <div>
-            <h2>Add Company</h2>
+            <h2>
+              {isEditMode
+                ? 'Edit Company'
+                : 'Add Company'}
+            </h2>
+
             <p>
-              Register a new company in TradeFlowAI.
+              {isEditMode
+                ? 'Update company information.'
+                : 'Register a new company in TradeFlowAI.'}
             </p>
           </div>
 
@@ -137,8 +158,16 @@ function CompanyFormModal({
               disabled={submitting}
             >
               {submitting
-                ? 'Creating...'
-                : 'Create Company'}
+                ? (
+                    isEditMode
+                      ? 'Saving...'
+                      : 'Creating...'
+                  )
+                : (
+                    isEditMode
+                      ? 'Save Changes'
+                      : 'Create Company'
+                  )}
             </button>
           </div>
 

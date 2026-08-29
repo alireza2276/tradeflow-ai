@@ -3,7 +3,9 @@ import { useEffect, useState } from 'react'
 import CompanyFormModal from '../components/CompanyFormModal'
 import {
   createCompany,
+  deleteCompany,
   getCompanies,
+  updateCompany,
 } from '../services/api'
 
 
@@ -11,7 +13,13 @@ function Companies() {
   const [companies, setCompanies] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
+
   const [isModalOpen, setIsModalOpen] = useState(false)
+  const [selectedCompany, setSelectedCompany] = useState(null)
+
+  const [deletingCompanyId, setDeletingCompanyId] =
+    useState(null)
+
 
   useEffect(() => {
     async function loadCompanies() {
@@ -28,16 +36,78 @@ function Companies() {
     loadCompanies()
   }, [])
 
-  async function handleCreateCompany(formData) {
-    const newCompany = await createCompany(formData)
 
-    setCompanies((currentCompanies) => [
-      ...currentCompanies,
-      newCompany,
-    ])
-
-    setIsModalOpen(false)
+  function handleOpenCreateModal() {
+    setSelectedCompany(null)
+    setIsModalOpen(true)
   }
+
+
+  function handleOpenEditModal(company) {
+    setSelectedCompany(company)
+    setIsModalOpen(true)
+  }
+
+
+  function handleCloseModal() {
+    setIsModalOpen(false)
+    setSelectedCompany(null)
+  }
+
+
+  async function handleSubmitCompany(formData) {
+    if (selectedCompany) {
+      const updatedCompany = await updateCompany(
+        selectedCompany.id,
+        formData
+      )
+
+      setCompanies((currentCompanies) =>
+        currentCompanies.map((company) =>
+          company.id === updatedCompany.id
+            ? updatedCompany
+            : company
+        )
+      )
+    } else {
+      const newCompany = await createCompany(formData)
+
+      setCompanies((currentCompanies) => [
+        ...currentCompanies,
+        newCompany,
+      ])
+    }
+
+    handleCloseModal()
+  }
+
+
+  async function handleDeleteCompany(company) {
+    const confirmed = window.confirm(
+      `Delete "${company.name}"? This action cannot be undone.`
+    )
+
+    if (!confirmed) {
+      return
+    }
+
+    try {
+      setDeletingCompanyId(company.id)
+
+      await deleteCompany(company.id)
+
+      setCompanies((currentCompanies) =>
+        currentCompanies.filter(
+          (item) => item.id !== company.id
+        )
+      )
+    } catch (err) {
+      window.alert(err.message)
+    } finally {
+      setDeletingCompanyId(null)
+    }
+  }
+
 
   if (loading) {
     return (
@@ -54,6 +124,7 @@ function Companies() {
       </div>
     )
   }
+
 
   if (error) {
     return (
@@ -73,6 +144,7 @@ function Companies() {
     )
   }
 
+
   return (
     <div className="companies-page">
 
@@ -88,11 +160,12 @@ function Companies() {
         <button
           type="button"
           className="primary-button"
-          onClick={() => setIsModalOpen(true)}
+          onClick={handleOpenCreateModal}
         >
           Add Company
         </button>
       </header>
+
 
       {companies.length === 0 ? (
         <div className="empty-state">
@@ -107,12 +180,14 @@ function Companies() {
                 <th>Company</th>
                 <th>National ID</th>
                 <th>Type</th>
+                <th>Actions</th>
               </tr>
             </thead>
 
             <tbody>
               {companies.map((company) => (
                 <tr key={company.id}>
+
                   <td>
                     {company.name}
                   </td>
@@ -122,8 +197,44 @@ function Companies() {
                   </td>
 
                   <td>
-                    {company.company_type}
+                    <span className="company-type-badge">
+                      {company.company_type === 'PRODUCTION'
+                        ? 'Production'
+                        : 'Commercial'}
+                    </span>
                   </td>
+
+                  <td>
+                    <div className="table-actions">
+
+                      <button
+                        type="button"
+                        className="table-action-button"
+                        onClick={() =>
+                          handleOpenEditModal(company)
+                        }
+                      >
+                        Edit
+                      </button>
+
+                      <button
+                        type="button"
+                        className="table-action-button table-action-button--danger"
+                        onClick={() =>
+                          handleDeleteCompany(company)
+                        }
+                        disabled={
+                          deletingCompanyId === company.id
+                        }
+                      >
+                        {deletingCompanyId === company.id
+                          ? 'Deleting...'
+                          : 'Delete'}
+                      </button>
+
+                    </div>
+                  </td>
+
                 </tr>
               ))}
             </tbody>
@@ -132,10 +243,12 @@ function Companies() {
         </div>
       )}
 
+
       {isModalOpen && (
         <CompanyFormModal
-          onClose={() => setIsModalOpen(false)}
-          onSubmit={handleCreateCompany}
+          company={selectedCompany}
+          onClose={handleCloseModal}
+          onSubmit={handleSubmitCompany}
         />
       )}
 
