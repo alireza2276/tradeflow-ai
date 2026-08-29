@@ -99,8 +99,18 @@ export async function deleteCompany(companyId) {
   )
 
   if (!response.ok) {
-    throw new Error(
-      'Failed to delete company.'
-    )
+    let errorMessage = 'Failed to delete company.'
+
+    try {
+      const errorData = await response.json()
+
+      if (errorData.detail) {
+        errorMessage = errorData.detail
+      }
+    } catch {
+      // Keep the default error message.
+    }
+
+    throw new Error(errorMessage)
   }
 }

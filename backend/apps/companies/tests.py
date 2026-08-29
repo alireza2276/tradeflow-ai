@@ -3,6 +3,10 @@ from rest_framework.test import APITestCase
 
 from apps.companies.models import Company
 
+from apps.trade_orders.models import RegistrationOrder
+
+from decimal import Decimal
+
 
 class CompanyAPITests(APITestCase):
 
@@ -98,4 +102,59 @@ class CompanyAPITests(APITestCase):
         self.assertEqual(
             response.status_code,
             status.HTTP_400_BAD_REQUEST,
+        )
+
+    def test_delete_company_without_orders(self):
+        company = Company.objects.create(
+            name="Delete Allowed",
+            national_id="9000000001",
+            company_type="COMMERCIAL",
+        )
+
+        response = self.client.delete(
+            f"/api/companies/{company.id}/"
+        )
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_204_NO_CONTENT,
+        )
+
+        self.assertFalse(
+            Company.objects.filter(id=company.id).exists()
+        )
+
+    def test_delete_company_with_registration_order_is_protected(self):
+        company = Company.objects.create(
+            name="Protected Company",
+            national_id="9000000002",
+            company_type="COMMERCIAL",
+        )
+
+        RegistrationOrder.objects.create(
+            company=company,
+            order_number="PROTECT-001",
+            registered_amount=Decimal("10000"),
+            currency="USD",
+        )
+
+        response = self.client.delete(
+            f"/api/companies/{company.id}/"
+        )
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_409_CONFLICT,
+        )
+
+        self.assertEqual(
+            response.data["detail"],
+            (
+                "This company cannot be deleted because "
+                "it has related registration orders."
+            ),
+        )
+
+        self.assertTrue(
+            Company.objects.filter(id=company.id).exists()
         )
