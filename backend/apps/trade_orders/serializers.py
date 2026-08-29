@@ -1,8 +1,7 @@
 from decimal import Decimal
+from django.db.models import Sum
 
 from rest_framework import serializers
-
-from apps.trade_orders.models import RegistrationOrder
 
 from apps.common.services.date_service import format_dual_date
 
@@ -58,6 +57,56 @@ class RegistrationOrderSerializer(serializers.ModelSerializer):
             )
 
         return value
+
+    def validate(self, attrs):
+        instance = self.instance
+
+        if instance is None:
+            return attrs
+
+        registered_amount = attrs.get(
+            "registered_amount",
+            instance.registered_amount,
+        )
+
+        currency = attrs.get(
+            "currency",
+            instance.currency,
+        )
+
+        total_purchased = (
+            instance.currency_purchases.aggregate(
+                total=Sum("amount")
+            )["total"]
+            or Decimal("0")
+        )
+
+        if registered_amount < total_purchased:
+            raise serializers.ValidationError(
+                {
+                    "registered_amount": (
+                        "Registered amount cannot be lower "
+                        "than the total currency purchases."
+                    )
+                }
+            )
+
+        if (
+            total_purchased > Decimal("0")
+            and currency != instance.currency
+        ):
+            raise serializers.ValidationError(
+                {
+                    "currency": (
+                        "Currency cannot be changed because "
+                        "currency purchases already exist "
+                        "for this registration order."
+                    )
+                }
+            )
+
+        return attrs
+
 
 class PaymentInstrumentSerializer(serializers.ModelSerializer):
     order_number = serializers.CharField(

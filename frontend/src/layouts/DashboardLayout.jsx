@@ -30,9 +30,14 @@ function DashboardLayout({ children }) {
             Companies
           </NavLink>
 
-          <button type="button">
+          <NavLink
+            to="/registration-orders"
+            className={({ isActive }) =>
+              isActive ? 'sidebar-link active' : 'sidebar-link'
+            }
+          >
             Registration Orders
-          </button>
+          </NavLink>
 
           <button type="button">
             Currency Purchases

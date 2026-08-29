@@ -997,3 +997,167 @@
   opacity: 0.55;
   cursor: not-allowed;
 }
+
+/* Registration Orders */
+
+.orders-page {
+  width: 100%;
+}
+
+.orders-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  margin-bottom: 28px;
+}
+
+.orders-header h1 {
+  margin: 0 0 6px;
+  font-size: 32px;
+  color: #111827;
+}
+
+.orders-header p {
+  margin: 0;
+  color: #64748b;
+  font-size: 15px;
+}
+
+.orders-table-wrapper {
+  overflow-x: auto;
+  background: white;
+  border: 1px solid #e5e7eb;
+  border-radius: 16px;
+  box-shadow: 0 4px 18px rgba(15, 23, 42, 0.05);
+}
+
+.orders-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.orders-table th,
+.orders-table td {
+  padding: 18px 20px;
+  text-align: left;
+  border-bottom: 1px solid #eef2f7;
+}
+
+.orders-table th {
+  background: #f8fafc;
+  color: #64748b;
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.orders-table td {
+  color: #1e293b;
+  font-size: 14px;
+}
+
+.orders-table tbody tr {
+  transition: background-color 0.15s ease;
+}
+
+.orders-table tbody tr:hover {
+  background: #f8fafc;
+}
+
+.orders-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.orders-table td:first-child {
+  font-weight: 600;
+  color: #0f172a;
+}
+
+.table-currency {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 48px;
+  padding: 5px 10px;
+  border-radius: 8px;
+  background: #eff6ff;
+  color: #2563eb;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.order-status {
+  display: inline-flex;
+  align-items: center;
+  padding: 5px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.order-status--active {
+  background: #ecfdf5;
+  color: #047857;
+}
+
+.order-status--inactive {
+  background: #f1f5f9;
+  color: #64748b;
+}
+
+.empty-state {
+  padding: 48px 24px;
+  background: white;
+  border: 1px solid #e5e7eb;
+  border-radius: 16px;
+  color: #64748b;
+  text-align: center;
+}
+
+/* Registration Order Form */
+
+
+.form-checkbox {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  width: fit-content;
+  color: #334155;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.form-checkbox input {
+  width: 16px;
+  height: 16px;
+  margin: 0;
+  accent-color: #2563eb;
+}
+
+
+.table-delete-button {
+  padding: 7px 12px;
+  border: 1px solid #fecaca;
+  border-radius: 8px;
+  background: #fff;
+  color: #dc2626;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition:
+    background-color 0.15s ease,
+    border-color 0.15s ease;
+}
+
+.table-delete-button:hover {
+  background: #fef2f2;
+  border-color: #fca5a5;
+}
+
+.table-delete-button:focus-visible {
+  outline: 2px solid #ef4444;
+  outline-offset: 2px;
+}

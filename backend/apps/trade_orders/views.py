@@ -9,6 +9,8 @@ from apps.trade_orders.serializers import RegistrationOrderSerializer
 
 from rest_framework import status, viewsets
 from rest_framework.response import Response
+from django.db.models.deletion import ProtectedError
+
 
 from apps.trade_orders.models import (
     CurrencyPurchase,
@@ -61,6 +63,26 @@ class RegistrationOrderViewSet(viewsets.ModelViewSet):
         "order_number",
     )
 
+    def destroy(self, request, *args, **kwargs):
+        registration_order = self.get_object()
+
+        try:
+            registration_order.delete()
+        except ProtectedError:
+            return Response(
+                {
+                    "detail": (
+                        "This registration order cannot be deleted "
+                        "because it has related payment instruments "
+                        "or currency purchases."
+                    )
+                },
+                status=status.HTTP_409_CONFLICT,
+            )
+
+        return Response(
+            status=status.HTTP_204_NO_CONTENT
+        )
 class PaymentInstrumentViewSet(viewsets.ModelViewSet):
     queryset = (
         PaymentInstrument.objects

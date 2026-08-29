@@ -8,6 +8,7 @@ import './App.css'
 import DashboardLayout from './layouts/DashboardLayout'
 import Companies from './pages/Companies'
 import Dashboard from './pages/Dashboard'
+import RegistrationOrders from './pages/RegistrationOrders'
 
 
 function App() {
@@ -24,6 +25,11 @@ function App() {
           <Route
             path="/companies"
             element={<Companies />}
+          />
+
+          <Route
+            path="/registration-orders"
+            element={<RegistrationOrders />}
           />
 
         </Routes>

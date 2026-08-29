@@ -766,6 +766,152 @@ class RegistrationOrderAPITests(APITestCase):
             ).exists()
         )
 
+    def test_registration_order_without_dependencies_can_be_deleted(self):
+        response = self.client.delete(
+            f"{self.url}{self.order.id}/"
+        )
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_204_NO_CONTENT,
+        )
+
+        self.assertFalse(
+            RegistrationOrder.objects.filter(
+                id=self.order.id,
+            ).exists()
+        )
+
+    def test_registration_order_with_payment_instrument_is_protected(self):
+        create_payment_instrument(
+            registration_order=self.order,
+            instrument_number="PI-PROTECT-001",
+        )
+
+        response = self.client.delete(
+            f"{self.url}{self.order.id}/"
+        )
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_409_CONFLICT,
+        )
+
+        self.assertEqual(
+            response.data["detail"],
+            (
+                "This registration order cannot be deleted "
+                "because it has related payment instruments "
+                "or currency purchases."
+            ),
+        )
+
+        self.assertTrue(
+            RegistrationOrder.objects.filter(
+                id=self.order.id,
+            ).exists()
+        )
+
+    def test_registration_order_with_currency_purchase_is_protected(self):
+        create_currency_purchase(
+            registration_order=self.order,
+            amount=Decimal("40000"),
+            currency="USD",
+            purchase_date=date(2026, 8, 22),
+        )
+
+        response = self.client.delete(
+            f"{self.url}{self.order.id}/"
+        )
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_409_CONFLICT,
+        )
+
+        self.assertEqual(
+            response.data["detail"],
+            (
+                "This registration order cannot be deleted "
+                "because it has related payment instruments "
+                "or currency purchases."
+            ),
+        )
+
+        self.assertTrue(
+            RegistrationOrder.objects.filter(
+                id=self.order.id,
+            ).exists()
+        )
+
+    def test_registered_amount_cannot_be_lower_than_total_purchases(self):
+        create_currency_purchase(
+            registration_order=self.order,
+            amount=Decimal("40000"),
+            currency="USD",
+            purchase_date=date(2026, 8, 22),
+        )
+
+        payload = {
+            "company": str(self.company.id),
+            "order_number": self.order.order_number,
+            "registered_amount": "39999",
+            "currency": "USD",
+            "is_active": True,
+        }
+
+        response = self.client.put(
+            f"{self.url}{self.order.id}/",
+            payload,
+            format="json",
+        )
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_400_BAD_REQUEST,
+        )
+
+        self.order.refresh_from_db()
+
+        self.assertEqual(
+            self.order.registered_amount,
+            Decimal("100000"),
+        )
+
+    def test_currency_cannot_be_changed_when_purchases_exist(self):
+        create_currency_purchase(
+            registration_order=self.order,
+            amount=Decimal("40000"),
+            currency="USD",
+            purchase_date=date(2026, 8, 22),
+        )
+
+        payload = {
+            "company": str(self.company.id),
+            "order_number": self.order.order_number,
+            "registered_amount": "100000",
+            "currency": "EUR",
+            "is_active": True,
+        }
+
+        response = self.client.put(
+            f"{self.url}{self.order.id}/",
+            payload,
+            format="json",
+        )
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_400_BAD_REQUEST,
+        )
+
+        self.order.refresh_from_db()
+
+        self.assertEqual(
+            self.order.currency,
+            "USD",
+        )
+
 class PaymentInstrumentAPITests(APITestCase):
 
     def setUp(self):
