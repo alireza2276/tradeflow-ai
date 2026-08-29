@@ -1,7 +1,9 @@
+import { NavLink } from 'react-router-dom'
+
+
 function DashboardLayout({ children }) {
   return (
     <div className="dashboard-layout">
-
       <aside className="sidebar">
         <div className="sidebar-brand">
           <h2>TradeFlowAI</h2>
@@ -9,20 +11,50 @@ function DashboardLayout({ children }) {
         </div>
 
         <nav className="sidebar-nav">
-          <button type="button">Dashboard</button>
-          <button type="button">Companies</button>
-          <button type="button">Registration Orders</button>
-          <button type="button">Currency Purchases</button>
-          <button type="button">Shipments</button>
-          <button type="button">Invoices</button>
-          <button type="button">Notifications</button>
+          <NavLink
+            to="/"
+            end
+            className={({ isActive }) =>
+              isActive ? 'sidebar-link active' : 'sidebar-link'
+            }
+          >
+            Dashboard
+          </NavLink>
+
+          <NavLink
+            to="/companies"
+            className={({ isActive }) =>
+              isActive ? 'sidebar-link active' : 'sidebar-link'
+            }
+          >
+            Companies
+          </NavLink>
+
+          <button type="button">
+            Registration Orders
+          </button>
+
+          <button type="button">
+            Currency Purchases
+          </button>
+
+          <button type="button">
+            Shipments
+          </button>
+
+          <button type="button">
+            Invoices
+          </button>
+
+          <button type="button">
+            Notifications
+          </button>
         </nav>
       </aside>
 
       <main className="main-content">
         {children}
       </main>
-
     </div>
   )
 }
