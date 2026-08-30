@@ -23,8 +23,7 @@ environ.Env.read_env(BASE_DIR.parent / ".env")
 # See https://docs.djangoproject.com/en/6.1/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-+yh$2s2k%*6m%6ptgxcqi!&-+6ztifdy-xnbzd14u$_&3&zbm4'
-
+SECRET_KEY = env("DJANGO_SECRET_KEY")
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
@@ -47,7 +46,7 @@ INSTALLED_APPS = [
     'apps.notifications',
     'rest_framework',
     'corsheaders',
-]
+    'apps.authentication.apps.AuthenticationConfig',]
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
