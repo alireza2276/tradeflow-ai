@@ -1,6 +1,6 @@
 from rest_framework import status
 from rest_framework.test import APITestCase
-
+from django.contrib.auth import get_user_model
 from datetime import date
 from decimal import Decimal
 
@@ -20,6 +20,14 @@ from apps.trade_orders.services.shipment_service import (
 class InvoiceAPITests(APITestCase):
 
     def setUp(self):
+        self.user = get_user_model().objects.create_user(
+            username="invoice-test-user",
+            password="StrongTestPassword123!",
+        )
+
+        self.client.force_authenticate(
+            user=self.user,
+        )
         self.url = "/api/documents/invoices/"
 
         self.company = Company.objects.create(

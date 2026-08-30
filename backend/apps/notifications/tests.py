@@ -1,6 +1,6 @@
 from rest_framework import status
 from rest_framework.test import APITestCase
-
+from django.contrib.auth import get_user_model
 
 from datetime import date
 from decimal import Decimal
@@ -276,6 +276,15 @@ class NotificationServiceTests(TestCase):
 class NotificationLogAPITests(APITestCase):
 
     def setUp(self):
+        self.user = get_user_model().objects.create_user(
+            username="notification-test-user",
+            password="StrongTestPassword123!",
+        )
+
+        self.client.force_authenticate(
+            user=self.user,
+        )
+
         self.company = Company.objects.create(
             name="Notification API Company",
             national_id="1122334455",

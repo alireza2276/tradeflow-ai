@@ -1,6 +1,6 @@
 from rest_framework import status
 from rest_framework.test import APITestCase
-
+from django.contrib.auth import get_user_model
 from datetime import date, timedelta
 from decimal import Decimal
 
@@ -631,9 +631,23 @@ class DeadlineStatusTests(TestCase):
         )
 
 
-class RegistrationOrderAPITests(APITestCase):
+class AuthenticatedAPITestCase(APITestCase):
+
+    def authenticate_test_user(self, username):
+        self.user = get_user_model().objects.create_user(
+            username=username,
+            password="StrongTestPassword123!",
+        )
+
+        self.client.force_authenticate(
+            user=self.user,
+        )
+
+
+class RegistrationOrderAPITests(AuthenticatedAPITestCase):
 
     def setUp(self):
+        self.authenticate_test_user("registration-order-test-user")
         self.url = "/api/trade/registration-orders/"
 
         self.company = Company.objects.create(
@@ -912,9 +926,9 @@ class RegistrationOrderAPITests(APITestCase):
             "USD",
         )
 
-class PaymentInstrumentAPITests(APITestCase):
-
+class PaymentInstrumentAPITests(AuthenticatedAPITestCase):
     def setUp(self):
+        self.authenticate_test_user("payment-instrument-test-user")
         self.url = "/api/trade/payment-instruments/"
 
         self.company = Company.objects.create(
@@ -1015,9 +1029,9 @@ class PaymentInstrumentAPITests(APITestCase):
             status.HTTP_400_BAD_REQUEST,
         )
 
-class CurrencyPurchaseAPITests(APITestCase):
-
+class CurrencyPurchaseAPITests(AuthenticatedAPITestCase):
     def setUp(self):
+        self.authenticate_test_user("currency-purchase-test-user")
         self.url = "/api/trade/currency-purchases/"
 
         self.company = Company.objects.create(
@@ -1472,9 +1486,9 @@ class CurrencyPurchaseAPITests(APITestCase):
             Decimal("40000"),
         )
 
-class ShipmentPartAPITests(APITestCase):
-
+class ShipmentPartAPITests(AuthenticatedAPITestCase):
     def setUp(self):
+        self.authenticate_test_user("shipment-part-test-user")
         self.url = "/api/trade/shipment-parts/"
 
         self.company = Company.objects.create(
@@ -1678,9 +1692,9 @@ class ShipmentPartAPITests(APITestCase):
             "Documents received.",
         )
 
-class DashboardServiceTests(APITestCase):
-
+class DashboardServiceTests(AuthenticatedAPITestCase):
     def setUp(self):
+        self.authenticate_test_user("dashboard-test-user")
         self.company = Company.objects.create(
             name="Dashboard Company",
             national_id="9988776655",

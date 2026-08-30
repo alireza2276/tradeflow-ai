@@ -6,11 +6,21 @@ from apps.companies.models import Company
 from apps.trade_orders.models import RegistrationOrder
 
 from decimal import Decimal
+from django.contrib.auth import get_user_model
 
 
 class CompanyAPITests(APITestCase):
 
     def setUp(self):
+        self.user = get_user_model().objects.create_user(
+            username="company-test-user",
+            password="StrongTestPassword123!",
+        )
+
+        self.client.force_authenticate(
+            user=self.user,
+        )
+
         self.url = "/api/companies/"
 
         self.company = Company.objects.create(

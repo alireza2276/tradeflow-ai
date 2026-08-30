@@ -226,3 +226,13 @@ class AuthenticationTests(TestCase):
             me_response.status_code,
             401,
         )
+
+    def test_financial_api_requires_authentication(self):
+        response = self.client.get(
+            "/api/trade/registration-orders/"
+        )
+
+        self.assertEqual(
+            response.status_code,
+            403,
+        )
