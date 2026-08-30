@@ -1260,6 +1260,218 @@ class CurrencyPurchaseAPITests(APITestCase):
             ).exists()
         )
 
+    def test_currency_purchase_amount_can_be_updated(self):
+        purchase = CurrencyPurchase.objects.create(
+            registration_order=self.order,
+            amount=Decimal("40000"),
+            currency="USD",
+            purchase_date=date(2026, 8, 22),
+            deadline=date(2027, 2, 22),
+        )
+
+        url = f"{self.url}{purchase.id}/"
+
+        response = self.client.patch(
+            url,
+            {
+                "amount": "50000",
+            },
+            format="json",
+        )
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_200_OK,
+        )
+
+        purchase.refresh_from_db()
+
+        self.assertEqual(
+            purchase.amount,
+            Decimal("50000"),
+        )
+
+    def test_currency_purchase_currency_cannot_be_changed(self):
+        purchase = CurrencyPurchase.objects.create(
+            registration_order=self.order,
+            amount=Decimal("40000"),
+            currency="USD",
+            purchase_date=date(2026, 8, 22),
+            deadline=date(2027, 2, 22),
+        )
+
+        url = f"{self.url}{purchase.id}/"
+
+        response = self.client.patch(
+            url,
+            {
+                "currency": "EUR",
+            },
+            format="json",
+        )
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_400_BAD_REQUEST,
+        )
+
+        purchase.refresh_from_db()
+
+        self.assertEqual(
+            purchase.currency,
+            "USD",
+        )
+
+    def test_currency_purchase_registration_order_cannot_be_changed(self):
+        other_order = RegistrationOrder.objects.create(
+            company=self.company,
+            order_number="PURCHASE-API-002",
+            registered_amount=Decimal("100000"),
+            currency="USD",
+        )
+
+        purchase = CurrencyPurchase.objects.create(
+            registration_order=self.order,
+            amount=Decimal("40000"),
+            currency="USD",
+            purchase_date=date(2026, 8, 22),
+            deadline=date(2027, 2, 22),
+        )
+
+        url = f"{self.url}{purchase.id}/"
+
+        response = self.client.patch(
+            url,
+            {
+                "registration_order": str(other_order.id),
+            },
+            format="json",
+        )
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_400_BAD_REQUEST,
+        )
+
+        purchase.refresh_from_db()
+
+        self.assertEqual(
+            purchase.registration_order_id,
+            self.order.id,
+        )
+
+    def test_currency_purchase_amount_cannot_be_lower_than_total_shipments(self):
+        purchase = CurrencyPurchase.objects.create(
+            registration_order=self.order,
+            amount=Decimal("40000"),
+            currency="USD",
+            purchase_date=date(2026, 8, 22),
+            deadline=date(2027, 2, 22),
+        )
+
+        ShipmentPart.objects.create(
+            currency_purchase=purchase,
+            amount=Decimal("30000"),
+            shipment_date=date(2026, 9, 1),
+        )
+
+        url = f"{self.url}{purchase.id}/"
+
+        response = self.client.patch(
+            url,
+            {
+                "amount": "20000",
+            },
+            format="json",
+        )
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_400_BAD_REQUEST,
+        )
+
+        purchase.refresh_from_db()
+
+        self.assertEqual(
+            purchase.amount,
+            Decimal("40000"),
+        )
+
+    def test_currency_purchase_date_update_recalculates_deadline(self):
+        purchase = CurrencyPurchase.objects.create(
+            registration_order=self.order,
+            amount=Decimal("40000"),
+            currency="USD",
+            purchase_date=date(2026, 8, 22),
+            deadline=date(2027, 2, 22),
+        )
+
+        url = f"{self.url}{purchase.id}/"
+
+        response = self.client.patch(
+            url,
+            {
+                "purchase_date": "2026-09-10",
+            },
+            format="json",
+        )
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_200_OK,
+        )
+
+        purchase.refresh_from_db()
+
+        self.assertEqual(
+            purchase.purchase_date,
+            date(2026, 9, 10),
+        )
+
+        self.assertEqual(
+            purchase.deadline,
+            date(2027, 3, 10),
+        )
+
+    def test_currency_purchase_update_cannot_exceed_order_amount(self):
+        first_purchase = CurrencyPurchase.objects.create(
+            registration_order=self.order,
+            amount=Decimal("40000"),
+            currency="USD",
+            purchase_date=date(2026, 8, 22),
+            deadline=date(2027, 2, 22),
+        )
+
+        CurrencyPurchase.objects.create(
+            registration_order=self.order,
+            amount=Decimal("50000"),
+            currency="USD",
+            purchase_date=date(2026, 8, 23),
+            deadline=date(2027, 2, 23),
+        )
+
+        url = f"{self.url}{first_purchase.id}/"
+
+        response = self.client.patch(
+            url,
+            {
+                "amount": "60000",
+            },
+            format="json",
+        )
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_400_BAD_REQUEST,
+        )
+
+        first_purchase.refresh_from_db()
+
+        self.assertEqual(
+            first_purchase.amount,
+            Decimal("40000"),
+        )
+
 class ShipmentPartAPITests(APITestCase):
 
     def setUp(self):

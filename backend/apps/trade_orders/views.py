@@ -32,6 +32,7 @@ from apps.trade_orders.services.shipment_service import (
 
 from apps.trade_orders.services.purchase_service import (
     create_currency_purchase,
+    update_currency_purchase,
 )
 
 from apps.trade_orders.services.payment_instrument_service import (
@@ -193,6 +194,99 @@ class CurrencyPurchaseViewSet(viewsets.ModelViewSet):
         return Response(
             output_serializer.data,
             status=status.HTTP_201_CREATED,
+        )
+
+    def update(self, request, *args, **kwargs):
+        return self._update_purchase(
+            request=request,
+            partial=False,
+            *args,
+            **kwargs,
+        )
+
+    def partial_update(self, request, *args, **kwargs):
+        return self._update_purchase(
+            request=request,
+            partial=True,
+            *args,
+            **kwargs,
+        )
+
+    def _update_purchase(
+            self,
+            request,
+            partial,
+            *args,
+            **kwargs,
+    ):
+        purchase = self.get_object()
+
+        serializer = self.get_serializer(
+            purchase,
+            data=request.data,
+            partial=partial,
+        )
+
+        serializer.is_valid(
+            raise_exception=True,
+        )
+
+        data = serializer.validated_data
+
+        requested_currency = data.get(
+            "currency",
+            purchase.currency,
+        )
+
+        if requested_currency != purchase.currency:
+            raise DRFValidationError(
+                {
+                    "currency": (
+                        "Currency cannot be changed "
+                        "for an existing currency purchase."
+                    )
+                }
+            )
+
+        registration_order = data.get(
+            "registration_order",
+            purchase.registration_order,
+        )
+
+        if registration_order.pk != purchase.registration_order_id:
+            raise DRFValidationError(
+                {
+                    "registration_order": (
+                        "Registration order cannot be changed "
+                        "for an existing currency purchase."
+                    )
+                }
+            )
+
+        try:
+            updated_purchase = update_currency_purchase(
+                purchase=purchase,
+                amount=data.get(
+                    "amount",
+                    purchase.amount,
+                ),
+                purchase_date=data.get(
+                    "purchase_date",
+                    purchase.purchase_date,
+                ),
+            )
+        except DjangoValidationError as exc:
+            raise DRFValidationError(
+                {"detail": exc.messages}
+            )
+
+        output_serializer = self.get_serializer(
+            updated_purchase,
+        )
+
+        return Response(
+            output_serializer.data,
+            status=status.HTTP_200_OK,
         )
 
 class ShipmentPartViewSet(viewsets.ModelViewSet):
