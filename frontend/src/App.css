@@ -1293,3 +1293,98 @@
   background: #f4f7fb;
   font-size: 15px;
 }
+
+/* Currency Purchases */
+
+.purchases-page {
+  width: 100%;
+  max-width: 1440px;
+  margin: 0 auto;
+}
+
+.purchases-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  margin-bottom: 28px;
+}
+
+.purchases-header h1 {
+  margin: 0 0 6px;
+  font-size: 32px;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.purchases-header p {
+  margin: 0;
+  font-size: 15px;
+  color: #64748b;
+}
+
+.purchases-table-wrapper {
+  overflow-x: auto;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 16px;
+  box-shadow:
+    0 1px 2px rgba(15, 23, 42, 0.04),
+    0 4px 12px rgba(15, 23, 42, 0.04);
+}
+
+.purchases-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.purchases-table th,
+.purchases-table td {
+  padding: 17px 18px;
+  text-align: left;
+  border-bottom: 1px solid #f1f5f9;
+  white-space: nowrap;
+}
+
+.purchases-table th {
+  background: #f8fafc;
+  color: #64748b;
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.purchases-table td {
+  color: #334155;
+  font-size: 14px;
+}
+
+.purchases-table tbody tr {
+  transition: background 0.15s ease;
+}
+
+.purchases-table tbody tr:hover {
+  background: #f8fafc;
+}
+
+.purchases-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.purchase-amount {
+  font-weight: 600;
+  color: #0f172a;
+}
+
+.purchase-date {
+  color: #475569;
+  font-size: 13px;
+}
+
+@media (max-width: 700px) {
+  .purchases-header {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+}

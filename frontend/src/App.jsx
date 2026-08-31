@@ -1,3 +1,5 @@
+import './App.css'
+
 import {
   useEffect,
   useState,
@@ -10,11 +12,11 @@ import {
   Routes,
 } from 'react-router-dom'
 
-import './App.css'
-
 import ProtectedRoute from './components/ProtectedRoute'
 import DashboardLayout from './layouts/DashboardLayout'
+
 import Companies from './pages/Companies'
+import CurrencyPurchases from './pages/CurrencyPurchases'
 import Dashboard from './pages/Dashboard'
 import Login from './pages/Login'
 import RegistrationOrders from './pages/RegistrationOrders'
@@ -50,18 +52,16 @@ function App() {
         <Route
           path="/login"
           element={
-            user
-              ? (
-                <Navigate
-                  to="/"
-                  replace
-                />
-              )
-              : (
-                <Login
-                  onLogin={setUser}
-                />
-              )
+            user ? (
+              <Navigate
+                to="/"
+                replace
+              />
+            ) : (
+              <Login
+                onLogin={setUser}
+              />
+            )
           }
         />
 
@@ -74,7 +74,7 @@ function App() {
           }
         >
           <Route
-            path="/*"
+            path="*"
             element={
               <DashboardLayout
                 onLogout={() => setUser(null)}
@@ -93,6 +93,11 @@ function App() {
                   <Route
                     path="/registration-orders"
                     element={<RegistrationOrders />}
+                  />
+
+                  <Route
+                    path="/currency-purchases"
+                    element={<CurrencyPurchases />}
                   />
                 </Routes>
               </DashboardLayout>

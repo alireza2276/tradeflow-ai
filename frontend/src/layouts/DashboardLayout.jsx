@@ -12,7 +12,7 @@ function DashboardLayout({
   children,
   onLogout,
 }) {
-    const navigate = useNavigate()
+  const navigate = useNavigate()
 
   async function handleLogout() {
     try {
@@ -33,6 +33,7 @@ function DashboardLayout({
       )
     }
   }
+
   return (
     <div className="dashboard-layout">
       <aside className="sidebar">
@@ -43,36 +44,49 @@ function DashboardLayout({
 
         <nav className="sidebar-nav">
           <NavLink
-              to="/"
-              end
-              className={({isActive}) =>
-                  isActive ? 'sidebar-link active' : 'sidebar-link'
-              }
+            to="/"
+            end
+            className={({ isActive }) =>
+              isActive
+                ? 'sidebar-link active'
+                : 'sidebar-link'
+            }
           >
             Dashboard
           </NavLink>
 
           <NavLink
-              to="/companies"
-              className={({isActive}) =>
-                  isActive ? 'sidebar-link active' : 'sidebar-link'
-              }
+            to="/companies"
+            className={({ isActive }) =>
+              isActive
+                ? 'sidebar-link active'
+                : 'sidebar-link'
+            }
           >
             Companies
           </NavLink>
 
           <NavLink
-              to="/registration-orders"
-              className={({isActive}) =>
-                  isActive ? 'sidebar-link active' : 'sidebar-link'
-              }
+            to="/registration-orders"
+            className={({ isActive }) =>
+              isActive
+                ? 'sidebar-link active'
+                : 'sidebar-link'
+            }
           >
             Registration Orders
           </NavLink>
 
-          <button type="button">
+          <NavLink
+            to="/currency-purchases"
+            className={({ isActive }) =>
+              isActive
+                ? 'sidebar-link active'
+                : 'sidebar-link'
+            }
+          >
             Currency Purchases
-          </button>
+          </NavLink>
 
           <button type="button">
             Shipments
@@ -85,10 +99,11 @@ function DashboardLayout({
           <button type="button">
             Notifications
           </button>
+
           <button
-              type="button"
-              className="sidebar-link logout-button"
-              onClick={handleLogout}
+            type="button"
+            className="sidebar-link logout-button"
+            onClick={handleLogout}
           >
             Logout
           </button>
@@ -101,5 +116,6 @@ function DashboardLayout({
     </div>
   )
 }
+
 
 export default DashboardLayout

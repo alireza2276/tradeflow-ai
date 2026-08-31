@@ -385,3 +385,72 @@ export async function deleteRegistrationOrder(
     throw new Error(errorMessage)
   }
 }
+
+export async function getCurrencyPurchases() {
+  const response = await apiFetch(
+    '/trade/currency-purchases/'
+  )
+
+  if (!response.ok) {
+    throw new Error(
+      'Failed to load currency purchases.'
+    )
+  }
+
+  return response.json()
+}
+
+
+export async function createCurrencyPurchase(
+  purchaseData
+) {
+  const response = await apiFetch(
+    '/trade/currency-purchases/',
+    {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(purchaseData),
+    }
+  )
+
+  if (!response.ok) {
+    const errorMessage = await parseErrorResponse(
+      response,
+      'Failed to create currency purchase.'
+    )
+
+    throw new Error(errorMessage)
+  }
+
+  return response.json()
+}
+
+
+export async function updateCurrencyPurchase(
+  purchaseId,
+  purchaseData
+) {
+  const response = await apiFetch(
+    `/trade/currency-purchases/${purchaseId}/`,
+    {
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(purchaseData),
+    }
+  )
+
+  if (!response.ok) {
+    const errorMessage = await parseErrorResponse(
+      response,
+      'Failed to update currency purchase.'
+    )
+
+    throw new Error(errorMessage)
+  }
+
+  return response.json()
+}
