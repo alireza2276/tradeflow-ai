@@ -1486,6 +1486,32 @@ class CurrencyPurchaseAPITests(AuthenticatedAPITestCase):
             Decimal("40000"),
         )
 
+
+    def test_currency_purchase_cannot_be_deleted(self):
+        purchase = CurrencyPurchase.objects.create(
+            registration_order=self.order,
+            amount=Decimal("40000"),
+            currency="USD",
+            purchase_date=date(2026, 8, 22),
+            deadline=date(2027, 2, 22),
+        )
+
+        response = self.client.delete(
+            f"{self.url}{purchase.id}/"
+        )
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_405_METHOD_NOT_ALLOWED,
+        )
+
+        self.assertTrue(
+            CurrencyPurchase.objects.filter(
+                id=purchase.id,
+            ).exists()
+        )
+
+
 class ShipmentPartAPITests(AuthenticatedAPITestCase):
     def setUp(self):
         self.authenticate_test_user("shipment-part-test-user")

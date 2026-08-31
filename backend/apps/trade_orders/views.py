@@ -164,6 +164,17 @@ class CurrencyPurchaseViewSet(viewsets.ModelViewSet):
         "created_at",
     )
 
+    def destroy(self, request, *args, **kwargs):
+        return Response(
+            {
+                "detail": (
+                    "Currency purchases cannot be deleted. "
+                    "Use the correction or void workflow instead."
+                )
+            },
+            status=status.HTTP_405_METHOD_NOT_ALLOWED,
+        )
+
     def create(self, request, *args, **kwargs):
         serializer = self.get_serializer(
             data=request.data,
