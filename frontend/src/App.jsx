@@ -76,7 +76,9 @@ function App() {
           <Route
             path="/*"
             element={
-              <DashboardLayout>
+              <DashboardLayout
+                onLogout={() => setUser(null)}
+              >
                 <Routes>
                   <Route
                     path="/"

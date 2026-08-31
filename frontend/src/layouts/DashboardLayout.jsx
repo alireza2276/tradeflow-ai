@@ -1,7 +1,38 @@
-import { NavLink } from 'react-router-dom'
+import {
+  NavLink,
+  useNavigate,
+} from 'react-router-dom'
+
+import {
+  logout,
+} from '../services/api'
 
 
-function DashboardLayout({ children }) {
+function DashboardLayout({
+  children,
+  onLogout,
+}) {
+    const navigate = useNavigate()
+
+  async function handleLogout() {
+    try {
+      await logout()
+
+      onLogout()
+
+      navigate(
+        '/login',
+        {
+          replace: true,
+        }
+      )
+    } catch (logoutError) {
+      window.alert(
+        logoutError.message ||
+        'Logout failed.'
+      )
+    }
+  }
   return (
     <div className="dashboard-layout">
       <aside className="sidebar">
@@ -12,29 +43,29 @@ function DashboardLayout({ children }) {
 
         <nav className="sidebar-nav">
           <NavLink
-            to="/"
-            end
-            className={({ isActive }) =>
-              isActive ? 'sidebar-link active' : 'sidebar-link'
-            }
+              to="/"
+              end
+              className={({isActive}) =>
+                  isActive ? 'sidebar-link active' : 'sidebar-link'
+              }
           >
             Dashboard
           </NavLink>
 
           <NavLink
-            to="/companies"
-            className={({ isActive }) =>
-              isActive ? 'sidebar-link active' : 'sidebar-link'
-            }
+              to="/companies"
+              className={({isActive}) =>
+                  isActive ? 'sidebar-link active' : 'sidebar-link'
+              }
           >
             Companies
           </NavLink>
 
           <NavLink
-            to="/registration-orders"
-            className={({ isActive }) =>
-              isActive ? 'sidebar-link active' : 'sidebar-link'
-            }
+              to="/registration-orders"
+              className={({isActive}) =>
+                  isActive ? 'sidebar-link active' : 'sidebar-link'
+              }
           >
             Registration Orders
           </NavLink>
@@ -53,6 +84,13 @@ function DashboardLayout({ children }) {
 
           <button type="button">
             Notifications
+          </button>
+          <button
+              type="button"
+              className="sidebar-link logout-button"
+              onClick={handleLogout}
+          >
+            Logout
           </button>
         </nav>
       </aside>
