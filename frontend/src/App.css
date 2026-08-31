@@ -1161,3 +1161,135 @@
   outline: 2px solid #ef4444;
   outline-offset: 2px;
 }
+
+.login-page {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background:
+    radial-gradient(
+      circle at top left,
+      rgba(37, 99, 235, 0.14),
+      transparent 34%
+    ),
+    linear-gradient(
+      135deg,
+      #f4f7fb 0%,
+      #eef3f9 100%
+    );
+}
+
+.login-card {
+  width: 100%;
+  max-width: 420px;
+  padding: 36px;
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 20px;
+  box-shadow:
+    0 24px 60px rgba(15, 23, 42, 0.10);
+}
+
+.login-brand {
+  margin-bottom: 30px;
+  text-align: center;
+}
+
+.login-brand h1 {
+  margin: 0;
+  color: #111827;
+  font-size: 30px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+.login-brand p {
+  margin: 8px 0 0;
+  color: #6b7280;
+  font-size: 14px;
+}
+
+.login-card .form-group {
+  margin-bottom: 18px;
+}
+
+.login-card .form-group label {
+  display: block;
+  margin-bottom: 8px;
+  color: #374151;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.login-card .form-group input {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 12px 14px;
+  color: #111827;
+  background: #ffffff;
+  border: 1px solid #d1d5db;
+  border-radius: 10px;
+  outline: none;
+  font-size: 15px;
+  transition:
+    border-color 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+.login-card .form-group input:focus {
+  border-color: #2563eb;
+  box-shadow:
+    0 0 0 3px rgba(37, 99, 235, 0.12);
+}
+
+.login-card .form-group input:disabled {
+  cursor: not-allowed;
+  background: #f9fafb;
+}
+
+.login-card .form-error {
+  margin-bottom: 16px;
+  padding: 10px 12px;
+  color: #b91c1c;
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  border-radius: 10px;
+  font-size: 14px;
+}
+
+.login-button {
+  width: 100%;
+  padding: 12px 16px;
+  color: #ffffff;
+  background: #2563eb;
+  border: none;
+  border-radius: 10px;
+  cursor: pointer;
+  font-size: 15px;
+  font-weight: 700;
+  transition:
+    background 0.2s ease,
+    transform 0.2s ease;
+}
+
+.login-button:hover:not(:disabled) {
+  background: #1d4ed8;
+  transform: translateY(-1px);
+}
+
+.login-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.7;
+}
+
+.auth-loading {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #4b5563;
+  background: #f4f7fb;
+  font-size: 15px;
+}
