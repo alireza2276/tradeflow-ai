@@ -19,6 +19,11 @@ def create_shipment_part(
     reference_number="",
     notes="",
 ) -> ShipmentPart:
+    locked_purchase = (
+        CurrencyPurchase.objects
+        .select_for_update()
+        .get(pk=currency_purchase.pk)
+    )
 
     if amount <= Decimal("0"):
         raise ValidationError(
@@ -28,13 +33,13 @@ def create_shipment_part(
     existing_amount = sum(
         (
             part.amount
-            for part in currency_purchase.shipment_parts.all()
+            for part in locked_purchase.shipment_parts.all()
         ),
         Decimal("0"),
     )
 
     remaining_amount = (
-        currency_purchase.amount - existing_amount
+        locked_purchase.amount - existing_amount
     )
 
     if amount > remaining_amount:
@@ -44,7 +49,7 @@ def create_shipment_part(
         )
 
     return ShipmentPart.objects.create(
-        currency_purchase=currency_purchase,
+        currency_purchase=locked_purchase,
         amount=amount,
         shipment_date=shipment_date,
         received_date=received_date,

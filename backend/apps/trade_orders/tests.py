@@ -2376,3 +2376,126 @@ class RegistrationOrderConcurrencyTests(TransactionTestCase):
             self.order.registered_amount,
             Decimal("120000"),
         )
+
+class ShipmentPartConcurrencyTests(TransactionTestCase):
+    reset_sequences = True
+
+    def setUp(self):
+        self.company = Company.objects.create(
+            name="Shipment Concurrency Company",
+            national_id="8877665544",
+            company_type="COMMERCIAL",
+        )
+
+        self.order = RegistrationOrder.objects.create(
+            company=self.company,
+            order_number="SHIP-CONCURRENT-001",
+            registered_amount=Decimal("100000"),
+            currency="USD",
+        )
+
+        self.purchase = CurrencyPurchase.objects.create(
+            registration_order=self.order,
+            amount=Decimal("100000"),
+            currency="USD",
+            purchase_date=date(2026, 8, 22),
+            deadline=date(2027, 2, 22),
+        )
+
+    def test_concurrent_shipments_preserve_purchase_amount_invariant(self):
+        start = Event()
+        errors = []
+        results = []
+
+        def create_shipment(amount):
+            close_old_connections()
+
+            try:
+                if not start.wait(timeout=5):
+                    errors.append(
+                        "Shipment thread timed out waiting to start."
+                    )
+                    return
+
+                purchase = CurrencyPurchase.objects.get(
+                    pk=self.purchase.pk
+                )
+
+                try:
+                    create_shipment_part(
+                        currency_purchase=purchase,
+                        amount=amount,
+                        shipment_date=date(2026, 8, 25),
+                        reference_number="CONCURRENT-SHIPMENT",
+                    )
+
+                    results.append(True)
+
+                except ValidationError:
+                    results.append(False)
+
+            except Exception as exc:
+                errors.append(str(exc))
+
+            finally:
+                close_old_connections()
+
+        first_thread = Thread(
+            target=create_shipment,
+            args=(Decimal("60000"),),
+        )
+
+        second_thread = Thread(
+            target=create_shipment,
+            args=(Decimal("60000"),),
+        )
+
+        first_thread.start()
+        second_thread.start()
+
+        start.set()
+
+        first_thread.join(timeout=10)
+        second_thread.join(timeout=10)
+
+        self.assertFalse(
+            first_thread.is_alive(),
+            "First shipment thread did not finish.",
+        )
+
+        self.assertFalse(
+            second_thread.is_alive(),
+            "Second shipment thread did not finish.",
+        )
+
+        self.assertEqual(errors, [])
+
+        self.assertEqual(
+            len(results),
+            2,
+        )
+
+        self.assertEqual(
+            results.count(True),
+            1,
+            "Exactly one concurrent shipment must succeed.",
+        )
+
+        self.purchase.refresh_from_db()
+
+        total_shipped = sum(
+            (
+                part.amount
+                for part in self.purchase.shipment_parts.all()
+            ),
+            Decimal("0"),
+        )
+
+        self.assertLessEqual(
+            total_shipped,
+            self.purchase.amount,
+            (
+                "Financial invariant violated: total shipment "
+                "amount exceeded the currency purchase amount."
+            ),
+        )
