@@ -3,7 +3,7 @@ from rest_framework.views import APIView
 
 from django.core.exceptions import ValidationError as DjangoValidationError
 from rest_framework.exceptions import ValidationError as DRFValidationError
-
+from django.db import transaction
 from apps.trade_orders.models import RegistrationOrder
 from apps.trade_orders.serializers import RegistrationOrderSerializer
 
@@ -63,6 +63,28 @@ class RegistrationOrderViewSet(viewsets.ModelViewSet):
         "registered_amount",
         "order_number",
     )
+
+    def update(self, request, *args, **kwargs):
+        partial = kwargs.pop("partial", False)
+
+        with transaction.atomic():
+            registration_order = (
+                RegistrationOrder.objects
+                .select_for_update()
+                .select_related("company")
+                .get(pk=kwargs["pk"])
+            )
+
+            serializer = self.get_serializer(
+                registration_order,
+                data=request.data,
+                partial=partial,
+            )
+
+            serializer.is_valid(raise_exception=True)
+            self.perform_update(serializer)
+
+            return Response(serializer.data)
 
     def destroy(self, request, *args, **kwargs):
         registration_order = self.get_object()

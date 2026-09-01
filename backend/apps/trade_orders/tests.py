@@ -1,3 +1,8 @@
+from threading import Event, Thread
+
+from django.db import close_old_connections, transaction
+
+from django.test import TransactionTestCase
 from rest_framework import status
 from rest_framework.test import APITestCase
 from django.contrib.auth import get_user_model
@@ -890,6 +895,27 @@ class RegistrationOrderAPITests(AuthenticatedAPITestCase):
         self.assertEqual(
             self.order.registered_amount,
             Decimal("100000"),
+        )
+
+    def test_registration_order_can_be_partially_updated(self):
+        response = self.client.patch(
+            f"{self.url}{self.order.id}/",
+            {
+                "registered_amount": "120000",
+            },
+            format="json",
+        )
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_200_OK,
+        )
+
+        self.order.refresh_from_db()
+
+        self.assertEqual(
+            self.order.registered_amount,
+            Decimal("120000"),
         )
 
     def test_currency_cannot_be_changed_when_purchases_exist(self):
@@ -2082,4 +2108,123 @@ class DashboardServiceTests(AuthenticatedAPITestCase):
         self.assertIn(
             purchase.deadline.strftime("%Y/%m/%d"),
             attention_case["deadline_dual"],
+        )
+
+class RegistrationOrderConcurrencyTests(TransactionTestCase):
+    reset_sequences = True
+
+    def setUp(self):
+        self.company = Company.objects.create(
+            name="Concurrency Test Company",
+            national_id="9988776655",
+            company_type="COMMERCIAL",
+        )
+
+        self.order = RegistrationOrder.objects.create(
+            company=self.company,
+            order_number="CONCURRENT-ORDER-001",
+            registered_amount=Decimal("100000"),
+            currency="USD",
+        )
+
+    def test_registration_order_row_lock_blocks_concurrent_update(self):
+        lock_acquired = Event()
+        release_lock = Event()
+        update_finished = Event()
+
+        errors = []
+
+        def hold_order_lock():
+            close_old_connections()
+
+            try:
+                with transaction.atomic():
+                    RegistrationOrder.objects.select_for_update().get(
+                        pk=self.order.pk
+                    )
+
+                    lock_acquired.set()
+
+                    if not release_lock.wait(timeout=5):
+                        errors.append(
+                            "Timed out waiting to release row lock."
+                        )
+            except Exception as exc:
+                errors.append(str(exc))
+            finally:
+                close_old_connections()
+
+        def update_order():
+            close_old_connections()
+
+            try:
+                if not lock_acquired.wait(timeout=5):
+                    errors.append(
+                        "Timed out waiting for row lock."
+                    )
+                    return
+
+                with transaction.atomic():
+                    locked_order = (
+                        RegistrationOrder.objects
+                        .select_for_update()
+                        .get(pk=self.order.pk)
+                    )
+
+                    locked_order.registered_amount = Decimal(
+                        "120000"
+                    )
+
+                    locked_order.save(
+                        update_fields=["registered_amount"]
+                    )
+
+                update_finished.set()
+
+            except Exception as exc:
+                errors.append(str(exc))
+            finally:
+                close_old_connections()
+
+        lock_thread = Thread(target=hold_order_lock)
+        update_thread = Thread(target=update_order)
+
+        lock_thread.start()
+
+        self.assertTrue(
+            lock_acquired.wait(timeout=5),
+            "First transaction did not acquire the row lock.",
+        )
+
+        update_thread.start()
+
+        self.assertFalse(
+            update_finished.wait(timeout=0.5),
+            "Concurrent update was not blocked by the row lock.",
+        )
+
+        release_lock.set()
+
+        lock_thread.join(timeout=5)
+        update_thread.join(timeout=5)
+
+        self.assertFalse(
+            lock_thread.is_alive(),
+            "Lock thread did not finish.",
+        )
+
+        self.assertFalse(
+            update_thread.is_alive(),
+            "Update thread did not finish.",
+        )
+
+        self.assertEqual(errors, [])
+
+        self.assertTrue(update_finished.is_set())
+
+        self.order.refresh_from_db()
+
+        self.assertEqual(
+            self.order.registered_amount,
+            Decimal("120000"),
         )
