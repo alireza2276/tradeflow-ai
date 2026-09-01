@@ -1,5 +1,8 @@
 from threading import Event, Thread
 
+from django.contrib.auth import get_user_model
+from rest_framework.test import APIClient
+
 from django.db import close_old_connections, transaction
 
 from django.test import TransactionTestCase
@@ -11,7 +14,7 @@ from decimal import Decimal
 
 from django.core.exceptions import ValidationError
 from django.test import TestCase
-
+from django.db.models import Sum
 from apps.companies.models import Company
 from apps.documents.services.invoice_service import create_invoice
 from apps.trade_orders.models import RegistrationOrder
@@ -2125,6 +2128,151 @@ class RegistrationOrderConcurrencyTests(TransactionTestCase):
             order_number="CONCURRENT-ORDER-001",
             registered_amount=Decimal("100000"),
             currency="USD",
+        )
+
+        self.user = get_user_model().objects.create_user(
+            username="concurrency-user",
+            password="StrongTestPass123!",
+        )
+
+        self.orders_url = "/api/trade/registration-orders/"
+
+    def test_purchase_and_order_update_preserve_financial_invariant(self):
+        start = Event()
+        errors = []
+        results = {}
+
+        def reduce_registration_order():
+            close_old_connections()
+
+            try:
+                client = APIClient()
+                client.force_authenticate(user=self.user)
+
+                if not start.wait(timeout=5):
+                    errors.append(
+                        "Order update timed out waiting to start."
+                    )
+                    return
+
+                response = client.patch(
+                    f"{self.orders_url}{self.order.pk}/",
+                    {
+                        "registered_amount": "50000",
+                    },
+                    format="json",
+                )
+
+                results["order_status"] = response.status_code
+
+            except Exception as exc:
+                errors.append(str(exc))
+
+            finally:
+                close_old_connections()
+
+        def create_purchase():
+            close_old_connections()
+
+            try:
+                if not start.wait(timeout=5):
+                    errors.append(
+                        "Purchase creation timed out waiting to start."
+                    )
+                    return
+
+                order = RegistrationOrder.objects.get(
+                    pk=self.order.pk
+                )
+
+                try:
+                    create_currency_purchase(
+                        registration_order=order,
+                        amount=Decimal("60000"),
+                        currency="USD",
+                        purchase_date=date(2026, 8, 22),
+                    )
+
+                    results["purchase_created"] = True
+
+                except ValidationError:
+                    results["purchase_created"] = False
+
+            except Exception as exc:
+                errors.append(str(exc))
+
+            finally:
+                close_old_connections()
+
+        order_thread = Thread(
+            target=reduce_registration_order
+        )
+
+        purchase_thread = Thread(
+            target=create_purchase
+        )
+
+        order_thread.start()
+        purchase_thread.start()
+
+        start.set()
+
+        order_thread.join(timeout=10)
+        purchase_thread.join(timeout=10)
+
+        self.assertFalse(
+            order_thread.is_alive(),
+            "Registration order thread did not finish.",
+        )
+
+        self.assertFalse(
+            purchase_thread.is_alive(),
+            "Currency purchase thread did not finish.",
+        )
+
+        self.assertEqual(errors, [])
+
+        self.assertIn(
+            results.get("order_status"),
+            (status.HTTP_200_OK, status.HTTP_400_BAD_REQUEST),
+        )
+
+        self.assertIn(
+            "purchase_created",
+            results,
+        )
+
+        order_update_succeeded = (
+                results["order_status"] == status.HTTP_200_OK
+        )
+
+        purchase_succeeded = results["purchase_created"]
+
+        self.assertNotEqual(
+            order_update_succeeded,
+            purchase_succeeded,
+            (
+                "Exactly one concurrent financial operation "
+                "must succeed."
+            ),
+        )
+
+        self.order.refresh_from_db()
+
+        total_purchased = (
+                self.order.currency_purchases.aggregate(
+                    total=Sum("amount")
+                )["total"]
+                or Decimal("0")
+        )
+
+        self.assertLessEqual(
+            total_purchased,
+            self.order.registered_amount,
+            (
+                "Financial invariant violated: total currency "
+                "purchases exceeded the registration order amount."
+            ),
         )
 
     def test_registration_order_row_lock_blocks_concurrent_update(self):

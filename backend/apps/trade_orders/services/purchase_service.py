@@ -60,6 +60,19 @@ def update_currency_purchase(
     amount: Decimal,
     purchase_date: date,
 ) -> CurrencyPurchase:
+    purchase_reference = (
+        CurrencyPurchase.objects
+        .only("registration_order_id")
+        .get(pk=purchase.pk)
+    )
+
+    locked_order = (
+        RegistrationOrder.objects
+        .select_for_update()
+        .select_related("company")
+        .get(pk=purchase_reference.registration_order_id)
+    )
+
     locked_purchase = (
         CurrencyPurchase.objects
         .select_for_update()
@@ -70,12 +83,14 @@ def update_currency_purchase(
         .get(pk=purchase.pk)
     )
 
-    locked_order = (
-        RegistrationOrder.objects
-        .select_for_update()
-        .select_related("company")
-        .get(pk=locked_purchase.registration_order_id)
-    )
+    if (
+        locked_purchase.registration_order_id
+        != locked_order.pk
+    ):
+        raise ValidationError(
+            "Currency purchase registration order changed "
+            "during the update operation."
+        )
 
     total_shipped = get_total_shipment_amount(
         locked_purchase
