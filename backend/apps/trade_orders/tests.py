@@ -25,6 +25,8 @@ from apps.trade_orders.services.deadline_service import (
 )
 from apps.trade_orders.services.purchase_service import (
     create_currency_purchase,
+    create_currency_purchase,
+    update_currency_purchase,
 )
 from apps.trade_orders.services.shipment_service import (
     create_shipment_part,
@@ -49,6 +51,10 @@ from django.test import TestCase
 
 from apps.trade_orders.services.dashboard_service import (
     get_dashboard_summary,
+)
+
+from apps.trade_orders.services.validation import (
+    get_total_shipment_amount,
 )
 
 class PaymentInstrumentServiceTests(TestCase):
@@ -2489,6 +2495,138 @@ class ShipmentPartConcurrencyTests(TransactionTestCase):
                 for part in self.purchase.shipment_parts.all()
             ),
             Decimal("0"),
+        )
+
+        self.assertLessEqual(
+            total_shipped,
+            self.purchase.amount,
+            (
+                "Financial invariant violated: total shipment "
+                "amount exceeded the currency purchase amount."
+            ),
+        )
+
+    def test_purchase_reduction_and_shipment_creation_preserve_invariant(self):
+        start = Event()
+        errors = []
+        results = {}
+
+        def reduce_purchase_amount():
+            close_old_connections()
+
+            try:
+                if not start.wait(timeout=5):
+                    errors.append(
+                        "Purchase update timed out waiting to start."
+                    )
+                    return
+
+                purchase = CurrencyPurchase.objects.get(
+                    pk=self.purchase.pk
+                )
+
+                try:
+                    update_currency_purchase(
+                        purchase=purchase,
+                        amount=Decimal("50000"),
+                        purchase_date=date(2026, 8, 22),
+                    )
+
+                    results["purchase_updated"] = True
+
+                except ValidationError:
+                    results["purchase_updated"] = False
+
+            except Exception as exc:
+                errors.append(str(exc))
+
+            finally:
+                close_old_connections()
+
+        def create_shipment():
+            close_old_connections()
+
+            try:
+                if not start.wait(timeout=5):
+                    errors.append(
+                        "Shipment creation timed out waiting to start."
+                    )
+                    return
+
+                purchase = CurrencyPurchase.objects.get(
+                    pk=self.purchase.pk
+                )
+
+                try:
+                    create_shipment_part(
+                        currency_purchase=purchase,
+                        amount=Decimal("60000"),
+                        shipment_date=date(2026, 8, 25),
+                        reference_number="RACE-SHIPMENT-001",
+                    )
+
+                    results["shipment_created"] = True
+
+                except ValidationError:
+                    results["shipment_created"] = False
+
+            except Exception as exc:
+                errors.append(str(exc))
+
+            finally:
+                close_old_connections()
+
+        purchase_thread = Thread(
+            target=reduce_purchase_amount
+        )
+
+        shipment_thread = Thread(
+            target=create_shipment
+        )
+
+        purchase_thread.start()
+        shipment_thread.start()
+
+        start.set()
+
+        purchase_thread.join(timeout=10)
+        shipment_thread.join(timeout=10)
+
+        self.assertFalse(
+            purchase_thread.is_alive(),
+            "Purchase update thread did not finish.",
+        )
+
+        self.assertFalse(
+            shipment_thread.is_alive(),
+            "Shipment creation thread did not finish.",
+        )
+
+        self.assertEqual(errors, [])
+
+        self.assertIn(
+            "purchase_updated",
+            results,
+        )
+
+        self.assertIn(
+            "shipment_created",
+            results,
+        )
+
+        self.assertNotEqual(
+            results["purchase_updated"],
+            results["shipment_created"],
+            (
+                "Exactly one concurrent financial operation "
+                "must succeed."
+            ),
+        )
+
+        self.purchase.refresh_from_db()
+
+        total_shipped = get_total_shipment_amount(
+            self.purchase
         )
 
         self.assertLessEqual(
