@@ -28,6 +28,11 @@ def validate_purchase_amount(
     purchase_currency: str,
     current_purchase: CurrencyPurchase | None = None,
 ) -> None:
+    if not registration_order.is_active:
+        raise ValidationError(
+            "Cannot create or update a currency purchase "
+            "for an inactive registration order."
+        )
     if purchase_currency != registration_order.currency:
         raise ValidationError(
             "Purchase currency must match registration order currency."

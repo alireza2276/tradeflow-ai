@@ -1076,6 +1076,34 @@ class CurrencyPurchaseAPITests(AuthenticatedAPITestCase):
             "2027-02-22",
         )
 
+    def test_currency_purchase_cannot_be_created_for_inactive_order(self):
+        self.order.is_active = False
+        self.order.save(update_fields=["is_active"])
+
+        payload = {
+            "registration_order": str(self.order.id),
+            "amount": "40000",
+            "currency": "USD",
+            "purchase_date": "2026-08-22",
+        }
+
+        response = self.client.post(
+            self.url,
+            payload,
+            format="json",
+        )
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_400_BAD_REQUEST,
+        )
+
+        self.assertFalse(
+            CurrencyPurchase.objects.filter(
+                registration_order=self.order,
+            ).exists()
+        )
+
     def test_multiple_purchases_up_to_order_amount_are_allowed(self):
         first_payload = {
             "registration_order": str(self.order.id),
