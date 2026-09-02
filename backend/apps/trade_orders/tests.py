@@ -28,8 +28,10 @@ from apps.trade_orders.services.purchase_service import (
     create_currency_purchase,
     update_currency_purchase,
 )
+
 from apps.trade_orders.services.shipment_service import (
     create_shipment_part,
+    update_shipment_part,
 )
 
 from apps.trade_orders.services.payment_instrument_service import (
@@ -1781,6 +1783,77 @@ class ShipmentPartAPITests(AuthenticatedAPITestCase):
             "Documents received.",
         )
 
+    def test_shipment_part_currency_purchase_cannot_be_changed(self):
+        shipment = ShipmentPart.objects.create(
+            currency_purchase=self.purchase,
+            amount=Decimal("20000"),
+            shipment_date=date(2026, 8, 24),
+            reference_number="SHIP-UPDATE-001",
+        )
+
+        second_purchase = CurrencyPurchase.objects.create(
+            registration_order=self.order,
+            amount=Decimal("50000"),
+            currency="USD",
+            purchase_date=date(2026, 8, 23),
+            deadline=date(2027, 2, 23),
+        )
+
+        response = self.client.patch(
+            f"{self.url}{shipment.id}/",
+            {
+                "currency_purchase": str(second_purchase.id),
+            },
+            format="json",
+        )
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_400_BAD_REQUEST,
+        )
+
+        shipment.refresh_from_db()
+
+        self.assertEqual(
+            shipment.currency_purchase_id,
+            self.purchase.id,
+        )
+
+    def test_shipment_part_amount_cannot_exceed_remaining_purchase_amount(self):
+        shipment = ShipmentPart.objects.create(
+            currency_purchase=self.purchase,
+            amount=Decimal("20000"),
+            shipment_date=date(2026, 8, 24),
+            reference_number="SHIP-UPDATE-001",
+        )
+
+        ShipmentPart.objects.create(
+            currency_purchase=self.purchase,
+            amount=Decimal("30000"),
+            shipment_date=date(2026, 8, 24),
+            reference_number="SHIP-EXISTING-002",
+        )
+
+        response = self.client.patch(
+            f"{self.url}{shipment.id}/",
+            {
+                "amount": "80000",
+            },
+            format="json",
+        )
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_400_BAD_REQUEST,
+        )
+
+        shipment.refresh_from_db()
+
+        self.assertEqual(
+            shipment.amount,
+            Decimal("20000"),
+        )
+
 class DashboardServiceTests(AuthenticatedAPITestCase):
     def setUp(self):
         self.authenticate_test_user("dashboard-test-user")
@@ -2619,6 +2692,148 @@ class ShipmentPartConcurrencyTests(TransactionTestCase):
             results["shipment_created"],
             (
                 "Exactly one concurrent financial operation "
+                "must succeed."
+            ),
+        )
+
+        self.purchase.refresh_from_db()
+
+        total_shipped = get_total_shipment_amount(
+            self.purchase
+        )
+
+        self.assertLessEqual(
+            total_shipped,
+            self.purchase.amount,
+            (
+                "Financial invariant violated: total shipment "
+                "amount exceeded the currency purchase amount."
+            ),
+        )
+
+    def test_shipment_update_and_creation_preserve_purchase_invariant(self):
+        existing_shipment = ShipmentPart.objects.create(
+            currency_purchase=self.purchase,
+            amount=Decimal("20000"),
+            shipment_date=date(2026, 8, 24),
+            reference_number="SHIP-RACE-EXISTING",
+        )
+
+        start = Event()
+        errors = []
+        results = {}
+
+        def update_existing_shipment():
+            close_old_connections()
+
+            try:
+                if not start.wait(timeout=5):
+                    errors.append(
+                        "Shipment update timed out waiting to start."
+                    )
+                    return
+
+                shipment = ShipmentPart.objects.get(
+                    pk=existing_shipment.pk
+                )
+
+                try:
+                    update_shipment_part(
+                        shipment=shipment,
+                        amount=Decimal("70000"),
+                        shipment_date=shipment.shipment_date,
+                        received_date=shipment.received_date,
+                        reference_number=shipment.reference_number,
+                        notes=shipment.notes,
+                    )
+
+                    results["shipment_updated"] = True
+
+                except ValidationError:
+                    results["shipment_updated"] = False
+
+            except Exception as exc:
+                errors.append(str(exc))
+
+            finally:
+                close_old_connections()
+
+        def create_new_shipment():
+            close_old_connections()
+
+            try:
+                if not start.wait(timeout=5):
+                    errors.append(
+                        "Shipment creation timed out waiting to start."
+                    )
+                    return
+
+                purchase = CurrencyPurchase.objects.get(
+                    pk=self.purchase.pk
+                )
+
+                try:
+                    create_shipment_part(
+                        currency_purchase=purchase,
+                        amount=Decimal("60000"),
+                        shipment_date=date(2026, 8, 25),
+                        reference_number="SHIP-RACE-NEW",
+                    )
+
+                    results["shipment_created"] = True
+
+                except ValidationError:
+                    results["shipment_created"] = False
+
+            except Exception as exc:
+                errors.append(str(exc))
+
+            finally:
+                close_old_connections()
+
+        update_thread = Thread(
+            target=update_existing_shipment
+        )
+
+        create_thread = Thread(
+            target=create_new_shipment
+        )
+
+        update_thread.start()
+        create_thread.start()
+
+        start.set()
+
+        update_thread.join(timeout=10)
+        create_thread.join(timeout=10)
+
+        self.assertFalse(
+            update_thread.is_alive(),
+            "Shipment update thread did not finish.",
+        )
+
+        self.assertFalse(
+            create_thread.is_alive(),
+            "Shipment creation thread did not finish.",
+        )
+
+        self.assertEqual(errors, [])
+
+        self.assertIn(
+            "shipment_updated",
+            results,
+        )
+
+        self.assertIn(
+            "shipment_created",
+            results,
+        )
+
+        self.assertNotEqual(
+            results["shipment_updated"],
+            results["shipment_created"],
+            (
+                "Exactly one concurrent shipment operation "
                 "must succeed."
             ),
         )

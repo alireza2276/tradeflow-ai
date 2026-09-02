@@ -28,6 +28,7 @@ from apps.trade_orders.serializers import (
 
 from apps.trade_orders.services.shipment_service import (
     create_shipment_part,
+    update_shipment_part,
 )
 
 from apps.trade_orders.services.purchase_service import (
@@ -348,6 +349,75 @@ class ShipmentPartViewSet(viewsets.ModelViewSet):
         "amount",
         "created_at",
     )
+
+    def update(self, request, *args, **kwargs):
+        partial = kwargs.pop("partial", False)
+
+        shipment = self.get_object()
+
+        if (
+                "currency_purchase" in request.data
+                and str(request.data["currency_purchase"])
+                != str(shipment.currency_purchase_id)
+        ):
+            raise DRFValidationError(
+                {
+                    "currency_purchase": (
+                        "Currency purchase cannot be changed "
+                        "for an existing shipment part."
+                    )
+                }
+            )
+
+        serializer = self.get_serializer(
+            shipment,
+            data=request.data,
+            partial=partial,
+        )
+
+        serializer.is_valid(
+            raise_exception=True,
+        )
+
+        data = serializer.validated_data
+
+        try:
+            updated_shipment = update_shipment_part(
+                shipment=shipment,
+                amount=data.get(
+                    "amount",
+                    shipment.amount,
+                ),
+                shipment_date=data.get(
+                    "shipment_date",
+                    shipment.shipment_date,
+                ),
+                received_date=data.get(
+                    "received_date",
+                    shipment.received_date,
+                ),
+                reference_number=data.get(
+                    "reference_number",
+                    shipment.reference_number,
+                ),
+                notes=data.get(
+                    "notes",
+                    shipment.notes,
+                ),
+            )
+        except DjangoValidationError as exc:
+            raise DRFValidationError(
+                {"detail": exc.messages}
+            )
+
+        output_serializer = self.get_serializer(
+            updated_shipment,
+        )
+
+        return Response(
+            output_serializer.data,
+            status=status.HTTP_200_OK,
+        )
 
     def create(self, request, *args, **kwargs):
         serializer = self.get_serializer(
