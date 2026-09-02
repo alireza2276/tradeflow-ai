@@ -419,6 +419,17 @@ class ShipmentPartViewSet(viewsets.ModelViewSet):
             status=status.HTTP_200_OK,
         )
 
+    def destroy(self, request, *args, **kwargs):
+        return Response(
+            {
+                "detail": (
+                    "Shipment parts cannot be deleted directly. "
+                    "Use the correction or void workflow instead."
+                )
+            },
+            status=status.HTTP_405_METHOD_NOT_ALLOWED,
+        )
+
     def create(self, request, *args, **kwargs):
         serializer = self.get_serializer(
             data=request.data,

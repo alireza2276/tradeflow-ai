@@ -1854,6 +1854,29 @@ class ShipmentPartAPITests(AuthenticatedAPITestCase):
             Decimal("20000"),
         )
 
+    def test_shipment_part_cannot_be_deleted_directly(self):
+        shipment = ShipmentPart.objects.create(
+            currency_purchase=self.purchase,
+            amount=Decimal("20000"),
+            shipment_date=date(2026, 8, 24),
+            reference_number="SHIP-NO-DELETE-001",
+        )
+
+        response = self.client.delete(
+            f"{self.url}{shipment.id}/",
+        )
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_405_METHOD_NOT_ALLOWED,
+        )
+
+        self.assertTrue(
+            ShipmentPart.objects.filter(
+                pk=shipment.pk,
+            ).exists()
+        )
+
 class DashboardServiceTests(AuthenticatedAPITestCase):
     def setUp(self):
         self.authenticate_test_user("dashboard-test-user")
