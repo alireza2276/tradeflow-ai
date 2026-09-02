@@ -1,10 +1,17 @@
 from rest_framework import viewsets
 
+from apps.authentication.permissions import (
+    TradeFlowModelPermissions,
+)
 from apps.notifications.models import NotificationLog
 from apps.notifications.serializers import NotificationLogSerializer
 
 
 class NotificationLogViewSet(viewsets.ReadOnlyModelViewSet):
+    permission_classes = (
+        TradeFlowModelPermissions,
+    )
+
     queryset = (
         NotificationLog.objects
         .select_related(

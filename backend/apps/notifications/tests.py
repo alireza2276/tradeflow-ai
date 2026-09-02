@@ -1,9 +1,10 @@
 from rest_framework import status
 from rest_framework.test import APITestCase
 from django.contrib.auth import get_user_model
-
+from rest_framework.test import APIClient
 from datetime import date
 from decimal import Decimal
+from django.urls import reverse
 
 from django.test import TestCase
 
@@ -27,6 +28,9 @@ from apps.notifications.services.deadline_notification_service import (
 from apps.trade_orders.services.shipment_service import (
     create_shipment_part,
 )
+
+from django.contrib.auth.models import Permission
+from django.contrib.contenttypes.models import ContentType
 
 class NotificationServiceTests(TestCase):
 
@@ -281,6 +285,23 @@ class NotificationLogAPITests(APITestCase):
             password="StrongTestPassword123!",
         )
 
+        notification_content_type = ContentType.objects.get_for_model(
+            NotificationLog,
+        )
+
+        notification_permissions = Permission.objects.filter(
+            content_type=notification_content_type,
+            codename__in=[
+                "view_notificationlog",
+                "add_notificationlog",
+                "delete_notificationlog",
+            ],
+        )
+
+        self.user.user_permissions.add(
+            *notification_permissions,
+        )
+
         self.client.force_authenticate(
             user=self.user,
         )
@@ -394,4 +415,51 @@ class NotificationLogAPITests(APITestCase):
             NotificationLog.objects.filter(
                 id=self.notification.id,
             ).exists()
+        )
+
+    def test_authenticated_user_without_permissions_cannot_view_notification_logs(self):
+        user = get_user_model().objects.create_user(
+            username="notification-no-permission-user",
+            password="StrongTestPass123!",
+        )
+
+        client = APIClient()
+        client.force_authenticate(user=user)
+
+        response = client.get(
+            reverse("notification-log-list"),
+        )
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_403_FORBIDDEN,
+        )
+
+    def test_user_with_view_permission_can_view_notification_logs(self):
+        user = get_user_model().objects.create_user(
+            username="notification-viewer-user",
+            password="StrongTestPass123!",
+        )
+
+        content_type = ContentType.objects.get_for_model(
+            NotificationLog,
+        )
+
+        view_permission = Permission.objects.get(
+            content_type=content_type,
+            codename="view_notificationlog",
+        )
+
+        user.user_permissions.add(view_permission)
+
+        client = APIClient()
+        client.force_authenticate(user=user)
+
+        response = client.get(
+            reverse("notification-log-list"),
+        )
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_200_OK,
         )

@@ -3,12 +3,19 @@ from rest_framework import status, viewsets
 from rest_framework.exceptions import ValidationError as DRFValidationError
 from rest_framework.response import Response
 
+from apps.authentication.permissions import (
+    TradeFlowModelPermissions,
+)
 from apps.documents.models import Invoice
 from apps.documents.serializers import InvoiceSerializer
 from apps.documents.services.invoice_service import create_invoice
 
 
 class InvoiceViewSet(viewsets.ModelViewSet):
+    permission_classes = (
+        TradeFlowModelPermissions,
+    )
+
     queryset = (
         Invoice.objects
         .select_related(

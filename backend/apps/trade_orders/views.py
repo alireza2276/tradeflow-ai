@@ -1,6 +1,6 @@
 from rest_framework import status, viewsets
 from rest_framework.views import APIView
-
+from django.shortcuts import get_object_or_404
 from django.core.exceptions import ValidationError as DjangoValidationError
 from rest_framework.exceptions import ValidationError as DRFValidationError
 from django.db import transaction
@@ -44,7 +44,17 @@ from apps.trade_orders.services.dashboard_service import (
     get_dashboard_summary,
 )
 
+from apps.authentication.permissions import (
+    CanViewTradeDashboard,
+    TradeFlowModelPermissions,
+)
+
 class RegistrationOrderViewSet(viewsets.ModelViewSet):
+
+    permission_classes = (
+        TradeFlowModelPermissions,
+    )
+
     queryset = (
         RegistrationOrder.objects
         .select_related("company")
@@ -69,11 +79,18 @@ class RegistrationOrderViewSet(viewsets.ModelViewSet):
         partial = kwargs.pop("partial", False)
 
         with transaction.atomic():
-            registration_order = (
-                RegistrationOrder.objects
-                .select_for_update()
-                .select_related("company")
-                .get(pk=kwargs["pk"])
+            queryset = self.filter_queryset(
+                self.get_queryset().select_for_update()
+            )
+
+            registration_order = get_object_or_404(
+                queryset,
+                pk=kwargs["pk"],
+            )
+
+            self.check_object_permissions(
+                request,
+                registration_order,
             )
 
             serializer = self.get_serializer(
@@ -82,10 +99,24 @@ class RegistrationOrderViewSet(viewsets.ModelViewSet):
                 partial=partial,
             )
 
-            serializer.is_valid(raise_exception=True)
-            self.perform_update(serializer)
+            serializer.is_valid(
+                raise_exception=True,
+            )
 
-            return Response(serializer.data)
+            self.perform_update(
+                serializer,
+            )
+
+            if getattr(
+                    registration_order,
+                    "_prefetched_objects_cache",
+                    None,
+            ):
+                registration_order._prefetched_objects_cache = {}
+
+            return Response(
+                serializer.data
+            )
 
     def destroy(self, request, *args, **kwargs):
         registration_order = self.get_object()
@@ -108,6 +139,11 @@ class RegistrationOrderViewSet(viewsets.ModelViewSet):
             status=status.HTTP_204_NO_CONTENT
         )
 class PaymentInstrumentViewSet(viewsets.ModelViewSet):
+
+    permission_classes = (
+        TradeFlowModelPermissions,
+    )
+
     queryset = (
         PaymentInstrument.objects
         .select_related(
@@ -162,6 +198,10 @@ class PaymentInstrumentViewSet(viewsets.ModelViewSet):
         )
 
 class CurrencyPurchaseViewSet(viewsets.ModelViewSet):
+    permission_classes = (
+        TradeFlowModelPermissions,
+    )
+
     queryset = (
         CurrencyPurchase.objects
         .select_related(
@@ -324,6 +364,10 @@ class CurrencyPurchaseViewSet(viewsets.ModelViewSet):
         )
 
 class ShipmentPartViewSet(viewsets.ModelViewSet):
+    permission_classes = (
+        TradeFlowModelPermissions,
+    )
+
     queryset = (
         ShipmentPart.objects
         .select_related(
@@ -468,6 +512,9 @@ class ShipmentPartViewSet(viewsets.ModelViewSet):
         )
 
 class DashboardSummaryAPIView(APIView):
+    permission_classes = (
+        CanViewTradeDashboard,
+    )
 
     def get(self, request):
         summary = get_dashboard_summary()

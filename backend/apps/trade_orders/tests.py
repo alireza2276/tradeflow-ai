@@ -1,5 +1,5 @@
 from threading import Event, Thread
-
+import uuid
 from django.contrib.auth import get_user_model
 from rest_framework.test import APIClient
 
@@ -11,6 +11,9 @@ from rest_framework.test import APITestCase
 from django.contrib.auth import get_user_model
 from datetime import date, timedelta
 from decimal import Decimal
+
+from django.contrib.auth.models import Permission
+from django.contrib.contenttypes.models import ContentType
 
 from django.core.exceptions import ValidationError
 from django.test import TestCase
@@ -649,11 +652,31 @@ class DeadlineStatusTests(TestCase):
 
 class AuthenticatedAPITestCase(APITestCase):
 
-    def authenticate_test_user(self, username):
+    def authenticate_test_user(
+        self,
+        username,
+        permissions=None,
+    ):
         self.user = get_user_model().objects.create_user(
             username=username,
             password="StrongTestPassword123!",
         )
+
+        if permissions:
+            for permission_code in permissions:
+                app_label, codename = permission_code.split(
+                    ".",
+                    1,
+                )
+
+                permission = Permission.objects.get(
+                    content_type__app_label=app_label,
+                    codename=codename,
+                )
+
+                self.user.user_permissions.add(
+                    permission,
+                )
 
         self.client.force_authenticate(
             user=self.user,
@@ -663,7 +686,15 @@ class AuthenticatedAPITestCase(APITestCase):
 class RegistrationOrderAPITests(AuthenticatedAPITestCase):
 
     def setUp(self):
-        self.authenticate_test_user("registration-order-test-user")
+        self.authenticate_test_user(
+            "registration-order-test-user",
+            permissions=[
+                "trade_orders.view_registrationorder",
+                "trade_orders.add_registrationorder",
+                "trade_orders.change_registrationorder",
+                "trade_orders.delete_registrationorder",
+            ],
+        )
         self.url = "/api/trade/registration-orders/"
 
         self.company = Company.objects.create(
@@ -963,9 +994,80 @@ class RegistrationOrderAPITests(AuthenticatedAPITestCase):
             "USD",
         )
 
+    def test_authenticated_user_without_permissions_cannot_view_registration_orders(self):
+        user = get_user_model().objects.create_user(
+            username="no-permission-user",
+            password="StrongTestPass123!",
+        )
+
+        client = APIClient()
+        client.force_authenticate(user=user)
+
+        response = client.get(
+            self.url,
+        )
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_403_FORBIDDEN,
+        )
+
+    def test_user_with_view_permission_can_view_registration_orders(self):
+        user = get_user_model().objects.create_user(
+            username="viewer-user",
+            password="StrongTestPass123!",
+        )
+
+        content_type = ContentType.objects.get_for_model(
+            RegistrationOrder,
+        )
+
+        view_permission = Permission.objects.get(
+            content_type=content_type,
+            codename="view_registrationorder",
+        )
+
+        user.user_permissions.add(view_permission)
+
+        client = APIClient()
+        client.force_authenticate(user=user)
+
+        response = client.get(
+            self.url,
+        )
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_200_OK,
+        )
+
+    def test_update_nonexistent_registration_order_returns_404(self):
+        nonexistent_id = uuid.uuid4()
+
+        response = self.client.patch(
+            f"/api/trade/registration-orders/{nonexistent_id}/",
+            {
+                "registered_amount": "50000",
+            },
+            format="json",
+        )
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_404_NOT_FOUND,
+        )
+
 class PaymentInstrumentAPITests(AuthenticatedAPITestCase):
     def setUp(self):
-        self.authenticate_test_user("payment-instrument-test-user")
+        self.authenticate_test_user(
+            "payment-instrument-test-user",
+            permissions=[
+                "trade_orders.view_paymentinstrument",
+                "trade_orders.add_paymentinstrument",
+                "trade_orders.change_paymentinstrument",
+                "trade_orders.delete_paymentinstrument",
+            ],
+        )
         self.url = "/api/trade/payment-instruments/"
 
         self.company = Company.objects.create(
@@ -1066,9 +1168,64 @@ class PaymentInstrumentAPITests(AuthenticatedAPITestCase):
             status.HTTP_400_BAD_REQUEST,
         )
 
+    def test_authenticated_user_without_permissions_cannot_view_payment_instruments(self):
+        user = get_user_model().objects.create_user(
+            username="payment-no-permission-user",
+            password="StrongTestPass123!",
+        )
+
+        client = APIClient()
+        client.force_authenticate(user=user)
+
+        response = client.get(
+            self.url,
+        )
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_403_FORBIDDEN,
+        )
+
+    def test_user_with_view_permission_can_view_payment_instruments(self):
+        user = get_user_model().objects.create_user(
+            username="payment-viewer-user",
+            password="StrongTestPass123!",
+        )
+
+        content_type = ContentType.objects.get_for_model(
+            PaymentInstrument,
+        )
+
+        view_permission = Permission.objects.get(
+            content_type=content_type,
+            codename="view_paymentinstrument",
+        )
+
+        user.user_permissions.add(view_permission)
+
+        client = APIClient()
+        client.force_authenticate(user=user)
+
+        response = client.get(
+            self.url,
+        )
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_200_OK,
+        )
+
 class CurrencyPurchaseAPITests(AuthenticatedAPITestCase):
     def setUp(self):
-        self.authenticate_test_user("currency-purchase-test-user")
+        self.authenticate_test_user(
+            "currency-purchase-test-user",
+            permissions=[
+                "trade_orders.view_currencypurchase",
+                "trade_orders.add_currencypurchase",
+                "trade_orders.change_currencypurchase",
+                "trade_orders.delete_currencypurchase",
+            ],
+        )
         self.url = "/api/trade/currency-purchases/"
 
         self.company = Company.objects.create(
@@ -1576,10 +1733,65 @@ class CurrencyPurchaseAPITests(AuthenticatedAPITestCase):
             ).exists()
         )
 
+    def test_authenticated_user_without_permissions_cannot_view_currency_purchases(self):
+        user = get_user_model().objects.create_user(
+            username="currency-no-permission-user",
+            password="StrongTestPass123!",
+        )
+
+        client = APIClient()
+        client.force_authenticate(user=user)
+
+        response = client.get(
+            self.url,
+        )
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_403_FORBIDDEN,
+        )
+
+    def test_user_with_view_permission_can_view_currency_purchases(self):
+        user = get_user_model().objects.create_user(
+            username="currency-viewer-user",
+            password="StrongTestPass123!",
+        )
+
+        content_type = ContentType.objects.get_for_model(
+            CurrencyPurchase,
+        )
+
+        view_permission = Permission.objects.get(
+            content_type=content_type,
+            codename="view_currencypurchase",
+        )
+
+        user.user_permissions.add(view_permission)
+
+        client = APIClient()
+        client.force_authenticate(user=user)
+
+        response = client.get(
+            self.url,
+        )
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_200_OK,
+        )
+
 
 class ShipmentPartAPITests(AuthenticatedAPITestCase):
     def setUp(self):
-        self.authenticate_test_user("shipment-part-test-user")
+        self.authenticate_test_user(
+            "shipment-part-test-user",
+            permissions=[
+                "trade_orders.view_shipmentpart",
+                "trade_orders.add_shipmentpart",
+                "trade_orders.change_shipmentpart",
+                "trade_orders.delete_shipmentpart",
+            ],
+        )
         self.url = "/api/trade/shipment-parts/"
 
         self.company = Company.objects.create(
@@ -1877,9 +2089,62 @@ class ShipmentPartAPITests(AuthenticatedAPITestCase):
             ).exists()
         )
 
+    def test_authenticated_user_without_permissions_cannot_view_shipment_parts(self):
+        user = get_user_model().objects.create_user(
+            username="shipment-no-permission-user",
+            password="StrongTestPass123!",
+        )
+
+        client = APIClient()
+        client.force_authenticate(user=user)
+
+        response = client.get(
+            self.url,
+        )
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_403_FORBIDDEN,
+        )
+
+    def test_user_with_view_permission_can_view_shipment_parts(self):
+        user = get_user_model().objects.create_user(
+            username="shipment-viewer-user",
+            password="StrongTestPass123!",
+        )
+
+        content_type = ContentType.objects.get_for_model(
+            ShipmentPart,
+        )
+
+        view_permission = Permission.objects.get(
+            content_type=content_type,
+            codename="view_shipmentpart",
+        )
+
+        user.user_permissions.add(view_permission)
+
+        client = APIClient()
+        client.force_authenticate(user=user)
+
+        response = client.get(
+            self.url,
+        )
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_200_OK,
+        )
+
 class DashboardServiceTests(AuthenticatedAPITestCase):
     def setUp(self):
-        self.authenticate_test_user("dashboard-test-user")
+        self.authenticate_test_user(
+            "dashboard-test-user",
+            permissions=[
+                "trade_orders.view_registrationorder",
+                "trade_orders.view_currencypurchase",
+            ],
+        )
         self.company = Company.objects.create(
             name="Dashboard Company",
             national_id="9988776655",
@@ -2215,6 +2480,39 @@ class DashboardServiceTests(AuthenticatedAPITestCase):
             attention_case["deadline_dual"],
         )
 
+    def test_dashboard_api_denies_user_without_required_permissions(self):
+        self.user.user_permissions.clear()
+
+        response = self.client.get(
+            "/api/trade/dashboard/",
+        )
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_403_FORBIDDEN,
+        )
+
+    def test_dashboard_api_denies_user_with_only_one_required_permission(self):
+        self.user.user_permissions.clear()
+
+        permission = Permission.objects.get(
+            content_type__app_label="trade_orders",
+            codename="view_registrationorder",
+        )
+
+        self.user.user_permissions.add(
+            permission,
+        )
+
+        response = self.client.get(
+            "/api/trade/dashboard/",
+        )
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_403_FORBIDDEN,
+        )
+
 class RegistrationOrderConcurrencyTests(TransactionTestCase):
     reset_sequences = True
 
@@ -2236,6 +2534,21 @@ class RegistrationOrderConcurrencyTests(TransactionTestCase):
             username="concurrency-user",
             password="StrongTestPass123!",
         )
+
+        registration_order_content_type = ContentType.objects.get_for_model(
+            RegistrationOrder,
+        )
+
+        change_permission = Permission.objects.get(
+            content_type=registration_order_content_type,
+            codename="change_registrationorder",
+        )
+
+        self.user.user_permissions.add(
+            change_permission,
+        )
+
+
 
         self.orders_url = "/api/trade/registration-orders/"
 

@@ -2,12 +2,14 @@ from rest_framework import status
 from rest_framework.test import APITestCase
 
 from apps.companies.models import Company
-
+from rest_framework.test import APIClient
 from apps.trade_orders.models import RegistrationOrder
 
 from decimal import Decimal
 from django.contrib.auth import get_user_model
 
+from django.contrib.auth.models import Permission
+from django.contrib.contenttypes.models import ContentType
 
 class CompanyAPITests(APITestCase):
 
@@ -15,6 +17,24 @@ class CompanyAPITests(APITestCase):
         self.user = get_user_model().objects.create_user(
             username="company-test-user",
             password="StrongTestPassword123!",
+        )
+
+        company_content_type = ContentType.objects.get_for_model(
+            Company,
+        )
+
+        company_permissions = Permission.objects.filter(
+            content_type=company_content_type,
+            codename__in=[
+                "view_company",
+                "add_company",
+                "change_company",
+                "delete_company",
+            ],
+        )
+
+        self.user.user_permissions.add(
+            *company_permissions,
         )
 
         self.client.force_authenticate(
@@ -167,4 +187,51 @@ class CompanyAPITests(APITestCase):
 
         self.assertTrue(
             Company.objects.filter(id=company.id).exists()
+        )
+
+    def test_authenticated_user_without_permissions_cannot_view_companies(self):
+        user = get_user_model().objects.create_user(
+            username="company-no-permission-user",
+            password="StrongTestPass123!",
+        )
+
+        client = APIClient()
+        client.force_authenticate(user=user)
+
+        response = client.get(
+            self.url,
+        )
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_403_FORBIDDEN,
+        )
+
+    def test_user_with_view_permission_can_view_companies(self):
+        user = get_user_model().objects.create_user(
+            username="company-viewer-user",
+            password="StrongTestPass123!",
+        )
+
+        content_type = ContentType.objects.get_for_model(
+            Company,
+        )
+
+        view_permission = Permission.objects.get(
+            content_type=content_type,
+            codename="view_company",
+        )
+
+        user.user_permissions.add(view_permission)
+
+        client = APIClient()
+        client.force_authenticate(user=user)
+
+        response = client.get(
+            self.url,
+        )
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_200_OK,
         )

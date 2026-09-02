@@ -2,11 +2,18 @@ from django.db.models.deletion import ProtectedError
 from rest_framework import status, viewsets
 from rest_framework.response import Response
 
+from apps.authentication.permissions import (
+    TradeFlowModelPermissions,
+)
 from apps.companies.models import Company
 from apps.companies.serializers import CompanySerializer
 
 
 class CompanyViewSet(viewsets.ModelViewSet):
+    permission_classes = (
+        TradeFlowModelPermissions,
+    )
+
     queryset = Company.objects.all()
     serializer_class = CompanySerializer
 

@@ -1,4 +1,3 @@
-from rest_framework import status
 from rest_framework.test import APITestCase
 from django.contrib.auth import get_user_model
 from datetime import date
@@ -6,6 +5,7 @@ from decimal import Decimal
 
 from rest_framework import status
 from rest_framework.test import APITestCase
+from rest_framework.test import APIClient
 
 from apps.companies.models import Company
 from apps.trade_orders.models import RegistrationOrder
@@ -15,7 +15,9 @@ from apps.trade_orders.services.purchase_service import (
 from apps.trade_orders.services.shipment_service import (
     create_shipment_part,
 )
-
+from django.contrib.auth.models import Permission
+from django.contrib.contenttypes.models import ContentType
+from apps.documents.models import Invoice
 
 class InvoiceAPITests(APITestCase):
 
@@ -23,6 +25,23 @@ class InvoiceAPITests(APITestCase):
         self.user = get_user_model().objects.create_user(
             username="invoice-test-user",
             password="StrongTestPassword123!",
+        )
+
+        invoice_content_type = ContentType.objects.get_for_model(
+            Invoice,
+        )
+
+        invoice_permissions = Permission.objects.filter(
+            content_type=invoice_content_type,
+            codename__in=[
+                "view_invoice",
+                "add_invoice",
+                "change_invoice",
+            ],
+        )
+
+        self.user.user_permissions.add(
+            *invoice_permissions,
         )
 
         self.client.force_authenticate(
@@ -200,4 +219,51 @@ class InvoiceAPITests(APITestCase):
         self.assertIn(
             "2026/09/15",
             response.data["submission_date_dual"],
+        )
+
+    def test_authenticated_user_without_permissions_cannot_view_invoices(self):
+        user = get_user_model().objects.create_user(
+            username="invoice-no-permission-user",
+            password="StrongTestPass123!",
+        )
+
+        client = APIClient()
+        client.force_authenticate(user=user)
+
+        response = client.get(
+            self.url,
+        )
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_403_FORBIDDEN,
+        )
+
+    def test_user_with_view_permission_can_view_invoices(self):
+        user = get_user_model().objects.create_user(
+            username="invoice-viewer-user",
+            password="StrongTestPass123!",
+        )
+
+        content_type = ContentType.objects.get_for_model(
+            Invoice,
+        )
+
+        view_permission = Permission.objects.get(
+            content_type=content_type,
+            codename="view_invoice",
+        )
+
+        user.user_permissions.add(view_permission)
+
+        client = APIClient()
+        client.force_authenticate(user=user)
+
+        response = client.get(
+            self.url,
+        )
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_200_OK,
         )
