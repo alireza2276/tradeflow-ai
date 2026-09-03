@@ -1,6 +1,8 @@
 from django.contrib.auth import get_user_model
+from django.contrib.auth.models import Group
+from django.core.management import call_command
 from django.test import Client, TestCase
-
+from rest_framework.test import APIClient
 
 class AuthenticationTests(TestCase):
 
@@ -230,6 +232,402 @@ class AuthenticationTests(TestCase):
     def test_financial_api_requires_authentication(self):
         response = self.client.get(
             "/api/trade/registration-orders/"
+        )
+
+        self.assertEqual(
+            response.status_code,
+            403,
+        )
+
+class RBACSetupTests(TestCase):
+
+    def test_setup_rbac_creates_expected_roles(self):
+        call_command(
+            "setup_rbac",
+            verbosity=0,
+        )
+
+        expected_roles = {
+            "TRADE_VIEWER",
+            "TRADE_OPERATOR",
+            "TRADE_SUPERVISOR",
+            "SECURITY_ADMIN",
+        }
+
+        actual_roles = set(
+            Group.objects.filter(
+                name__in=expected_roles,
+            ).values_list(
+                "name",
+                flat=True,
+            )
+        )
+
+        self.assertEqual(
+            actual_roles,
+            expected_roles,
+        )
+
+    def test_setup_rbac_is_idempotent(self):
+        call_command(
+            "setup_rbac",
+            verbosity=0,
+        )
+
+        call_command(
+            "setup_rbac",
+            verbosity=0,
+        )
+
+        expected_roles = {
+            "TRADE_VIEWER",
+            "TRADE_OPERATOR",
+            "TRADE_SUPERVISOR",
+            "SECURITY_ADMIN",
+        }
+
+        for role_name in expected_roles:
+            self.assertEqual(
+                Group.objects.filter(
+                    name=role_name,
+                ).count(),
+                1,
+            )
+
+    def test_setup_rbac_assigns_exact_permissions_to_roles(self):
+        call_command(
+            "setup_rbac",
+            verbosity=0,
+        )
+
+        expected_permissions = {
+            "TRADE_VIEWER": {
+                "companies.view_company",
+                "documents.view_invoice",
+                "notifications.view_notificationlog",
+                "trade_orders.view_currencypurchase",
+                "trade_orders.view_paymentinstrument",
+                "trade_orders.view_registrationorder",
+                "trade_orders.view_shipmentpart",
+            },
+            "TRADE_OPERATOR": {
+                "companies.view_company",
+                "documents.view_invoice",
+                "documents.add_invoice",
+                "documents.change_invoice",
+                "notifications.view_notificationlog",
+                "trade_orders.view_registrationorder",
+                "trade_orders.view_paymentinstrument",
+                "trade_orders.add_paymentinstrument",
+                "trade_orders.change_paymentinstrument",
+                "trade_orders.view_currencypurchase",
+                "trade_orders.add_currencypurchase",
+                "trade_orders.change_currencypurchase",
+                "trade_orders.view_shipmentpart",
+                "trade_orders.add_shipmentpart",
+                "trade_orders.change_shipmentpart",
+            },
+            "TRADE_SUPERVISOR": {
+                "companies.view_company",
+                "companies.add_company",
+                "companies.change_company",
+                "documents.view_invoice",
+                "documents.add_invoice",
+                "documents.change_invoice",
+                "notifications.view_notificationlog",
+                "trade_orders.view_registrationorder",
+                "trade_orders.add_registrationorder",
+                "trade_orders.change_registrationorder",
+                "trade_orders.view_paymentinstrument",
+                "trade_orders.add_paymentinstrument",
+                "trade_orders.change_paymentinstrument",
+                "trade_orders.view_currencypurchase",
+                "trade_orders.add_currencypurchase",
+                "trade_orders.change_currencypurchase",
+                "trade_orders.view_shipmentpart",
+                "trade_orders.add_shipmentpart",
+                "trade_orders.change_shipmentpart",
+            },
+            "SECURITY_ADMIN": set(),
+        }
+
+        for role_name, expected in expected_permissions.items():
+            group = Group.objects.get(
+                name=role_name,
+            )
+
+            actual = {
+                (
+                    f"{permission.content_type.app_label}."
+                    f"{permission.codename}"
+                )
+                for permission in group.permissions.select_related(
+                    "content_type"
+                )
+            }
+
+            self.assertEqual(
+                actual,
+                expected,
+                f"Unexpected permissions for role {role_name}.",
+            )
+
+class RBACAPITests(TestCase):
+
+    def setUp(self):
+        call_command(
+            "setup_rbac",
+            verbosity=0,
+        )
+
+        self.client = APIClient()
+
+    def create_user_with_role(self, username, role_name):
+        user = get_user_model().objects.create_user(
+            username=username,
+            password="StrongTestPassword123!",
+        )
+
+        role = Group.objects.get(
+            name=role_name,
+        )
+
+        user.groups.add(
+            role,
+        )
+
+        return user
+
+    def test_trade_viewer_can_view_registration_orders_but_cannot_create(self):
+        user = self.create_user_with_role(
+            "trade-viewer-user",
+            "TRADE_VIEWER",
+        )
+
+        self.client.force_authenticate(
+            user=user,
+        )
+
+        get_response = self.client.get(
+            "/api/trade/registration-orders/",
+        )
+
+        post_response = self.client.post(
+            "/api/trade/registration-orders/",
+            {},
+            format="json",
+        )
+
+        self.assertEqual(
+            get_response.status_code,
+            200,
+        )
+
+        self.assertEqual(
+            post_response.status_code,
+            403,
+        )
+
+    def test_trade_operator_cannot_create_registration_order(self):
+        user = self.create_user_with_role(
+            "trade-operator-user",
+            "TRADE_OPERATOR",
+        )
+
+        self.client.force_authenticate(
+            user=user,
+        )
+
+        response = self.client.post(
+            "/api/trade/registration-orders/",
+            {},
+            format="json",
+        )
+
+        self.assertEqual(
+            response.status_code,
+            403,
+        )
+
+    def test_trade_operator_can_create_currency_purchase(self):
+        from decimal import Decimal
+        from datetime import date
+
+        from apps.companies.models import Company
+        from apps.trade_orders.models import RegistrationOrder
+
+        company = Company.objects.create(
+            name="RBAC Operator Company",
+            national_id="1122334455",
+            company_type="COMMERCIAL",
+        )
+
+        order = RegistrationOrder.objects.create(
+            company=company,
+            order_number="RBAC-OP-001",
+            registered_amount=Decimal("100000"),
+            currency="USD",
+        )
+
+        user = self.create_user_with_role(
+            "trade-operator-purchase-user",
+            "TRADE_OPERATOR",
+        )
+
+        self.client.force_authenticate(
+            user=user,
+        )
+
+        response = self.client.post(
+            "/api/trade/currency-purchases/",
+            {
+                "registration_order": str(order.pk),
+                "amount": "50000",
+                "currency": "USD",
+                "purchase_date": date.today().isoformat(),
+            },
+            format="json",
+        )
+
+        self.assertEqual(
+            response.status_code,
+            201,
+        )
+
+    def test_trade_supervisor_can_create_company(self):
+        user = self.create_user_with_role(
+            "trade-supervisor-user",
+            "TRADE_SUPERVISOR",
+        )
+
+        self.client.force_authenticate(
+            user=user,
+        )
+
+        response = self.client.post(
+            "/api/companies/",
+            {
+                "name": "RBAC Supervisor Company",
+                "national_id": "9988776655",
+                "company_type": "COMMERCIAL",
+            },
+            format="json",
+        )
+
+        self.assertEqual(
+            response.status_code,
+            201,
+        )
+
+    def test_trade_supervisor_can_create_registration_order(self):
+        from apps.companies.models import Company
+
+        company = Company.objects.create(
+            name="RBAC Supervisor Order Company",
+            national_id="8877665544",
+            company_type="COMMERCIAL",
+        )
+
+        user = self.create_user_with_role(
+            "trade-supervisor-order-user",
+            "TRADE_SUPERVISOR",
+        )
+
+        self.client.force_authenticate(
+            user=user,
+        )
+
+        response = self.client.post(
+            "/api/trade/registration-orders/",
+            {
+                "company": str(company.pk),
+                "order_number": "RBAC-SUP-001",
+                "registered_amount": "100000",
+                "currency": "USD",
+            },
+            format="json",
+        )
+
+        self.assertEqual(
+            response.status_code,
+            201,
+        )
+
+    def test_trade_roles_do_not_have_delete_permissions(self):
+        trade_roles = (
+            "TRADE_VIEWER",
+            "TRADE_OPERATOR",
+            "TRADE_SUPERVISOR",
+        )
+
+        for role_name in trade_roles:
+            user = self.create_user_with_role(
+                f"{role_name.lower()}-delete-test",
+                role_name,
+            )
+
+            delete_permissions = {
+                permission
+                for permission in user.get_all_permissions()
+                if ".delete_" in permission
+            }
+
+            self.assertEqual(
+                delete_permissions,
+                set(),
+                f"{role_name} unexpectedly has delete permissions.",
+            )
+
+    def test_security_admin_cannot_access_trade_data(self):
+        user = self.create_user_with_role(
+            "security-admin-user",
+            "SECURITY_ADMIN",
+        )
+
+        self.client.force_authenticate(
+            user=user,
+        )
+
+        response = self.client.get(
+            "/api/trade/registration-orders/",
+        )
+
+        self.assertEqual(
+            response.status_code,
+            403,
+        )
+
+    def test_trade_viewer_can_access_dashboard(self):
+        user = self.create_user_with_role(
+            "trade-viewer-dashboard-user",
+            "TRADE_VIEWER",
+        )
+
+        self.client.force_authenticate(
+            user=user,
+        )
+
+        response = self.client.get(
+            "/api/trade/dashboard/",
+        )
+
+        self.assertEqual(
+            response.status_code,
+            200,
+        )
+
+    def test_security_admin_cannot_access_dashboard(self):
+        user = self.create_user_with_role(
+            "security-admin-dashboard-user",
+            "SECURITY_ADMIN",
+        )
+
+        self.client.force_authenticate(
+            user=user,
+        )
+
+        response = self.client.get(
+            "/api/trade/dashboard/",
         )
 
         self.assertEqual(
