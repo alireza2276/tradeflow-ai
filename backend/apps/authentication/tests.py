@@ -3,6 +3,7 @@ from django.contrib.auth.models import Group
 from django.core.management import call_command
 from django.test import Client, TestCase
 from rest_framework.test import APIClient
+import json
 
 class AuthenticationTests(TestCase):
 
@@ -237,6 +238,113 @@ class AuthenticationTests(TestCase):
         self.assertEqual(
             response.status_code,
             403,
+        )
+
+    def test_me_returns_user_roles_and_permissions(self):
+        user = get_user_model().objects.create_user(
+            username="rbac-me-user",
+            password="StrongTestPass123!",
+        )
+
+        call_command(
+            "setup_rbac",
+            verbosity=0,
+        )
+
+        role = Group.objects.get(
+            name="TRADE_VIEWER",
+        )
+
+        user.groups.add(role)
+
+        self.client.force_login(user)
+
+        response = self.client.get(
+            "/api/auth/me/",
+        )
+
+        self.assertEqual(
+            response.status_code,
+            200,
+        )
+
+        data = response.json()
+
+        self.assertIn(
+            "TRADE_VIEWER",
+            data["user"]["roles"],
+        )
+
+        self.assertIn(
+            "trade_orders.view_registrationorder",
+            data["user"]["permissions"],
+        )
+
+        self.assertIn(
+            "trade_orders.view_currencypurchase",
+            data["user"]["permissions"],
+        )
+
+        self.assertNotIn(
+            "trade_orders.add_registrationorder",
+            data["user"]["permissions"],
+        )
+
+    def test_login_returns_user_roles_and_permissions(self):
+        user = get_user_model().objects.create_user(
+            username="rbac-login-user",
+            password="StrongTestPass123!",
+        )
+
+        call_command(
+            "setup_rbac",
+            verbosity=0,
+        )
+
+        role = Group.objects.get(
+            name="TRADE_OPERATOR",
+        )
+
+        user.groups.add(role)
+
+        csrf_response = self.client.get(
+            "/api/auth/csrf/",
+        )
+
+        csrf_token = csrf_response.cookies["csrftoken"].value
+
+        response = self.client.post(
+            "/api/auth/login/",
+            data=json.dumps(
+                {
+                    "username": "rbac-login-user",
+                    "password": "StrongTestPass123!",
+                }
+            ),
+            content_type="application/json",
+            HTTP_X_CSRFTOKEN=csrf_token,
+        )
+
+        self.assertEqual(
+            response.status_code,
+            200,
+        )
+
+        data = response.json()
+
+        self.assertIn(
+            "TRADE_OPERATOR",
+            data["user"]["roles"],
+        )
+
+        self.assertIn(
+            "trade_orders.add_currencypurchase",
+            data["user"]["permissions"],
+        )
+
+        self.assertNotIn(
+            "trade_orders.add_registrationorder",
+            data["user"]["permissions"],
         )
 
 class RBACSetupTests(TestCase):

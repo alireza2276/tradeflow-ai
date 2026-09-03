@@ -3,6 +3,10 @@ import {
   useState,
 } from 'react'
 
+import {
+  hasPermission,
+} from '../utils/permissions'
+
 import CurrencyPurchaseFormModal
   from '../components/CurrencyPurchaseFormModal'
 
@@ -35,7 +39,9 @@ function formatAmount(value) {
   }`
 }
 
-function CurrencyPurchases() {
+function CurrencyPurchases({
+  user,
+}) {
   const [purchases, setPurchases] = useState([])
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState('')
@@ -118,13 +124,19 @@ function CurrencyPurchases() {
           </p>
         </div>
 
-        <button
-          type="button"
-          className="primary-button"
-          onClick={handleAddPurchase}
-        >
-          Add Currency Purchase
-        </button>
+        {hasPermission(
+          user,
+          'trade_orders.add_currencypurchase'
+        ) && (
+          <button
+            type="button"
+            className="primary-button"
+            onClick={handleAddPurchase}
+          >
+            Add Currency Purchase
+          </button>
+        )}
+
       </div>
 
       <div className="purchases-table-wrapper">
@@ -137,7 +149,12 @@ function CurrencyPurchases() {
               <th>Currency</th>
               <th>Purchase Date</th>
               <th>Deadline</th>
-              <th>Actions</th>
+              {hasPermission(
+                user,
+                'trade_orders.change_currencypurchase'
+              ) && (
+                <th>Actions</th>
+              )}
             </tr>
           </thead>
 
@@ -176,25 +193,40 @@ function CurrencyPurchases() {
                   </span>
                 </td>
 
-                <td>
-                  <div className="table-actions">
-                    <button
-                      type="button"
-                      className="table-action-button"
-                      onClick={() =>
-                        handleEditPurchase(purchase)
-                      }
-                    >
-                      Edit
-                    </button>
-                  </div>
-                </td>
+                {hasPermission(
+                  user,
+                  'trade_orders.change_currencypurchase'
+                ) && (
+                  <td>
+                    <div className="table-actions">
+                      <button
+                        type="button"
+                        className="table-action-button"
+                        onClick={() =>
+                          handleEditPurchase(purchase)
+                        }
+                      >
+                        Edit
+                      </button>
+                    </div>
+                  </td>
+                )}
+
               </tr>
             ))}
 
             {purchases.length === 0 && (
               <tr>
-                <td colSpan="7">
+                <td
+                    colSpan={
+                      hasPermission(
+                          user,
+                          'trade_orders.change_currencypurchase'
+                      )
+                          ? 7
+                          : 6
+                    }
+                >
                   <div className="empty-state">
                     No currency purchases found.
                   </div>
@@ -206,7 +238,7 @@ function CurrencyPurchases() {
       </div>
 
       <CurrencyPurchaseFormModal
-        isOpen={isModalOpen}
+          isOpen={isModalOpen}
         purchase={selectedPurchase}
         onClose={handleCloseModal}
         onSubmit={handleSubmit}

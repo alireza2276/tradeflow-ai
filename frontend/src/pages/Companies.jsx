@@ -1,5 +1,9 @@
 import { useEffect, useState } from 'react'
 
+import {
+  hasPermission,
+} from '../utils/permissions'
+
 import CompanyFormModal from '../components/CompanyFormModal'
 import {
   createCompany,
@@ -9,7 +13,9 @@ import {
 } from '../services/api'
 
 
-function Companies() {
+function Companies({
+  user,
+}) {
   const [companies, setCompanies] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
@@ -144,6 +150,18 @@ function Companies() {
     )
   }
 
+  const canEditCompany = hasPermission(
+    user,
+    'companies.change_company'
+  )
+
+  const canDeleteCompany = hasPermission(
+    user,
+    'companies.delete_company'
+  )
+
+  const canManageCompanies =
+    canEditCompany || canDeleteCompany
 
   return (
     <div className="companies-page">
@@ -157,13 +175,19 @@ function Companies() {
           </p>
         </div>
 
-        <button
-          type="button"
-          className="primary-button"
-          onClick={handleOpenCreateModal}
-        >
-          Add Company
-        </button>
+        {hasPermission(
+          user,
+          'companies.add_company'
+        ) && (
+          <button
+            type="button"
+            className="primary-button"
+            onClick={handleOpenCreateModal}
+          >
+            Add Company
+          </button>
+        )}
+
       </header>
 
 
@@ -180,7 +204,9 @@ function Companies() {
                 <th>Company</th>
                 <th>National ID</th>
                 <th>Type</th>
-                <th>Actions</th>
+                {canManageCompanies && (
+                  <th>Actions</th>
+                )}
               </tr>
             </thead>
 
@@ -204,36 +230,40 @@ function Companies() {
                     </span>
                   </td>
 
-                  <td>
-                    <div className="table-actions">
+                  {canManageCompanies && (
+                    <td>
+                      <div className="table-actions">
+                        {canEditCompany && (
+                          <button
+                            type="button"
+                            className="table-action-button"
+                            onClick={() =>
+                              handleOpenEditModal(company)
+                            }
+                          >
+                            Edit
+                          </button>
+                        )}
 
-                      <button
-                        type="button"
-                        className="table-action-button"
-                        onClick={() =>
-                          handleOpenEditModal(company)
-                        }
-                      >
-                        Edit
-                      </button>
-
-                      <button
-                        type="button"
-                        className="table-action-button table-action-button--danger"
-                        onClick={() =>
-                          handleDeleteCompany(company)
-                        }
-                        disabled={
-                          deletingCompanyId === company.id
-                        }
-                      >
-                        {deletingCompanyId === company.id
-                          ? 'Deleting...'
-                          : 'Delete'}
-                      </button>
-
-                    </div>
-                  </td>
+                        {canDeleteCompany && (
+                          <button
+                            type="button"
+                            className="table-action-button table-action-button--danger"
+                            onClick={() =>
+                              handleDeleteCompany(company)
+                            }
+                            disabled={
+                              deletingCompanyId === company.id
+                            }
+                          >
+                            {deletingCompanyId === company.id
+                              ? 'Deleting...'
+                              : 'Delete'}
+                          </button>
+                        )}
+                      </div>
+                    </td>
+                  )}
 
                 </tr>
               ))}

@@ -5,6 +5,25 @@ from django.http import JsonResponse
 from django.views.decorators.csrf import ensure_csrf_cookie
 from django.views.decorators.http import require_POST
 
+def serialize_user(user):
+    roles = list(
+        user.groups.order_by("name").values_list(
+            "name",
+            flat=True,
+        )
+    )
+
+    permissions = sorted(
+        user.get_all_permissions()
+    )
+
+    return {
+        "id": user.pk,
+        "username": user.get_username(),
+        "is_staff": user.is_staff,
+        "roles": roles,
+        "permissions": permissions,
+    }
 
 @ensure_csrf_cookie
 def csrf_token_view(request):
@@ -69,11 +88,7 @@ def login_view(request):
     return JsonResponse(
         {
             "detail": "Login successful.",
-            "user": {
-                "id": user.pk,
-                "username": user.get_username(),
-                "is_staff": user.is_staff,
-            },
+            "user": serialize_user(user),
         },
         status=200,
     )
@@ -93,11 +108,7 @@ def me_view(request):
 
     return JsonResponse(
         {
-            "user": {
-                "id": request.user.pk,
-                "username": request.user.get_username(),
-                "is_staff": request.user.is_staff,
-            }
+            "user": serialize_user(request.user),
         },
         status=200,
     )

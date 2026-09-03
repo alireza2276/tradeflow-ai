@@ -12,12 +12,15 @@ import {
   Routes,
 } from 'react-router-dom'
 
+import PermissionRoute from './components/PermissionRoute'
 import ProtectedRoute from './components/ProtectedRoute'
+
 import DashboardLayout from './layouts/DashboardLayout'
 
 import Companies from './pages/Companies'
 import CurrencyPurchases from './pages/CurrencyPurchases'
 import Dashboard from './pages/Dashboard'
+import Forbidden from './pages/Forbidden'
 import Login from './pages/Login'
 import RegistrationOrders from './pages/RegistrationOrders'
 
@@ -77,28 +80,92 @@ function App() {
             path="*"
             element={
               <DashboardLayout
+                user={user}
                 onLogout={() => setUser(null)}
               >
                 <Routes>
                   <Route
-                    path="/"
-                    element={<Dashboard />}
+                    path="/forbidden"
+                    element={
+                      <Forbidden
+                        user={user}
+                      />
+                    }
                   />
 
                   <Route
-                    path="/companies"
-                    element={<Companies />}
-                  />
+                    element={
+                      <PermissionRoute
+                        user={user}
+                        permissions={[
+                          'trade_orders.view_registrationorder',
+                          'trade_orders.view_currencypurchase',
+                        ]}
+                      />
+                    }
+                  >
+                    <Route
+                      path="/"
+                      element={<Dashboard />}
+                    />
+                  </Route>
 
                   <Route
-                    path="/registration-orders"
-                    element={<RegistrationOrders />}
-                  />
+                    element={
+                      <PermissionRoute
+                        user={user}
+                        permission="companies.view_company"
+                      />
+                    }
+                  >
+                    <Route
+                      path="/companies"
+                      element={
+                        <Companies
+                          user={user}
+                        />
+                      }
+                    />
+
+                  </Route>
 
                   <Route
-                    path="/currency-purchases"
-                    element={<CurrencyPurchases />}
-                  />
+                    element={
+                      <PermissionRoute
+                        user={user}
+                        permission="trade_orders.view_registrationorder"
+                      />
+                    }
+                  >
+                    <Route
+                      path="/registration-orders"
+                      element={
+                        <RegistrationOrders
+                          user={user}
+                        />
+                      }
+                    />
+
+                  </Route>
+
+                  <Route
+                    element={
+                      <PermissionRoute
+                        user={user}
+                        permission="trade_orders.view_currencypurchase"
+                      />
+                    }
+                  >
+                    <Route
+                      path="/currency-purchases"
+                      element={
+                        <CurrencyPurchases
+                          user={user}
+                        />
+                      }
+                    />
+
+                  </Route>
                 </Routes>
               </DashboardLayout>
             }

@@ -1,5 +1,9 @@
 import { useEffect, useState } from 'react'
 
+import {
+  hasPermission,
+} from '../utils/permissions'
+
 import RegistrationOrderFormModal from '../components/RegistrationOrderFormModal'
 import {
   createRegistrationOrder,
@@ -9,7 +13,9 @@ import {
 } from '../services/api'
 
 
-function RegistrationOrders() {
+function RegistrationOrders({
+  user,
+}) {
   const [orders, setOrders] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
@@ -104,6 +110,19 @@ function RegistrationOrders() {
     return Number(value).toLocaleString('en-US')
   }
 
+  const canEditOrder = hasPermission(
+    user,
+    'trade_orders.change_registrationorder'
+  )
+
+  const canDeleteOrder = hasPermission(
+    user,
+    'trade_orders.delete_registrationorder'
+  )
+
+  const canManageOrders =
+    canEditOrder || canDeleteOrder
+
   if (loading) {
     return (
       <div className="orders-page">
@@ -150,13 +169,19 @@ function RegistrationOrders() {
           </p>
         </div>
 
-        <button
-          type="button"
-          className="primary-button"
-          onClick={handleOpenCreateModal}
-        >
-          Add Order
-        </button>
+        {hasPermission(
+          user,
+          'trade_orders.add_registrationorder'
+        ) && (
+          <button
+            type="button"
+            className="primary-button"
+            onClick={handleOpenCreateModal}
+          >
+            Add Order
+          </button>
+        )}
+
       </header>
 
       {orders.length === 0 ? (
@@ -174,7 +199,9 @@ function RegistrationOrders() {
                 <th>Registered Amount</th>
                 <th>Currency</th>
                 <th>Status</th>
-                <th>Actions</th>
+                {canManageOrders && (
+                  <th>Actions</th>
+                )}
               </tr>
             </thead>
 
@@ -214,29 +241,35 @@ function RegistrationOrders() {
                     </span>
                   </td>
 
-                  <td>
-                    <div className="table-actions">
-                      <button
-                        type="button"
-                        className="table-action-button"
-                        onClick={() =>
-                          handleOpenEditModal(order)
-                        }
-                      >
-                        Edit
-                      </button>
+                  {canManageOrders && (
+                    <td>
+                      <div className="table-actions">
+                        {canEditOrder && (
+                          <button
+                            type="button"
+                            className="table-action-button"
+                            onClick={() =>
+                              handleOpenEditModal(order)
+                            }
+                          >
+                            Edit
+                          </button>
+                        )}
 
-                      <button
-                        type="button"
-                        className="table-delete-button"
-                        onClick={() =>
-                          handleDeleteOrder(order)
-                        }
-                      >
-                        Delete
-                      </button>
-                    </div>
-                  </td>
+                        {canDeleteOrder && (
+                          <button
+                            type="button"
+                            className="table-delete-button"
+                            onClick={() =>
+                              handleDeleteOrder(order)
+                            }
+                          >
+                            Delete
+                          </button>
+                        )}
+                      </div>
+                    </td>
+                  )}
 
                 </tr>
               ))}
