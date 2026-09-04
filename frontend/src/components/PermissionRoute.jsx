@@ -17,7 +17,9 @@ function PermissionRoute({
     ? [permission]
     : permissions
 
-  const hasAccess = requiredPermissions.every(
+  const hasAccess =
+  requiredPermissions.length > 0 &&
+  requiredPermissions.every(
     (requiredPermission) =>
       hasPermission(
         user,
