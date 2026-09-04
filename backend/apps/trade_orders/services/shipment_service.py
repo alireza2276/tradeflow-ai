@@ -94,6 +94,15 @@ def update_shipment_part(
             "during the update operation."
         )
 
+    if (
+            hasattr(locked_shipment, "invoice")
+            and amount != locked_shipment.amount
+    ):
+        raise ValidationError(
+            "Shipment part amount cannot be changed "
+            "after an invoice has been issued."
+        )
+
     if amount <= Decimal("0"):
         raise ValidationError(
             "Shipment part amount must be greater than zero."

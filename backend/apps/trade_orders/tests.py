@@ -2066,6 +2066,88 @@ class ShipmentPartAPITests(AuthenticatedAPITestCase):
             Decimal("20000"),
         )
 
+    def test_shipment_amount_cannot_change_after_invoice_is_created(self):
+        shipment = ShipmentPart.objects.create(
+            currency_purchase=self.purchase,
+            amount=Decimal("20000"),
+            shipment_date=date(2026, 9, 1),
+            reference_number="SHIP-INVOICED-001",
+        )
+
+        create_invoice(
+            shipment_part=shipment,
+            fob_amount=Decimal("18000"),
+            freight_amount=Decimal("2000"),
+            submission_date=date(2026, 9, 15),
+        )
+
+        response = self.client.patch(
+            f"{self.url}{shipment.id}/",
+            {
+                "amount": "19000",
+            },
+            format="json",
+        )
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_400_BAD_REQUEST,
+        )
+
+        shipment.refresh_from_db()
+
+        self.assertEqual(
+            shipment.amount,
+            Decimal("20000"),
+        )
+
+    def test_non_financial_shipment_fields_can_change_after_invoice_is_created(self):
+        shipment = ShipmentPart.objects.create(
+            currency_purchase=self.purchase,
+            amount=Decimal("20000"),
+            shipment_date=date(2026, 9, 1),
+            reference_number="SHIP-INVOICED-002",
+            notes="Original note",
+        )
+
+        create_invoice(
+            shipment_part=shipment,
+            fob_amount=Decimal("18000"),
+            freight_amount=Decimal("2000"),
+            submission_date=date(2026, 9, 15),
+        )
+
+        response = self.client.patch(
+            f"{self.url}{shipment.id}/",
+            {
+                "notes": "Updated after invoice",
+                "reference_number": "SHIP-INVOICED-002-EDIT",
+            },
+            format="json",
+        )
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_200_OK,
+        )
+
+        shipment.refresh_from_db()
+
+        self.assertEqual(
+            shipment.amount,
+            Decimal("20000"),
+        )
+
+        self.assertEqual(
+            shipment.notes,
+            "Updated after invoice",
+        )
+
+        self.assertEqual(
+            shipment.reference_number,
+            "SHIP-INVOICED-002-EDIT",
+        )
+
     def test_shipment_part_cannot_be_deleted_directly(self):
         shipment = ShipmentPart.objects.create(
             currency_purchase=self.purchase,

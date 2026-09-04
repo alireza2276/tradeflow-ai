@@ -8,7 +8,10 @@ from apps.authentication.permissions import (
 )
 from apps.documents.models import Invoice
 from apps.documents.serializers import InvoiceSerializer
-from apps.documents.services.invoice_service import create_invoice
+from apps.documents.services.invoice_service import (
+    create_invoice,
+    update_invoice,
+)
 
 
 class InvoiceViewSet(viewsets.ModelViewSet):
@@ -72,4 +75,77 @@ class InvoiceViewSet(viewsets.ModelViewSet):
         return Response(
             output_serializer.data,
             status=status.HTTP_201_CREATED,
+        )
+
+    def update(self, request, *args, **kwargs):
+        partial = kwargs.pop(
+            "partial",
+            False,
+        )
+
+        invoice = self.get_object()
+
+        serializer = self.get_serializer(
+            invoice,
+            data=request.data,
+            partial=partial,
+        )
+
+        serializer.is_valid(
+            raise_exception=True,
+        )
+
+        data = serializer.validated_data
+
+        shipment_part = data.get(
+            "shipment_part",
+            invoice.shipment_part,
+        )
+
+        if shipment_part.pk != invoice.shipment_part_id:
+            raise DRFValidationError(
+                {
+                    "shipment_part": (
+                        "Shipment part cannot be changed "
+                        "after invoice creation."
+                    )
+                }
+            )
+
+        try:
+            updated_invoice = update_invoice(
+                invoice=invoice,
+                fob_amount=data.get(
+                    "fob_amount",
+                ),
+                freight_amount=data.get(
+                    "freight_amount",
+                ),
+                submission_date=data.get(
+                    "submission_date",
+                ),
+            )
+
+        except DjangoValidationError as exc:
+            raise DRFValidationError(
+                {"detail": exc.messages}
+            )
+
+        output_serializer = self.get_serializer(
+            updated_invoice,
+        )
+
+        return Response(
+            output_serializer.data
+        )
+
+    def destroy(self, request, *args, **kwargs):
+        return Response(
+            {
+                "detail": (
+                    "Invoice deletion is not allowed. "
+                    "Use a correction or void workflow instead."
+                )
+            },
+            status=status.HTTP_405_METHOD_NOT_ALLOWED,
         )
