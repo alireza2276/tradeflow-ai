@@ -136,9 +136,16 @@ function DashboardLayout({
             user,
             'documents.view_invoice'
           ) && (
-            <button type="button">
+            <NavLink
+              to="/invoices"
+              className={({ isActive }) =>
+                isActive
+                  ? 'sidebar-link active'
+                  : 'sidebar-link'
+              }
+            >
               Invoices
-            </button>
+            </NavLink>
           )}
 
           {hasPermission(

@@ -29,6 +29,8 @@ import {
   getCurrentUser,
 } from './services/api'
 
+import Invoices from './pages/Invoices'
+
 
 function App() {
   const [user, setUser] = useState(null)
@@ -182,6 +184,25 @@ function App() {
                       }
                     />
                   </Route>
+
+                  <Route
+                      element={
+                        <PermissionRoute
+                          user={user}
+                          permission="documents.view_invoice"
+                        />
+                      }
+                    >
+                      <Route
+                        path="/invoices"
+                        element={
+                          <Invoices
+                            user={user}
+                          />
+                        }
+                      />
+                  </Route>
+
                 </Routes>
               </DashboardLayout>
             }

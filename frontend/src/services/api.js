@@ -523,3 +523,72 @@ export async function updateShipmentPart(
 
   return response.json()
 }
+
+export async function getInvoices() {
+  const response = await apiFetch(
+    '/documents/invoices/'
+  )
+
+  if (!response.ok) {
+    throw new Error(
+      'Failed to load invoices.'
+    )
+  }
+
+  return response.json()
+}
+
+
+export async function createInvoice(
+  invoiceData
+) {
+  const response = await apiFetch(
+    '/documents/invoices/',
+    {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(invoiceData),
+    }
+  )
+
+  if (!response.ok) {
+    const errorMessage = await parseErrorResponse(
+      response,
+      'Failed to create invoice.'
+    )
+
+    throw new Error(errorMessage)
+  }
+
+  return response.json()
+}
+
+
+export async function updateInvoice(
+  invoiceId,
+  invoiceData
+) {
+  const response = await apiFetch(
+    `/documents/invoices/${invoiceId}/`,
+    {
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(invoiceData),
+    }
+  )
+
+  if (!response.ok) {
+    const errorMessage = await parseErrorResponse(
+      response,
+      'Failed to update invoice.'
+    )
+
+    throw new Error(errorMessage)
+  }
+
+  return response.json()
+}
