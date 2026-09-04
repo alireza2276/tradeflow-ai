@@ -23,6 +23,7 @@ import Dashboard from './pages/Dashboard'
 import Forbidden from './pages/Forbidden'
 import Login from './pages/Login'
 import RegistrationOrders from './pages/RegistrationOrders'
+import ShipmentParts from './pages/ShipmentParts'
 
 import {
   getCurrentUser,
@@ -126,7 +127,6 @@ function App() {
                         />
                       }
                     />
-
                   </Route>
 
                   <Route
@@ -145,7 +145,6 @@ function App() {
                         />
                       }
                     />
-
                   </Route>
 
                   <Route
@@ -164,7 +163,24 @@ function App() {
                         />
                       }
                     />
+                  </Route>
 
+                  <Route
+                    element={
+                      <PermissionRoute
+                        user={user}
+                        permission="trade_orders.view_shipmentpart"
+                      />
+                    }
+                  >
+                    <Route
+                      path="/shipment-parts"
+                      element={
+                        <ShipmentParts
+                          user={user}
+                        />
+                      }
+                    />
                   </Route>
                 </Routes>
               </DashboardLayout>

@@ -454,3 +454,72 @@ export async function updateCurrencyPurchase(
 
   return response.json()
 }
+
+export async function getShipmentParts() {
+  const response = await apiFetch(
+    '/trade/shipment-parts/'
+  )
+
+  if (!response.ok) {
+    throw new Error(
+      'Failed to load shipment parts.'
+    )
+  }
+
+  return response.json()
+}
+
+
+export async function createShipmentPart(
+  shipmentData
+) {
+  const response = await apiFetch(
+    '/trade/shipment-parts/',
+    {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(shipmentData),
+    }
+  )
+
+  if (!response.ok) {
+    const errorMessage = await parseErrorResponse(
+      response,
+      'Failed to create shipment part.'
+    )
+
+    throw new Error(errorMessage)
+  }
+
+  return response.json()
+}
+
+
+export async function updateShipmentPart(
+  shipmentId,
+  shipmentData
+) {
+  const response = await apiFetch(
+    `/trade/shipment-parts/${shipmentId}/`,
+    {
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(shipmentData),
+    }
+  )
+
+  if (!response.ok) {
+    const errorMessage = await parseErrorResponse(
+      response,
+      'Failed to update shipment part.'
+    )
+
+    throw new Error(errorMessage)
+  }
+
+  return response.json()
+}

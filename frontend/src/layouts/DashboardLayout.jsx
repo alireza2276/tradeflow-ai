@@ -1,9 +1,4 @@
 import {
-  hasPermission,
-} from '../utils/permissions'
-
-
-import {
   NavLink,
   useNavigate,
 } from 'react-router-dom'
@@ -11,6 +6,10 @@ import {
 import {
   logout,
 } from '../services/api'
+
+import {
+  hasPermission,
+} from '../utils/permissions'
 
 
 function DashboardLayout({
@@ -49,7 +48,6 @@ function DashboardLayout({
         </div>
 
         <nav className="sidebar-nav">
-
           {hasPermission(
             user,
             'trade_orders.view_registrationorder'
@@ -122,9 +120,16 @@ function DashboardLayout({
             user,
             'trade_orders.view_shipmentpart'
           ) && (
-            <button type="button">
-              Shipments
-            </button>
+            <NavLink
+              to="/shipment-parts"
+              className={({ isActive }) =>
+                isActive
+                  ? 'sidebar-link active'
+                  : 'sidebar-link'
+              }
+            >
+              Shipment Parts
+            </NavLink>
           )}
 
           {hasPermission(
