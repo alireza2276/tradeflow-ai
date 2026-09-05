@@ -32,6 +32,11 @@ from apps.trade_orders.services.shipment_service import (
 from django.contrib.auth.models import Permission
 from django.contrib.contenttypes.models import ContentType
 
+from threading import Event, Thread
+
+from django.db import close_old_connections
+from django.test import TransactionTestCase
+
 class NotificationServiceTests(TestCase):
 
     def setUp(self):
@@ -275,6 +280,86 @@ class NotificationServiceTests(TestCase):
         self.assertIn(
             "مبلغ باقی‌مانده: 20000 EUR",
             message,
+        )
+
+class NotificationConcurrencyTests(TransactionTestCase):
+    reset_sequences = True
+
+    def setUp(self):
+        self.company = Company.objects.create(
+            name="Notification Concurrency Company",
+            national_id="5566778899",
+            company_type="COMMERCIAL",
+        )
+
+        self.order = RegistrationOrder.objects.create(
+            company=self.company,
+            order_number="NOTIF-CONCURRENT-001",
+            registered_amount=Decimal("100000"),
+            currency="USD",
+        )
+
+        self.purchase = create_currency_purchase(
+            registration_order=self.order,
+            amount=Decimal("40000"),
+            currency="USD",
+            purchase_date=date(2026, 8, 22),
+        )
+
+    def test_concurrent_notification_send_creates_only_one_log(self):
+        start_event = Event()
+
+        results = []
+        errors = []
+
+        def worker():
+            close_old_connections()
+
+            try:
+                start_event.wait()
+
+                result = send_notification(
+                    purchase=self.purchase,
+                    today=self.purchase.deadline,
+                )
+
+                results.append(result)
+
+            except Exception as exc:
+                errors.append(exc)
+
+            finally:
+                close_old_connections()
+
+        thread_one = Thread(target=worker)
+        thread_two = Thread(target=worker)
+
+        thread_one.start()
+        thread_two.start()
+
+        start_event.set()
+
+        thread_one.join()
+        thread_two.join()
+
+        self.assertEqual(errors, [])
+
+        self.assertEqual(
+            NotificationLog.objects.filter(
+                currency_purchase=self.purchase,
+                notification_type="LAST_DAY",
+            ).count(),
+            1,
+        )
+
+        self.assertEqual(
+            results.count(True),
+            1,
+        )
+
+        self.assertEqual(
+            results.count(False),
+            1,
         )
 
 class NotificationLogAPITests(APITestCase):

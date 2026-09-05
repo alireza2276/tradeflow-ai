@@ -9,6 +9,7 @@ from apps.trade_orders.services.deadline_service import (
     get_deadline_status,
 )
 
+from django.db import IntegrityError, transaction
 
 def should_send_notification(
     *,
@@ -81,9 +82,14 @@ def send_notification(
     # فعلاً ارسال واقعی پیام نداریم.
     # SMS provider در مرحله بعد اینجا وصل می‌شود.
 
-    NotificationLog.objects.create(
-        currency_purchase=purchase,
-        notification_type=status.value,
-    )
+    try:
+        with transaction.atomic():
+            NotificationLog.objects.create(
+                currency_purchase=purchase,
+                notification_type=status.value,
+            )
+
+    except IntegrityError:
+        return False
 
     return True
