@@ -38,6 +38,7 @@ from apps.trade_orders.services.purchase_service import (
 
 from apps.trade_orders.services.payment_instrument_service import (
     create_payment_instrument,
+    update_payment_instrument,
 )
 
 from apps.trade_orders.services.dashboard_service import (
@@ -195,6 +196,82 @@ class PaymentInstrumentViewSet(viewsets.ModelViewSet):
         return Response(
             output_serializer.data,
             status=status.HTTP_201_CREATED,
+        )
+
+    def update(self, request, *args, **kwargs):
+        partial = kwargs.pop(
+            "partial",
+            False,
+        )
+
+        payment_instrument = self.get_object()
+
+        serializer = self.get_serializer(
+            payment_instrument,
+            data=request.data,
+            partial=partial,
+        )
+
+        serializer.is_valid(
+            raise_exception=True,
+        )
+
+        data = serializer.validated_data
+
+        registration_order = data.get(
+            "registration_order",
+            payment_instrument.registration_order,
+        )
+
+        if (
+                registration_order.pk !=
+                payment_instrument.registration_order_id
+        ):
+            raise DRFValidationError(
+                {
+                    "registration_order": (
+                        "Registration order cannot be changed "
+                        "after payment instrument creation."
+                    )
+                }
+            )
+
+        instrument_number = data.get(
+            "instrument_number",
+            payment_instrument.instrument_number,
+        )
+
+        try:
+            updated_payment_instrument = (
+                update_payment_instrument(
+                    payment_instrument=payment_instrument,
+                    instrument_number=instrument_number,
+                )
+            )
+        except DjangoValidationError as exc:
+            raise DRFValidationError(
+                {
+                    "detail": exc.messages,
+                }
+            )
+
+        output_serializer = self.get_serializer(
+            updated_payment_instrument,
+        )
+
+        return Response(
+            output_serializer.data
+        )
+
+    def destroy(self, request, *args, **kwargs):
+        return Response(
+            {
+                "detail": (
+                    "Payment instrument deletion is not allowed. "
+                    "Use a correction or void workflow instead."
+                )
+            },
+            status=status.HTTP_405_METHOD_NOT_ALLOWED,
         )
 
 class CurrencyPurchaseViewSet(viewsets.ModelViewSet):

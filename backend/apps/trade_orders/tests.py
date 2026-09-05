@@ -1,10 +1,8 @@
 from threading import Event, Thread
 import uuid
-from django.contrib.auth import get_user_model
 from rest_framework.test import APIClient
 
 from django.db import close_old_connections, transaction
-
 from django.test import TransactionTestCase
 from rest_framework import status
 from rest_framework.test import APITestCase
@@ -16,11 +14,9 @@ from django.contrib.auth.models import Permission
 from django.contrib.contenttypes.models import ContentType
 
 from django.core.exceptions import ValidationError
-from django.test import TestCase
 from django.db.models import Sum
 from apps.companies.models import Company
 from apps.documents.services.invoice_service import create_invoice
-from apps.trade_orders.models import RegistrationOrder
 from apps.trade_orders.services.deadline_service import (
     DeadlineStatus,
     calculate_purchase_deadline,
@@ -39,6 +35,7 @@ from apps.trade_orders.services.shipment_service import (
 
 from apps.trade_orders.services.payment_instrument_service import (
     create_payment_instrument,
+    update_payment_instrument,
 )
 
 from apps.trade_orders.services.balance_service import (
@@ -1213,6 +1210,86 @@ class PaymentInstrumentAPITests(AuthenticatedAPITestCase):
         self.assertEqual(
             response.status_code,
             status.HTTP_200_OK,
+        )
+
+    def test_payment_instrument_can_be_updated_safely(self):
+        payment_instrument = create_payment_instrument(
+            registration_order=self.order,
+            instrument_number="PI-API-001",
+        )
+
+        response = self.client.patch(
+            f"{self.url}{payment_instrument.id}/",
+            {
+                "instrument_number": "PI-API-001-EDIT",
+            },
+            format="json",
+        )
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_200_OK,
+        )
+
+        payment_instrument.refresh_from_db()
+
+        self.assertEqual(
+            payment_instrument.instrument_number,
+            "PI-API-001-EDIT",
+        )
+
+    def test_payment_instrument_registration_order_cannot_be_changed(self):
+        payment_instrument = create_payment_instrument(
+            registration_order=self.order,
+            instrument_number="PI-API-001",
+        )
+
+        second_order = RegistrationOrder.objects.create(
+            company=self.company,
+            order_number="PAY-API-002",
+            registered_amount=Decimal("50000"),
+            currency="USD",
+        )
+
+        response = self.client.patch(
+            f"{self.url}{payment_instrument.id}/",
+            {
+                "registration_order": str(second_order.id),
+            },
+            format="json",
+        )
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_400_BAD_REQUEST,
+        )
+
+        payment_instrument.refresh_from_db()
+
+        self.assertEqual(
+            payment_instrument.registration_order,
+            self.order,
+        )
+
+    def test_payment_instrument_delete_is_not_allowed(self):
+        payment_instrument = create_payment_instrument(
+            registration_order=self.order,
+            instrument_number="PI-API-001",
+        )
+
+        response = self.client.delete(
+            f"{self.url}{payment_instrument.id}/",
+        )
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_405_METHOD_NOT_ALLOWED,
+        )
+
+        self.assertTrue(
+            PaymentInstrument.objects.filter(
+                pk=payment_instrument.pk
+            ).exists()
         )
 
 class CurrencyPurchaseAPITests(AuthenticatedAPITestCase):
@@ -3269,4 +3346,300 @@ class ShipmentPartConcurrencyTests(TransactionTestCase):
                 "Financial invariant violated: total shipment "
                 "amount exceeded the currency purchase amount."
             ),
+        )
+
+class PaymentInstrumentConcurrencyTests(TransactionTestCase):
+    reset_sequences = True
+
+    def setUp(self):
+        self.company = Company.objects.create(
+            name="Payment Concurrency Company",
+            national_id="5544332211",
+            company_type="COMMERCIAL",
+        )
+
+        self.order = RegistrationOrder.objects.create(
+            company=self.company,
+            order_number="PAY-CONCURRENT-001",
+            registered_amount=Decimal("100000"),
+            currency="USD",
+        )
+
+    def test_concurrent_creation_allows_only_one_payment_instrument(self):
+        start = Event()
+        results = []
+        errors = []
+
+        def create_worker(instrument_number):
+            close_old_connections()
+
+            try:
+                if not start.wait(timeout=5):
+                    errors.append(
+                        "Payment instrument thread timed out."
+                    )
+                    return
+
+                order = RegistrationOrder.objects.get(
+                    pk=self.order.pk
+                )
+
+                try:
+                    create_payment_instrument(
+                        registration_order=order,
+                        instrument_number=instrument_number,
+                    )
+
+                    results.append(True)
+
+                except ValidationError:
+                    results.append(False)
+
+            except Exception as exc:
+                errors.append(str(exc))
+
+            finally:
+                close_old_connections()
+
+        first_thread = Thread(
+            target=create_worker,
+            args=("PI-CONCURRENT-001",),
+        )
+
+        second_thread = Thread(
+            target=create_worker,
+            args=("PI-CONCURRENT-002",),
+        )
+
+        first_thread.start()
+        second_thread.start()
+
+        start.set()
+
+        first_thread.join(timeout=10)
+        second_thread.join(timeout=10)
+
+        self.assertFalse(
+            first_thread.is_alive(),
+            "First payment instrument thread did not finish.",
+        )
+
+        self.assertFalse(
+            second_thread.is_alive(),
+            "Second payment instrument thread did not finish.",
+        )
+
+        self.assertEqual(
+            errors,
+            [],
+        )
+
+        self.assertEqual(
+            len(results),
+            2,
+        )
+
+        self.assertEqual(
+            results.count(True),
+            1,
+            "Exactly one concurrent creation must succeed.",
+        )
+
+        self.assertEqual(
+            PaymentInstrument.objects.filter(
+                registration_order=self.order,
+            ).count(),
+            1,
+        )
+
+    def test_concurrent_creation_with_same_instrument_number_allows_only_one(self):
+        second_order = RegistrationOrder.objects.create(
+            company=self.company,
+            order_number="PAY-CONCURRENT-002",
+            registered_amount=Decimal("50000"),
+            currency="USD",
+        )
+
+        start = Event()
+        results = []
+        errors = []
+
+        def create_worker(order_id):
+            close_old_connections()
+
+            try:
+                if not start.wait(timeout=5):
+                    errors.append(
+                        "Payment instrument thread timed out."
+                    )
+                    return
+
+                order = RegistrationOrder.objects.get(
+                    pk=order_id
+                )
+
+                try:
+                    create_payment_instrument(
+                        registration_order=order,
+                        instrument_number="PI-CONCURRENT-SAME",
+                    )
+
+                    results.append(True)
+
+                except ValidationError:
+                    results.append(False)
+
+                except Exception as exc:
+                    errors.append(
+                        type(exc).__name__
+                    )
+
+            finally:
+                close_old_connections()
+
+        first_thread = Thread(
+            target=create_worker,
+            args=(self.order.pk,),
+        )
+
+        second_thread = Thread(
+            target=create_worker,
+            args=(second_order.pk,),
+        )
+
+        first_thread.start()
+        second_thread.start()
+
+        start.set()
+
+        first_thread.join(timeout=10)
+        second_thread.join(timeout=10)
+
+        self.assertFalse(
+            first_thread.is_alive()
+        )
+
+        self.assertFalse(
+            second_thread.is_alive()
+        )
+
+        self.assertEqual(
+            errors,
+            [],
+        )
+
+        self.assertEqual(
+            len(results),
+            2,
+        )
+
+        self.assertEqual(
+            results.count(True),
+            1,
+        )
+
+        self.assertEqual(
+            results.count(False),
+            1,
+        )
+
+        self.assertEqual(
+            PaymentInstrument.objects.filter(
+                instrument_number="PI-CONCURRENT-SAME",
+            ).count(),
+            1,
+        )
+
+    def test_concurrent_updates_to_same_instrument_number_are_safe(self):
+        second_order = RegistrationOrder.objects.create(
+            company=self.company,
+            order_number="RO-CONCURRENT-UPDATE-002",
+            registered_amount=Decimal("1000.00"),
+            currency="EUR",
+            is_active=True,
+        )
+
+        first_instrument = create_payment_instrument(
+            registration_order=self.order,
+            instrument_number="PI-CONCURRENT-UPDATE-001",
+        )
+
+        second_instrument = create_payment_instrument(
+            registration_order=second_order,
+            instrument_number="PI-CONCURRENT-UPDATE-002",
+        )
+
+        start_event = Event()
+        results = []
+        errors = []
+
+        def worker(payment_instrument_id):
+            close_old_connections()
+
+            try:
+                payment_instrument = (
+                    PaymentInstrument.objects.get(
+                        pk=payment_instrument_id
+                    )
+                )
+
+                start_event.wait()
+
+                try:
+                    update_payment_instrument(
+                        payment_instrument=payment_instrument,
+                        instrument_number=(
+                            "PI-CONCURRENT-UPDATE-SAME"
+                        ),
+                    )
+
+                    results.append(True)
+
+                except ValidationError:
+                    results.append(False)
+
+            except Exception as exc:
+                errors.append(exc)
+
+            finally:
+                close_old_connections()
+
+        first_thread = Thread(
+            target=worker,
+            args=(first_instrument.id,),
+        )
+
+        second_thread = Thread(
+            target=worker,
+            args=(second_instrument.id,),
+        )
+
+        first_thread.start()
+        second_thread.start()
+
+        start_event.set()
+
+        first_thread.join()
+        second_thread.join()
+
+        self.assertEqual(errors, [])
+        self.assertEqual(len(results), 2)
+
+        self.assertEqual(
+            results.count(True),
+            1,
+        )
+
+        self.assertEqual(
+            results.count(False),
+            1,
+        )
+
+        self.assertEqual(
+            PaymentInstrument.objects.filter(
+                instrument_number=(
+                    "PI-CONCURRENT-UPDATE-SAME"
+                )
+            ).count(),
+            1,
         )
