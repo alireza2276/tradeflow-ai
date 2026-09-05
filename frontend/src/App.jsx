@@ -33,6 +33,8 @@ import PaymentInstruments from './pages/PaymentInstruments'
 
 import Invoices from './pages/Invoices'
 
+import Notifications from './pages/Notifications'
+
 
 function App() {
   const [user, setUser] = useState(null)
@@ -174,6 +176,22 @@ function App() {
                           <PaymentInstruments
                             user={user}
                           />
+                        }
+                      />
+                    </Route>
+
+                    <Route
+                      element={
+                        <PermissionRoute
+                          user={user}
+                          permission="notifications.view_notificationlog"
+                        />
+                      }
+                    >
+                      <Route
+                        path="/notifications"
+                        element={
+                          <Notifications />
                         }
                       />
                     </Route>

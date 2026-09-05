@@ -2016,3 +2016,162 @@
     flex-direction: column;
   }
 }
+
+/* Notifications */
+
+.notifications-page {
+  width: 100%;
+  max-width: 1440px;
+  margin: 0 auto;
+}
+
+.notifications-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  margin-bottom: 28px;
+}
+
+.notifications-header h1 {
+  margin: 0 0 6px;
+
+  font-size: 32px;
+  font-weight: 700;
+  letter-spacing: -0.5px;
+
+  color: #0f172a;
+}
+
+.notifications-header p {
+  margin: 0;
+
+  font-size: 15px;
+  color: #64748b;
+}
+
+.notifications-table-wrapper {
+  overflow-x: auto;
+
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 16px;
+
+  box-shadow:
+    0 1px 2px rgba(15, 23, 42, 0.04),
+    0 4px 12px rgba(15, 23, 42, 0.04);
+}
+
+.notifications-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.notifications-table th,
+.notifications-table td {
+  padding: 17px 18px;
+
+  text-align: left;
+  vertical-align: middle;
+
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.notifications-table th {
+  background: #f8fafc;
+
+  color: #64748b;
+
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+
+  white-space: nowrap;
+}
+
+.notifications-table td {
+  color: #334155;
+  font-size: 14px;
+}
+
+.notifications-table tbody tr {
+  transition: background 0.15s ease;
+}
+
+.notifications-table tbody tr:hover {
+  background: #f8fafc;
+}
+
+.notifications-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.notification-company {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.notification-company strong {
+  color: #0f172a;
+  font-weight: 600;
+}
+
+.notification-company span {
+  color: #94a3b8;
+  font-size: 12px;
+}
+
+.notification-amount {
+  color: #0f172a;
+  font-weight: 600;
+}
+
+.notification-badge {
+  display: inline-flex;
+  align-items: center;
+
+  padding: 6px 9px;
+
+  border-radius: 999px;
+
+  background: #fff7ed;
+  color: #c2410c;
+
+  font-size: 11px;
+  font-weight: 700;
+
+  white-space: nowrap;
+}
+
+.notification-badge-overdue {
+  background: #fef2f2;
+  color: #dc2626;
+}
+
+.notification-badge-last_day,
+.notification-badge-five_days {
+  background: #fff1f2;
+  color: #be123c;
+}
+
+.notification-badge-ten_days,
+.notification-badge-twenty_days,
+.notification-badge-thirty_days {
+  background: #fff7ed;
+  color: #c2410c;
+}
+
+.notification-badge-sixty_days,
+.notification-badge-ninety_days {
+  background: #eff6ff;
+  color: #2563eb;
+}
+
+@media (max-width: 700px) {
+  .notifications-header {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+}

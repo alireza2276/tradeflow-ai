@@ -662,3 +662,17 @@ export async function updateInvoice(
 
   return response.json()
 }
+
+export async function getNotificationLogs() {
+  const response = await apiFetch(
+    '/notifications/logs/'
+  )
+
+  if (!response.ok) {
+    throw new Error(
+      'Failed to load notifications.'
+    )
+  }
+
+  return response.json()
+}

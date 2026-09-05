@@ -168,10 +168,19 @@ function DashboardLayout({
             user,
             'notifications.view_notificationlog'
           ) && (
-            <button type="button">
+            <NavLink
+              to="/notifications"
+              className={({ isActive }) =>
+                isActive
+                  ? 'sidebar-link active'
+                  : 'sidebar-link'
+              }
+            >
               Notifications
-            </button>
+            </NavLink>
           )}
+
+
 
           <button
             type="button"
