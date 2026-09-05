@@ -1054,6 +1054,105 @@ class RegistrationOrderAPITests(AuthenticatedAPITestCase):
             status.HTTP_404_NOT_FOUND,
         )
 
+    def test_registration_orders_can_be_searched_by_order_number(self):
+        RegistrationOrder.objects.create(
+            company=self.company,
+            order_number="SEARCH-ORDER-98765",
+            registered_amount=Decimal("25000"),
+            currency="USD",
+        )
+
+        response = self.client.get(
+            f"{self.url}?search=SEARCH-ORDER-98765",
+        )
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_200_OK,
+        )
+
+        self.assertEqual(
+            len(response.data),
+            1,
+        )
+
+        self.assertEqual(
+            response.data[0]["order_number"],
+            "SEARCH-ORDER-98765",
+        )
+
+    def test_registration_orders_can_be_filtered_by_currency_and_status(self):
+        RegistrationOrder.objects.create(
+            company=self.company,
+            order_number="FILTER-EUR-ACTIVE",
+            registered_amount=Decimal("25000"),
+            currency="EUR",
+            is_active=True,
+        )
+
+        RegistrationOrder.objects.create(
+            company=self.company,
+            order_number="FILTER-EUR-INACTIVE",
+            registered_amount=Decimal("30000"),
+            currency="EUR",
+            is_active=False,
+        )
+
+        response = self.client.get(
+            f"{self.url}?currency=EUR&is_active=true",
+        )
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_200_OK,
+        )
+
+        self.assertEqual(
+            len(response.data),
+            1,
+        )
+
+        self.assertEqual(
+            response.data[0]["order_number"],
+            "FILTER-EUR-ACTIVE",
+        )
+
+    def test_registration_orders_can_be_ordered_by_registered_amount(self):
+        RegistrationOrder.objects.create(
+            company=self.company,
+            order_number="ORDER-SORT-LOW",
+            registered_amount=Decimal("10000"),
+            currency="USD",
+            is_active=True,
+        )
+
+        RegistrationOrder.objects.create(
+            company=self.company,
+            order_number="ORDER-SORT-HIGH",
+            registered_amount=Decimal("200000"),
+            currency="USD",
+            is_active=True,
+        )
+
+        response = self.client.get(
+            f"{self.url}?ordering=registered_amount",
+        )
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_200_OK,
+        )
+
+        amounts = [
+            Decimal(item["registered_amount"])
+            for item in response.data
+        ]
+
+        self.assertEqual(
+            amounts,
+            sorted(amounts),
+        )
+
 class PaymentInstrumentAPITests(AuthenticatedAPITestCase):
     def setUp(self):
         self.authenticate_test_user(

@@ -5,6 +5,7 @@ import {
 } from '../utils/permissions'
 
 import RegistrationOrderFormModal from '../components/RegistrationOrderFormModal'
+
 import {
   createRegistrationOrder,
   deleteRegistrationOrder,
@@ -19,26 +20,69 @@ function RegistrationOrders({
   const [orders, setOrders] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
+
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [selectedOrder, setSelectedOrder] = useState(null)
 
+  const [search, setSearch] = useState('')
+  const [debouncedSearch, setDebouncedSearch] = useState('')
+
+  const [currencyFilter, setCurrencyFilter] = useState('')
+  const [statusFilter, setStatusFilter] = useState('')
+  const [ordering, setOrdering] = useState('-created_at')
+
   useEffect(() => {
-    loadOrders()
-  }, [])
+    const timer = setTimeout(() => {
+      setDebouncedSearch(search)
+    }, 350)
 
-  async function loadOrders() {
-    try {
-      setLoading(true)
-      setError('')
-
-      const data = await getRegistrationOrders()
-      setOrders(data)
-    } catch (err) {
-      setError(err.message)
-    } finally {
-      setLoading(false)
+    return () => {
+      clearTimeout(timer)
     }
-  }
+  }, [search])
+
+  useEffect(() => {
+    let isMounted = true
+
+    async function fetchOrders() {
+      try {
+        setLoading(true)
+        setError('')
+
+        const data = await getRegistrationOrders({
+          search: debouncedSearch,
+          currency: currencyFilter,
+          isActive: statusFilter,
+          ordering,
+        })
+
+        if (!isMounted) {
+          return
+        }
+
+        setOrders(data)
+      } catch (err) {
+        if (isMounted) {
+          setError(err.message)
+        }
+      } finally {
+        if (isMounted) {
+          setLoading(false)
+        }
+      }
+    }
+
+    fetchOrders()
+
+    return () => {
+      isMounted = false
+    }
+  }, [
+    debouncedSearch,
+    currencyFilter,
+    statusFilter,
+    ordering,
+  ])
 
   function handleOpenCreateModal() {
     setSelectedOrder(null)
@@ -72,7 +116,9 @@ function RegistrationOrders({
       )
     } else {
       const newOrder =
-        await createRegistrationOrder(formData)
+        await createRegistrationOrder(
+          formData
+        )
 
       setOrders((currentOrders) => [
         ...currentOrders,
@@ -93,7 +139,9 @@ function RegistrationOrders({
     }
 
     try {
-      await deleteRegistrationOrder(order.id)
+      await deleteRegistrationOrder(
+        order.id
+      )
 
       setOrders((currentOrders) =>
         currentOrders.filter(
@@ -107,8 +155,15 @@ function RegistrationOrders({
   }
 
   const formatAmount = (value) => {
-    return Number(value).toLocaleString('en-US')
+    return Number(value).toLocaleString(
+      'en-US'
+    )
   }
+
+  const canAddOrder = hasPermission(
+    user,
+    'trade_orders.add_registrationorder'
+  )
 
   const canEditOrder = hasPermission(
     user,
@@ -123,16 +178,22 @@ function RegistrationOrders({
   const canManageOrders =
     canEditOrder || canDeleteOrder
 
-  if (loading) {
+  if (
+    loading &&
+    orders.length === 0
+  ) {
     return (
       <div className="orders-page">
         <div className="page-state">
           <div className="loading-spinner" />
 
-          <h2>Loading registration orders</h2>
+          <h2>
+            Loading registration orders
+          </h2>
 
           <p>
-            Fetching trade registration orders.
+            Fetching trade registration
+            orders.
           </p>
         </div>
       </div>
@@ -147,7 +208,10 @@ function RegistrationOrders({
             !
           </div>
 
-          <h2>Unable to load registration orders</h2>
+          <h2>
+            Unable to load registration
+            orders
+          </h2>
 
           <p>
             {error}
@@ -162,45 +226,179 @@ function RegistrationOrders({
 
       <header className="orders-header">
         <div>
-          <h1>Registration Orders</h1>
+          <h1>
+            Registration Orders
+          </h1>
 
           <p>
-            Manage registered trade orders and their currency allocations.
+            Manage registered trade orders
+            and their currency allocations.
           </p>
         </div>
 
-        {hasPermission(
-          user,
-          'trade_orders.add_registrationorder'
-        ) && (
+        {canAddOrder && (
           <button
             type="button"
             className="primary-button"
-            onClick={handleOpenCreateModal}
+            onClick={
+              handleOpenCreateModal
+            }
           >
             Add Order
           </button>
         )}
-
       </header>
+
+      <div className="orders-filters">
+
+        <div className="orders-search">
+          <input
+            type="search"
+            value={search}
+            onChange={(event) =>
+              setSearch(
+                event.target.value
+              )
+            }
+            placeholder={
+              'Search order, company, national ID or currency...'
+            }
+            aria-label={
+              'Search registration orders'
+            }
+          />
+        </div>
+
+        <select
+          value={currencyFilter}
+          onChange={(event) =>
+            setCurrencyFilter(
+              event.target.value
+            )
+          }
+          aria-label={
+            'Filter by currency'
+          }
+        >
+          <option value="">
+            All Currencies
+          </option>
+
+          <option value="USD">
+            USD
+          </option>
+
+          <option value="EUR">
+            EUR
+          </option>
+
+          <option value="GBP">
+            GBP
+          </option>
+
+          <option value="AED">
+            AED
+          </option>
+        </select>
+
+        <select
+          value={statusFilter}
+          onChange={(event) =>
+            setStatusFilter(
+              event.target.value
+            )
+          }
+          aria-label={
+            'Filter by status'
+          }
+        >
+          <option value="">
+            All Statuses
+          </option>
+
+          <option value="true">
+            Active
+          </option>
+
+          <option value="false">
+            Inactive
+          </option>
+        </select>
+
+        <select
+          value={ordering}
+          onChange={(event) =>
+            setOrdering(
+              event.target.value
+            )
+          }
+          aria-label={
+            'Sort registration orders'
+          }
+        >
+          <option value="-created_at">
+            Newest First
+          </option>
+
+          <option value="created_at">
+            Oldest First
+          </option>
+
+          <option value="-registered_amount">
+            Amount: High to Low
+          </option>
+
+          <option value="registered_amount">
+            Amount: Low to High
+          </option>
+
+          <option value="order_number">
+            Order Number: A-Z
+          </option>
+
+          <option value="-order_number">
+            Order Number: Z-A
+          </option>
+        </select>
+
+      </div>
 
       {orders.length === 0 ? (
         <div className="empty-state">
-          No registration orders have been created yet.
+          No registration orders match
+          the current search or filters.
         </div>
       ) : (
         <div className="orders-table-wrapper">
+
           <table className="orders-table">
 
             <thead>
               <tr>
-                <th>Order Number</th>
-                <th>Company</th>
-                <th>Registered Amount</th>
-                <th>Currency</th>
-                <th>Status</th>
+                <th>
+                  Order Number
+                </th>
+
+                <th>
+                  Company
+                </th>
+
+                <th>
+                  Registered Amount
+                </th>
+
+                <th>
+                  Currency
+                </th>
+
+                <th>
+                  Status
+                </th>
+
                 {canManageOrders && (
-                  <th>Actions</th>
+                  <th>
+                    Actions
+                  </th>
                 )}
               </tr>
             </thead>
@@ -214,11 +412,16 @@ function RegistrationOrders({
                   </td>
 
                   <td>
-                    {order.company_name || order.company}
+                    {
+                      order.company_name ||
+                      order.company
+                    }
                   </td>
 
                   <td>
-                    {formatAmount(order.registered_amount)}
+                    {formatAmount(
+                      order.registered_amount
+                    )}
                   </td>
 
                   <td>
@@ -235,21 +438,26 @@ function RegistrationOrders({
                           : 'order-status order-status--inactive'
                       }
                     >
-                      {order.is_active
-                        ? 'Active'
-                        : 'Inactive'}
+                      {
+                        order.is_active
+                          ? 'Active'
+                          : 'Inactive'
+                      }
                     </span>
                   </td>
 
                   {canManageOrders && (
                     <td>
                       <div className="table-actions">
+
                         {canEditOrder && (
                           <button
                             type="button"
                             className="table-action-button"
                             onClick={() =>
-                              handleOpenEditModal(order)
+                              handleOpenEditModal(
+                                order
+                              )
                             }
                           >
                             Edit
@@ -261,12 +469,15 @@ function RegistrationOrders({
                             type="button"
                             className="table-delete-button"
                             onClick={() =>
-                              handleDeleteOrder(order)
+                              handleDeleteOrder(
+                                order
+                              )
                             }
                           >
                             Delete
                           </button>
                         )}
+
                       </div>
                     </td>
                   )}
@@ -276,6 +487,7 @@ function RegistrationOrders({
             </tbody>
 
           </table>
+
         </div>
       )}
 
@@ -289,5 +501,6 @@ function RegistrationOrders({
     </div>
   )
 }
+
 
 export default RegistrationOrders

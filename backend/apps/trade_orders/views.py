@@ -68,6 +68,12 @@ class RegistrationOrderViewSet(viewsets.ModelViewSet):
         "order_number",
         "company__name",
         "company__national_id",
+        "currency",
+    )
+
+    filterset_fields = (
+        "currency",
+        "is_active",
     )
 
     ordering_fields = (

@@ -296,9 +296,42 @@ export async function deleteCompany(companyId) {
 }
 
 
-export async function getRegistrationOrders() {
+export async function getRegistrationOrders(
+  params = {}
+) {
+  const query = new URLSearchParams()
+
+  if (params.search) {
+    query.set('search', params.search)
+  }
+
+  if (params.currency) {
+    query.set('currency', params.currency)
+  }
+
+  if (params.isActive !== undefined &&
+      params.isActive !== '') {
+    query.set(
+      'is_active',
+      params.isActive
+    )
+  }
+
+  if (params.ordering) {
+    query.set(
+      'ordering',
+      params.ordering
+    )
+  }
+
+  const queryString = query.toString()
+
   const response = await apiFetch(
-    '/trade/registration-orders/'
+    `/trade/registration-orders/${
+      queryString
+        ? `?${queryString}`
+        : ''
+    }`
   )
 
   if (!response.ok) {
