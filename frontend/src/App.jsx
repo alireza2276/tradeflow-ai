@@ -29,6 +29,8 @@ import {
   getCurrentUser,
 } from './services/api'
 
+import PaymentInstruments from './pages/PaymentInstruments'
+
 import Invoices from './pages/Invoices'
 
 
@@ -157,6 +159,26 @@ function App() {
                       />
                     }
                   >
+
+                  <Route
+                      element={
+                        <PermissionRoute
+                          user={user}
+                          permission="trade_orders.view_paymentinstrument"
+                        />
+                      }
+                    >
+                      <Route
+                        path="/payment-instruments"
+                        element={
+                          <PaymentInstruments
+                            user={user}
+                          />
+                        }
+                      />
+                    </Route>
+
+
                     <Route
                       path="/currency-purchases"
                       element={

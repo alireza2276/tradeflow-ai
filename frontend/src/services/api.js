@@ -386,6 +386,76 @@ export async function deleteRegistrationOrder(
   }
 }
 
+
+export async function getPaymentInstruments() {
+  const response = await apiFetch(
+    '/trade/payment-instruments/'
+  )
+
+  if (!response.ok) {
+    throw new Error(
+      'Failed to load payment instruments.'
+    )
+  }
+
+  return response.json()
+}
+
+
+export async function createPaymentInstrument(
+  instrumentData
+) {
+  const response = await apiFetch(
+    '/trade/payment-instruments/',
+    {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(instrumentData),
+    }
+  )
+
+  if (!response.ok) {
+    const errorMessage = await parseErrorResponse(
+      response,
+      'Failed to create payment instrument.'
+    )
+
+    throw new Error(errorMessage)
+  }
+
+  return response.json()
+}
+
+
+export async function updatePaymentInstrument(
+  instrumentId,
+  instrumentData
+) {
+  const response = await apiFetch(
+    `/trade/payment-instruments/${instrumentId}/`,
+    {
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(instrumentData),
+    }
+  )
+
+  if (!response.ok) {
+    const errorMessage = await parseErrorResponse(
+      response,
+      'Failed to update payment instrument.'
+    )
+
+    throw new Error(errorMessage)
+  }
+
+  return response.json()
+}
+
 export async function getCurrencyPurchases() {
   const response = await apiFetch(
     '/trade/currency-purchases/'

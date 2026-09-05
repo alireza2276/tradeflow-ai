@@ -1890,3 +1890,129 @@
 .invoices-table tbody tr:last-child td {
   border-bottom: none;
 }
+
+/* Payment Instruments */
+
+.payment-instruments-page {
+  width: 100%;
+  max-width: 1440px;
+  margin: 0 auto;
+}
+
+.payment-instruments-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  margin-bottom: 28px;
+}
+
+.payment-instruments-header h1 {
+  margin: 0 0 6px;
+
+  font-size: 32px;
+  font-weight: 700;
+  letter-spacing: -0.5px;
+
+  color: #0f172a;
+}
+
+.payment-instruments-header p {
+  margin: 0;
+
+  font-size: 15px;
+  color: #64748b;
+}
+
+.payment-instruments-table-wrapper {
+  overflow-x: auto;
+
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 16px;
+
+  box-shadow:
+    0 1px 2px rgba(15, 23, 42, 0.04),
+    0 4px 12px rgba(15, 23, 42, 0.04);
+}
+
+.payment-instruments-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.payment-instruments-table th,
+.payment-instruments-table td {
+  padding: 17px 18px;
+
+  text-align: left;
+  vertical-align: middle;
+
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.payment-instruments-table th {
+  background: #f8fafc;
+
+  color: #64748b;
+
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+
+  white-space: nowrap;
+}
+
+.payment-instruments-table td {
+  color: #334155;
+  font-size: 14px;
+}
+
+.payment-instruments-table tbody tr {
+  transition: background 0.15s ease;
+}
+
+.payment-instruments-table tbody tr:hover {
+  background: #f8fafc;
+}
+
+.payment-instruments-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.payment-instruments-table td:first-child {
+  font-weight: 600;
+  color: #0f172a;
+}
+
+.payment-instruments-table td:nth-child(3) {
+  font-weight: 600;
+  color: #0f172a;
+}
+
+.payment-instruments-table .secondary-button {
+  padding: 7px 12px;
+
+  background: #eff6ff;
+  color: #2563eb;
+
+  border-radius: 8px;
+
+  font-size: 12px;
+  font-weight: 600;
+
+  white-space: nowrap;
+}
+
+.payment-instruments-table .secondary-button:hover {
+  background: #dbeafe;
+  color: #1d4ed8;
+}
+
+@media (max-width: 700px) {
+  .payment-instruments-header {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+}

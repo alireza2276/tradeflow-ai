@@ -102,6 +102,22 @@ function DashboardLayout({
 
           {hasPermission(
             user,
+            'trade_orders.view_paymentinstrument'
+          ) && (
+            <NavLink
+              to="/payment-instruments"
+              className={({ isActive }) =>
+                isActive
+                  ? 'sidebar-link active'
+                  : 'sidebar-link'
+              }
+            >
+              Payment Instruments
+            </NavLink>
+          )}
+
+          {hasPermission(
+            user,
             'trade_orders.view_currencypurchase'
           ) && (
             <NavLink
