@@ -3,6 +3,8 @@ import {
   useNavigate,
 } from 'react-router-dom'
 
+import { useTranslation } from 'react-i18next'
+
 import {
   logout,
 } from '../services/api'
@@ -18,6 +20,10 @@ function DashboardLayout({
   onLogout,
 }) {
   const navigate = useNavigate()
+  const { t, i18n } = useTranslation()
+
+  const currentLanguage =
+    i18n.resolvedLanguage || i18n.language
 
   async function handleLogout() {
     try {
@@ -39,12 +45,57 @@ function DashboardLayout({
     }
   }
 
+  async function handleLanguageChange(language) {
+    await i18n.changeLanguage(language)
+
+    document.documentElement.lang = language
+    document.documentElement.dir =
+      language === 'fa'
+        ? 'rtl'
+        : 'ltr'
+  }
+
   return (
     <div className="dashboard-layout">
       <aside className="sidebar">
         <div className="sidebar-brand">
-          <h2>TradeFlowAI</h2>
-          <span>Trade Finance</span>
+          <h2>
+            {t('common.appName')}
+          </h2>
+
+          <span>
+            {t('common.tradeFinance')}
+          </span>
+        </div>
+
+        <div className="language-switcher">
+          <button
+            type="button"
+            className={
+              currentLanguage === 'fa'
+                ? 'language-button active'
+                : 'language-button'
+            }
+            onClick={() =>
+              handleLanguageChange('fa')
+            }
+          >
+            {t('common.persian')}
+          </button>
+
+          <button
+            type="button"
+            className={
+              currentLanguage === 'en'
+                ? 'language-button active'
+                : 'language-button'
+            }
+            onClick={() =>
+              handleLanguageChange('en')
+            }
+          >
+            {t('common.english')}
+          </button>
         </div>
 
         <nav className="sidebar-nav">
@@ -64,7 +115,7 @@ function DashboardLayout({
                   : 'sidebar-link'
               }
             >
-              Dashboard
+              {t('navigation.dashboard')}
             </NavLink>
           )}
 
@@ -80,7 +131,7 @@ function DashboardLayout({
                   : 'sidebar-link'
               }
             >
-              Companies
+              {t('navigation.companies')}
             </NavLink>
           )}
 
@@ -96,7 +147,9 @@ function DashboardLayout({
                   : 'sidebar-link'
               }
             >
-              Registration Orders
+              {t(
+                'navigation.registrationOrders'
+              )}
             </NavLink>
           )}
 
@@ -112,7 +165,9 @@ function DashboardLayout({
                   : 'sidebar-link'
               }
             >
-              Payment Instruments
+              {t(
+                'navigation.paymentInstruments'
+              )}
             </NavLink>
           )}
 
@@ -128,7 +183,9 @@ function DashboardLayout({
                   : 'sidebar-link'
               }
             >
-              Currency Purchases
+              {t(
+                'navigation.currencyPurchases'
+              )}
             </NavLink>
           )}
 
@@ -144,7 +201,9 @@ function DashboardLayout({
                   : 'sidebar-link'
               }
             >
-              Shipment Parts
+              {t(
+                'navigation.shipmentParts'
+              )}
             </NavLink>
           )}
 
@@ -160,7 +219,7 @@ function DashboardLayout({
                   : 'sidebar-link'
               }
             >
-              Invoices
+              {t('navigation.invoices')}
             </NavLink>
           )}
 
@@ -176,18 +235,18 @@ function DashboardLayout({
                   : 'sidebar-link'
               }
             >
-              Notifications
+              {t(
+                'navigation.notifications'
+              )}
             </NavLink>
           )}
-
-
 
           <button
             type="button"
             className="sidebar-link logout-button"
             onClick={handleLogout}
           >
-            Logout
+            {t('common.logout')}
           </button>
         </nav>
       </aside>

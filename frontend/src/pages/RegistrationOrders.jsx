@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 
 import {
   hasPermission,
@@ -18,6 +19,8 @@ import {
 function RegistrationOrders({
   user,
 }) {
+  const { t } = useTranslation()
+
   const [orders, setOrders] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
@@ -134,7 +137,7 @@ function RegistrationOrders({
 
   async function handleDeleteOrder(order) {
     const confirmed = window.confirm(
-      `Delete registration order "${order.order_number}"?`
+      `${t('common.delete')} "${order.order_number}"?`
     )
 
     if (!confirmed) {
@@ -208,12 +211,15 @@ function RegistrationOrders({
           <div className="loading-spinner" />
 
           <h2>
-            Loading registration orders
+            {t(
+              'registrationOrders.loadingTitle'
+            )}
           </h2>
 
           <p>
-            Fetching trade registration
-            orders.
+            {t(
+              'registrationOrders.loadingDescription'
+            )}
           </p>
         </div>
       </div>
@@ -229,8 +235,9 @@ function RegistrationOrders({
           </div>
 
           <h2>
-            Unable to load registration
-            orders
+            {t(
+              'registrationOrders.loadError'
+            )}
           </h2>
 
           <p>
@@ -247,12 +254,15 @@ function RegistrationOrders({
       <header className="orders-header">
         <div>
           <h1>
-            Registration Orders
+            {t(
+              'registrationOrders.title'
+            )}
           </h1>
 
           <p>
-            Manage registered trade orders
-            and their currency allocations.
+            {t(
+              'registrationOrders.description'
+            )}
           </p>
         </div>
 
@@ -266,8 +276,12 @@ function RegistrationOrders({
           >
             {
               isExporting
-                ? 'Exporting...'
-                : 'Export CSV'
+                ? t(
+                    'registrationOrders.exporting'
+                  )
+                : t(
+                    'common.exportCsv'
+                  )
             }
           </button>
 
@@ -279,7 +293,9 @@ function RegistrationOrders({
                 handleOpenCreateModal
               }
             >
-              Add Order
+              {t(
+                'registrationOrders.addOrder'
+              )}
             </button>
           )}
 
@@ -298,10 +314,14 @@ function RegistrationOrders({
               )
             }
             placeholder={
-              'Search order, company, national ID or currency...'
+              t(
+                'registrationOrders.searchPlaceholder'
+              )
             }
             aria-label={
-              'Search registration orders'
+              t(
+                'common.search'
+              )
             }
           />
         </div>
@@ -314,11 +334,15 @@ function RegistrationOrders({
             )
           }
           aria-label={
-            'Filter by currency'
+            t(
+              'registrationOrders.currency'
+            )
           }
         >
           <option value="">
-            All Currencies
+            {t(
+              'registrationOrders.allCurrencies'
+            )}
           </option>
 
           <option value="USD">
@@ -346,19 +370,27 @@ function RegistrationOrders({
             )
           }
           aria-label={
-            'Filter by status'
+            t(
+              'registrationOrders.status'
+            )
           }
         >
           <option value="">
-            All Statuses
+            {t(
+              'registrationOrders.allStatuses'
+            )}
           </option>
 
           <option value="true">
-            Active
+            {t(
+              'common.active'
+            )}
           </option>
 
           <option value="false">
-            Inactive
+            {t(
+              'common.inactive'
+            )}
           </option>
         </select>
 
@@ -370,31 +402,45 @@ function RegistrationOrders({
             )
           }
           aria-label={
-            'Sort registration orders'
+            t(
+              'registrationOrders.sort'
+            )
           }
         >
           <option value="-created_at">
-            Newest First
+            {t(
+              'registrationOrders.newestFirst'
+            )}
           </option>
 
           <option value="created_at">
-            Oldest First
+            {t(
+              'registrationOrders.oldestFirst'
+            )}
           </option>
 
           <option value="-registered_amount">
-            Amount: High to Low
+            {t(
+              'registrationOrders.amountHighToLow'
+            )}
           </option>
 
           <option value="registered_amount">
-            Amount: Low to High
+            {t(
+              'registrationOrders.amountLowToHigh'
+            )}
           </option>
 
           <option value="order_number">
-            Order Number: A-Z
+            {t(
+              'registrationOrders.orderNumberAsc'
+            )}
           </option>
 
           <option value="-order_number">
-            Order Number: Z-A
+            {t(
+              'registrationOrders.orderNumberDesc'
+            )}
           </option>
         </select>
 
@@ -402,8 +448,9 @@ function RegistrationOrders({
 
       {orders.length === 0 ? (
         <div className="empty-state">
-          No registration orders match
-          the current search or filters.
+          {t(
+            'registrationOrders.empty'
+          )}
         </div>
       ) : (
         <div className="orders-table-wrapper">
@@ -413,28 +460,40 @@ function RegistrationOrders({
             <thead>
               <tr>
                 <th>
-                  Order Number
+                  {t(
+                    'registrationOrders.orderNumber'
+                  )}
                 </th>
 
                 <th>
-                  Company
+                  {t(
+                    'registrationOrders.company'
+                  )}
                 </th>
 
                 <th>
-                  Registered Amount
+                  {t(
+                    'registrationOrders.registeredAmount'
+                  )}
                 </th>
 
                 <th>
-                  Currency
+                  {t(
+                    'registrationOrders.currency'
+                  )}
                 </th>
 
                 <th>
-                  Status
+                  {t(
+                    'registrationOrders.status'
+                  )}
                 </th>
 
                 {canManageOrders && (
                   <th>
-                    Actions
+                    {t(
+                      'registrationOrders.actions'
+                    )}
                   </th>
                 )}
               </tr>
@@ -477,8 +536,12 @@ function RegistrationOrders({
                     >
                       {
                         order.is_active
-                          ? 'Active'
-                          : 'Inactive'
+                          ? t(
+                              'common.active'
+                            )
+                          : t(
+                              'common.inactive'
+                            )
                       }
                     </span>
                   </td>
@@ -497,7 +560,9 @@ function RegistrationOrders({
                               )
                             }
                           >
-                            Edit
+                            {t(
+                              'common.edit'
+                            )}
                           </button>
                         )}
 
@@ -511,7 +576,9 @@ function RegistrationOrders({
                               )
                             }
                           >
-                            Delete
+                            {t(
+                              'common.delete'
+                            )}
                           </button>
                         )}
 

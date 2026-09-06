@@ -2257,3 +2257,185 @@
     grid-column: auto;
   }
 }
+
+/* =========================================================
+   Internationalization / RTL / Language Switcher
+   ========================================================= */
+
+.language-switcher {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+
+  margin: 0 12px 22px;
+  padding: 4px;
+
+  background: #1f2937;
+  border: 1px solid #374151;
+  border-radius: 10px;
+}
+
+.language-switcher .language-button {
+  min-height: 34px;
+  padding: 6px 10px;
+
+  background: transparent;
+  color: #9ca3af;
+
+  border: none;
+  border-radius: 7px;
+
+  font-size: 12px;
+  font-weight: 600;
+
+  cursor: pointer;
+
+  transition:
+    background 0.2s ease,
+    color 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+.language-switcher .language-button:hover {
+  background: #273449;
+  color: #ffffff;
+}
+
+.language-switcher .language-button.active {
+  background: #ffffff;
+  color: #1d4ed8;
+
+  box-shadow:
+    0 1px 2px rgba(0, 0, 0, 0.12);
+}
+
+
+/* Direction-aware sidebar */
+
+[dir='rtl'] .sidebar-brand {
+  text-align: right;
+}
+
+[dir='ltr'] .sidebar-brand {
+  text-align: left;
+}
+
+[dir='rtl'] .sidebar-link,
+[dir='rtl'] .sidebar-nav button {
+  text-align: right;
+}
+
+[dir='ltr'] .sidebar-link,
+[dir='ltr'] .sidebar-nav button {
+  text-align: left;
+}
+
+
+/* Direction-aware page content */
+
+[dir='rtl'] .main-content {
+  text-align: right;
+}
+
+[dir='ltr'] .main-content {
+  text-align: left;
+}
+
+
+/* Direction-aware tables */
+
+[dir='rtl'] .attention-table th,
+[dir='rtl'] .attention-table td,
+[dir='rtl'] .companies-table th,
+[dir='rtl'] .companies-table td,
+[dir='rtl'] .orders-table th,
+[dir='rtl'] .orders-table td,
+[dir='rtl'] .purchases-table th,
+[dir='rtl'] .purchases-table td,
+[dir='rtl'] .shipments-table th,
+[dir='rtl'] .shipments-table td,
+[dir='rtl'] .invoices-table th,
+[dir='rtl'] .invoices-table td,
+[dir='rtl'] .payment-instruments-table th,
+[dir='rtl'] .payment-instruments-table td,
+[dir='rtl'] .notifications-table th,
+[dir='rtl'] .notifications-table td {
+  text-align: right;
+}
+
+[dir='ltr'] .attention-table th,
+[dir='ltr'] .attention-table td,
+[dir='ltr'] .companies-table th,
+[dir='ltr'] .companies-table td,
+[dir='ltr'] .orders-table th,
+[dir='ltr'] .orders-table td,
+[dir='ltr'] .purchases-table th,
+[dir='ltr'] .purchases-table td,
+[dir='ltr'] .shipments-table th,
+[dir='ltr'] .shipments-table td,
+[dir='ltr'] .invoices-table th,
+[dir='ltr'] .invoices-table td,
+[dir='ltr'] .payment-instruments-table th,
+[dir='ltr'] .payment-instruments-table td,
+[dir='ltr'] .notifications-table th,
+[dir='ltr'] .notifications-table td {
+  text-align: left;
+}
+
+
+/* Forms follow the selected language direction */
+
+[dir='rtl'] .form-group,
+[dir='rtl'] .modal-form,
+[dir='rtl'] .orders-filters {
+  text-align: right;
+}
+
+[dir='ltr'] .form-group,
+[dir='ltr'] .modal-form,
+[dir='ltr'] .orders-filters {
+  text-align: left;
+}
+
+[dir='rtl'] input,
+[dir='rtl'] textarea,
+[dir='rtl'] select {
+  text-align: right;
+}
+
+[dir='ltr'] input,
+[dir='ltr'] textarea,
+[dir='ltr'] select {
+  text-align: left;
+}
+
+
+/* Keep financial and technical values readable */
+
+.table-currency,
+.purchase-amount,
+.notification-amount {
+  unicode-bidi: isolate;
+}
+
+
+/* RTL scrollbar spacing inside modal forms */
+
+[dir='rtl'] .modal-card .modal-form {
+  padding-right: 0;
+  padding-left: 4px;
+}
+
+[dir='ltr'] .modal-card .modal-form {
+  padding-right: 4px;
+  padding-left: 0;
+}
+
+
+/* Mobile language switcher */
+
+@media (max-width: 700px) {
+  .language-switcher {
+    margin-bottom: 18px;
+  }
+}
