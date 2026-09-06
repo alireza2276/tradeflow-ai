@@ -344,6 +344,72 @@ export async function getRegistrationOrders(
 }
 
 
+export async function exportRegistrationOrders(
+  params = {}
+) {
+  const query = new URLSearchParams()
+
+  if (params.search) {
+    query.set('search', params.search)
+  }
+
+  if (params.currency) {
+    query.set('currency', params.currency)
+  }
+
+  if (
+    params.isActive !== undefined &&
+    params.isActive !== ''
+  ) {
+    query.set(
+      'is_active',
+      params.isActive
+    )
+  }
+
+  if (params.ordering) {
+    query.set(
+      'ordering',
+      params.ordering
+    )
+  }
+
+  const queryString = query.toString()
+
+  const response = await apiFetch(
+    `/trade/registration-orders/export/${
+      queryString
+        ? `?${queryString}`
+        : ''
+    }`
+  )
+
+  if (!response.ok) {
+    throw new Error(
+      'Failed to export registration orders.'
+    )
+  }
+
+  const blob = await response.blob()
+
+  const downloadUrl =
+    window.URL.createObjectURL(blob)
+
+  const link =
+    document.createElement('a')
+
+  link.href = downloadUrl
+  link.download = 'registration-orders.csv'
+
+  document.body.appendChild(link)
+  link.click()
+  link.remove()
+
+  window.URL.revokeObjectURL(
+    downloadUrl
+  )
+}
+
 export async function createRegistrationOrder(
   orderData
 ) {

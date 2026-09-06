@@ -9,6 +9,7 @@ import RegistrationOrderFormModal from '../components/RegistrationOrderFormModal
 import {
   createRegistrationOrder,
   deleteRegistrationOrder,
+  exportRegistrationOrders,
   getRegistrationOrders,
   updateRegistrationOrder,
 } from '../services/api'
@@ -30,6 +31,8 @@ function RegistrationOrders({
   const [currencyFilter, setCurrencyFilter] = useState('')
   const [statusFilter, setStatusFilter] = useState('')
   const [ordering, setOrdering] = useState('-created_at')
+
+  const [isExporting, setIsExporting] = useState(false)
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -154,6 +157,23 @@ function RegistrationOrders({
     }
   }
 
+  async function handleExportOrders() {
+    try {
+      setIsExporting(true)
+
+      await exportRegistrationOrders({
+        search: debouncedSearch,
+        currency: currencyFilter,
+        isActive: statusFilter,
+        ordering,
+      })
+    } catch (err) {
+      window.alert(err.message)
+    } finally {
+      setIsExporting(false)
+    }
+  }
+
   const formatAmount = (value) => {
     return Number(value).toLocaleString(
       'en-US'
@@ -236,17 +256,34 @@ function RegistrationOrders({
           </p>
         </div>
 
-        {canAddOrder && (
+        <div className="orders-header-actions">
+
           <button
             type="button"
-            className="primary-button"
-            onClick={
-              handleOpenCreateModal
-            }
+            className="table-action-button"
+            onClick={handleExportOrders}
+            disabled={isExporting}
           >
-            Add Order
+            {
+              isExporting
+                ? 'Exporting...'
+                : 'Export CSV'
+            }
           </button>
-        )}
+
+          {canAddOrder && (
+            <button
+              type="button"
+              className="primary-button"
+              onClick={
+                handleOpenCreateModal
+              }
+            >
+              Add Order
+            </button>
+          )}
+
+        </div>
       </header>
 
       <div className="orders-filters">

@@ -1153,6 +1153,131 @@ class RegistrationOrderAPITests(AuthenticatedAPITestCase):
             sorted(amounts),
         )
 
+    def test_registration_orders_can_be_exported_as_csv(self):
+        response = self.client.get(
+            f"{self.url}export/",
+        )
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_200_OK,
+        )
+
+        self.assertEqual(
+            response["Content-Type"],
+            "text/csv; charset=utf-8",
+        )
+
+        self.assertEqual(
+            response["Content-Disposition"],
+            'attachment; filename="registration-orders.csv"',
+        )
+
+        content = b"".join(
+            response.streaming_content
+        ).decode("utf-8-sig")
+
+        self.assertIn(
+            "Order Number,Company,National ID,"
+            "Registered Amount,Currency,Status",
+            content,
+        )
+
+        self.assertIn(
+            "API-ORDER-001",
+            content,
+        )
+
+        self.assertIn(
+            "API Test Company",
+            content,
+        )
+
+    def test_registration_order_export_respects_filters(self):
+        RegistrationOrder.objects.create(
+            company=self.company,
+            order_number="EXPORT-EUR-001",
+            registered_amount=Decimal("25000"),
+            currency="EUR",
+            is_active=True,
+        )
+
+        response = self.client.get(
+            f"{self.url}export/?currency=EUR",
+        )
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_200_OK,
+        )
+
+        content = b"".join(
+            response.streaming_content
+        ).decode("utf-8-sig")
+
+        self.assertIn(
+            "EXPORT-EUR-001",
+            content,
+        )
+
+        self.assertNotIn(
+            "API-ORDER-001",
+            content,
+        )
+
+    def test_registration_order_export_neutralizes_csv_formula_injection(self):
+        dangerous_company = Company.objects.create(
+            name="=2+2",
+            national_id="9988776655",
+            company_type="COMMERCIAL",
+        )
+
+        RegistrationOrder.objects.create(
+            company=dangerous_company,
+            order_number="@DANGEROUS-ORDER",
+            registered_amount=Decimal("1000"),
+            currency="USD",
+            is_active=True,
+        )
+
+        response = self.client.get(
+            f"{self.url}export/",
+        )
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_200_OK,
+        )
+
+        content = b"".join(
+            response.streaming_content
+        ).decode("utf-8-sig")
+
+        self.assertIn(
+            "'=2+2",
+            content,
+        )
+
+        self.assertIn(
+            "'@DANGEROUS-ORDER",
+            content,
+        )
+
+    def test_registration_order_export_requires_view_permission(self):
+        self.authenticate_test_user(
+            "export-no-permission-user",
+            permissions=[],
+        )
+
+        response = self.client.get(
+            f"{self.url}export/",
+        )
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_403_FORBIDDEN,
+        )
+
 class PaymentInstrumentAPITests(AuthenticatedAPITestCase):
     def setUp(self):
         self.authenticate_test_user(

@@ -50,6 +50,11 @@ from apps.authentication.permissions import (
     TradeFlowModelPermissions,
 )
 
+import csv
+
+from django.http import StreamingHttpResponse
+from rest_framework.decorators import action
+
 class RegistrationOrderViewSet(viewsets.ModelViewSet):
 
     permission_classes = (
@@ -81,6 +86,94 @@ class RegistrationOrderViewSet(viewsets.ModelViewSet):
         "registered_amount",
         "order_number",
     )
+
+    @action(
+        detail=False,
+        methods=["get"],
+        url_path="export",
+    )
+    def export_csv(self, request):
+        queryset = self.filter_queryset(
+            self.get_queryset()
+        )
+
+        class Echo:
+            def write(self, value):
+                return value
+
+        pseudo_buffer = Echo()
+        writer = csv.writer(pseudo_buffer)
+
+        def safe_csv_value(value):
+            if value is None:
+                return ""
+
+            text = str(value)
+
+            if text.startswith(
+                ("=", "+", "-", "@")
+            ):
+                return "'" + text
+
+            return text
+
+        def generate_rows():
+            yield "\ufeff"
+
+            yield writer.writerow([
+                "Order Number",
+                "Company",
+                "National ID",
+                "Registered Amount",
+                "Currency",
+                "Status",
+            ])
+
+            for order in queryset.iterator(
+                chunk_size=1000
+            ):
+                yield writer.writerow([
+                    safe_csv_value(
+                        order.order_number
+                    ),
+                    safe_csv_value(
+                        order.company.name
+                    ),
+                    safe_csv_value(
+                        order.company.national_id
+                    ),
+                    safe_csv_value(
+                        order.registered_amount
+                    ),
+                    safe_csv_value(
+                        order.currency
+                    ),
+                    (
+                        "Active"
+                        if order.is_active
+                        else "Inactive"
+                    ),
+                ])
+
+        response = StreamingHttpResponse(
+            generate_rows(),
+            content_type=(
+                "text/csv; charset=utf-8"
+            ),
+        )
+
+        response[
+            "Content-Disposition"
+        ] = (
+            'attachment; '
+            'filename="registration-orders.csv"'
+        )
+
+        response[
+            "X-Content-Type-Options"
+        ] = "nosniff"
+
+        return response
 
     def update(self, request, *args, **kwargs):
         partial = kwargs.pop("partial", False)
