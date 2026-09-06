@@ -1,8 +1,13 @@
+import { useTranslation } from 'react-i18next'
+
+
 function AttentionTable({ cases }) {
+  const { t } = useTranslation()
+
   if (!cases || cases.length === 0) {
     return (
       <div className="empty-state">
-        No cases currently require attention.
+        {t('attentionTable.empty')}
       </div>
     )
   }
@@ -11,26 +16,73 @@ function AttentionTable({ cases }) {
     return Number(value).toLocaleString('en-US')
   }
 
+  function getDeadlineText(item) {
+    if (item.days_remaining < 0) {
+      return t(
+        'attentionTable.daysOverdue',
+        {
+          count: Math.abs(
+            item.days_remaining
+          ),
+        }
+      )
+    }
+
+    if (item.days_remaining === 0) {
+      return t(
+        'attentionTable.dueToday'
+      )
+    }
+
+    return t(
+      'attentionTable.daysLeft',
+      {
+        count: item.days_remaining,
+      }
+    )
+  }
+
   return (
     <div className="attention-table-wrapper">
       <table className="attention-table">
         <thead>
           <tr>
-            <th>Company</th>
-            <th>Order</th>
-            <th>Currency</th>
-            <th>Remaining</th>
-            <th>Deadline</th>
-            <th>Status</th>
+            <th>
+              {t('attentionTable.company')}
+            </th>
+
+            <th>
+              {t('attentionTable.order')}
+            </th>
+
+            <th>
+              {t('attentionTable.currency')}
+            </th>
+
+            <th>
+              {t('attentionTable.remaining')}
+            </th>
+
+            <th>
+              {t('attentionTable.deadline')}
+            </th>
+
+            <th>
+              {t('attentionTable.status')}
+            </th>
           </tr>
         </thead>
 
         <tbody>
           {cases.map((item) => (
             <tr key={item.purchase_id}>
-              <td>{item.company_name}</td>
+              <td>
+                {item.company_name}
+              </td>
 
-              <td>{item.order_number}</td>
+              <td>
+                {item.order_number}
+              </td>
 
               <td>
                 <span className="table-currency">
@@ -39,7 +91,9 @@ function AttentionTable({ cases }) {
               </td>
 
               <td>
-                {formatAmount(item.remaining_amount)}
+                {formatAmount(
+                  item.remaining_amount
+                )}
               </td>
 
               <td>
@@ -49,34 +103,34 @@ function AttentionTable({ cases }) {
                   </strong>
 
                   <span
-                      className={
-                        item.status === 'OVERDUE'
-                            ? 'deadline-text deadline-text--danger'
-                            : 'deadline-text deadline-text--warning'
-                      }
+                    className={
+                      item.status === 'OVERDUE'
+                        ? 'deadline-text deadline-text--danger'
+                        : 'deadline-text deadline-text--warning'
+                    }
                   >
-                            {item.days_remaining < 0
-                        ? `${Math.abs(item.days_remaining)} days overdue`
-                        : item.days_remaining === 0
-                            ? 'Due today'
-                            : `${item.days_remaining} days left`}
+                    {getDeadlineText(item)}
                   </span>
                 </div>
               </td>
 
-
-
               <td>
                 <span
-                    className={
-                      item.status === 'OVERDUE'
-                          ? 'status-badge status-badge--danger'
-                          : 'status-badge status-badge--warning'
-                    }
+                  className={
+                    item.status === 'OVERDUE'
+                      ? 'status-badge status-badge--danger'
+                      : 'status-badge status-badge--warning'
+                  }
                 >
-                  {item.status === 'OVERDUE'
-                      ? 'Overdue'
-                      : 'Due Soon'}
+                  {
+                    item.status === 'OVERDUE'
+                      ? t(
+                          'attentionTable.overdue'
+                        )
+                      : t(
+                          'attentionTable.dueSoon'
+                        )
+                  }
                 </span>
               </td>
             </tr>
@@ -86,5 +140,6 @@ function AttentionTable({ cases }) {
     </div>
   )
 }
+
 
 export default AttentionTable

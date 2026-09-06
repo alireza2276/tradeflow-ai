@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 
 import AttentionTable from '../components/AttentionTable'
 import CurrencyCard from '../components/CurrencyCard'
@@ -7,6 +8,8 @@ import { getDashboardSummary } from '../services/api'
 
 
 function Dashboard() {
+  const { t } = useTranslation()
+
   const [dashboardData, setDashboardData] = useState(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
@@ -27,38 +30,42 @@ function Dashboard() {
   }, [])
 
   if (loading) {
-  return (
-    <div className="dashboard-page">
-      <div className="page-state">
-        <div className="loading-spinner" />
+    return (
+      <div className="dashboard-page">
+        <div className="page-state">
+          <div className="loading-spinner" />
 
-        <h2>Loading dashboard</h2>
+          <h2>
+            {t('dashboard.loadingTitle')}
+          </h2>
 
-        <p>
-          Fetching the latest trade finance data.
-        </p>
+          <p>
+            {t('dashboard.loadingDescription')}
+          </p>
+        </div>
       </div>
-    </div>
-  )
-}
+    )
+  }
 
   if (error) {
-  return (
-    <div className="dashboard-page">
-      <div className="page-state page-state--error">
-        <div className="error-icon">
-          !
+    return (
+      <div className="dashboard-page">
+        <div className="page-state page-state--error">
+          <div className="error-icon">
+            !
+          </div>
+
+          <h2>
+            {t('dashboard.loadError')}
+          </h2>
+
+          <p>
+            {error}
+          </p>
         </div>
-
-        <h2>Unable to load dashboard</h2>
-
-        <p>
-          {error}
-        </p>
       </div>
-    </div>
-  )
-}
+    )
+  }
 
   const currencyEntries = Object.entries(
     dashboardData.currency_totals || {}
@@ -66,84 +73,107 @@ function Dashboard() {
 
   return (
     <div className="dashboard-page">
-
       <header className="dashboard-header">
         <div>
-          <h1>Dashboard</h1>
+          <h1>
+            {t('dashboard.title')}
+          </h1>
+
           <p>
-            Monitor trade finance operations and compliance deadlines.
+            {t('dashboard.description')}
           </p>
         </div>
       </header>
 
       <section className="stats-grid">
-
         <StatCard
-          title="Active Orders"
+          title={t('dashboard.activeOrders')}
           value={dashboardData.active_orders_count}
-          subtitle="Registration orders currently active"
+          subtitle={t(
+            'dashboard.activeOrdersSubtitle'
+          )}
         />
 
         <StatCard
-          title="Active Purchases"
+          title={t('dashboard.activePurchases')}
           value={dashboardData.active_purchases_count}
-          subtitle="Currency purchases under monitoring"
+          subtitle={t(
+            'dashboard.activePurchasesSubtitle'
+          )}
         />
 
         <StatCard
-          title="Due Soon"
+          title={t('dashboard.dueSoon')}
           value={dashboardData.due_soon_count}
-          subtitle="Deadlines within the next 30 days"
+          subtitle={t(
+            'dashboard.dueSoonSubtitle'
+          )}
           tone="warning"
         />
 
         <StatCard
-          title="Overdue"
+          title={t('dashboard.overdue')}
           value={dashboardData.overdue_count}
-          subtitle="Cases requiring immediate attention"
+          subtitle={t(
+            'dashboard.overdueSubtitle'
+          )}
           tone="danger"
         />
-
       </section>
 
       <section className="currency-section">
-
         <div className="section-header">
           <div>
-            <h2>Currency Exposure</h2>
+            <h2>
+              {t('dashboard.currencyExposure')}
+            </h2>
+
             <p>
-              Purchased, documented, and remaining amounts by currency.
+              {t(
+                'dashboard.currencyExposureDescription'
+              )}
             </p>
           </div>
         </div>
 
         {currencyEntries.length === 0 ? (
           <div className="empty-state">
-            No currency purchase data available.
+            {t('dashboard.noCurrencyData')}
           </div>
         ) : (
           <div className="currency-grid">
-            {currencyEntries.map(([currency, totals]) => (
-              <CurrencyCard
-                key={currency}
-                currency={currency}
-                purchasedAmount={totals.purchased_amount}
-                documentedAmount={totals.documented_amount}
-                remainingAmount={totals.remaining_amount}
-              />
-            ))}
+            {currencyEntries.map(
+              ([currency, totals]) => (
+                <CurrencyCard
+                  key={currency}
+                  currency={currency}
+                  purchasedAmount={
+                    totals.purchased_amount
+                  }
+                  documentedAmount={
+                    totals.documented_amount
+                  }
+                  remainingAmount={
+                    totals.remaining_amount
+                  }
+                />
+              )
+            )}
           </div>
         )}
-
       </section>
 
       <section className="attention-section">
-
         <div className="section-header">
           <div>
-            <h2>Cases Requiring Attention</h2>
+            <h2>
+              {t('dashboard.attentionTitle')}
+            </h2>
+
             <p>
-              Purchases that are overdue or approaching their compliance deadline.
+              {t(
+                'dashboard.attentionDescription'
+              )}
             </p>
           </div>
         </div>
@@ -151,11 +181,10 @@ function Dashboard() {
         <AttentionTable
           cases={dashboardData.attention_cases}
         />
-
       </section>
-
     </div>
   )
 }
+
 
 export default Dashboard

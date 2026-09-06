@@ -33,6 +33,75 @@ const resources = {
         notifications: 'اعلان‌ها',
       },
 
+      dashboard: {
+        title: 'داشبورد',
+        description:
+          'پایش عملیات ارزی و سررسیدهای مربوط به ارائه اسناد حمل',
+
+        loadingTitle:
+          'در حال بارگذاری داشبورد',
+        loadingDescription:
+          'آخرین اطلاعات عملیات ارزی در حال دریافت است.',
+        loadError:
+          'بارگذاری داشبورد انجام نشد.',
+
+        activeOrders: 'ثبت سفارش‌های فعال',
+        activeOrdersSubtitle:
+          'ثبت سفارش‌هایی که در حال حاضر فعال هستند',
+
+        activePurchases: 'خریدهای ارز فعال',
+        activePurchasesSubtitle:
+          'خریدهای ارزی که در حال پایش هستند',
+
+        dueSoon: 'نزدیک به سررسید',
+        dueSoonSubtitle:
+          'سررسیدهای ۳۰ روز آینده',
+
+        overdue: 'سررسید گذشته',
+        overdueSubtitle:
+          'پرونده‌هایی که نیازمند پیگیری فوری هستند',
+
+        currencyExposure: 'وضعیت ارزی',
+        currencyExposureDescription:
+          'مبالغ خریداری‌شده، مستندشده و باقی‌مانده به تفکیک ارز',
+        noCurrencyData:
+          'اطلاعاتی از خرید ارز برای نمایش وجود ندارد.',
+
+        attentionTitle:
+          'پرونده‌های نیازمند پیگیری',
+        attentionDescription:
+          'خریدهای ارزی سررسید گذشته یا نزدیک به مهلت ارائه اسناد حمل',
+      },
+
+      currencyCard: {
+        currency: 'ارز',
+        remainingAmount: 'مبلغ باقی‌مانده',
+        purchased: 'خریداری‌شده',
+        documented: 'مستندشده',
+      },
+
+      attentionTable: {
+        company: 'شرکت',
+        order: 'ثبت سفارش',
+        currency: 'ارز',
+        remaining: 'باقی‌مانده',
+        deadline: 'سررسید',
+        status: 'وضعیت',
+
+        empty:
+          'در حال حاضر پرونده‌ای نیازمند پیگیری نیست.',
+
+        overdue: 'سررسید گذشته',
+        dueSoon: 'نزدیک به سررسید',
+
+        daysOverdue:
+          '{{count}} روز از سررسید گذشته است',
+        dueToday:
+          'سررسید امروز است',
+        daysLeft:
+          '{{count}} روز تا سررسید باقی مانده است',
+      },
+
       registrationOrders: {
         title: 'ثبت سفارش‌ها',
         description:
@@ -97,6 +166,75 @@ const resources = {
         shipmentParts: 'Shipment Parts',
         invoices: 'Invoices',
         notifications: 'Notifications',
+      },
+
+      dashboard: {
+        title: 'Dashboard',
+        description:
+          'Monitor trade finance operations and compliance deadlines.',
+
+        loadingTitle:
+          'Loading dashboard',
+        loadingDescription:
+          'Fetching the latest trade finance data.',
+        loadError:
+          'Unable to load dashboard',
+
+        activeOrders: 'Active Orders',
+        activeOrdersSubtitle:
+          'Registration orders currently active',
+
+        activePurchases: 'Active Purchases',
+        activePurchasesSubtitle:
+          'Currency purchases under monitoring',
+
+        dueSoon: 'Due Soon',
+        dueSoonSubtitle:
+          'Deadlines within the next 30 days',
+
+        overdue: 'Overdue',
+        overdueSubtitle:
+          'Cases requiring immediate attention',
+
+        currencyExposure: 'Currency Exposure',
+        currencyExposureDescription:
+          'Purchased, documented, and remaining amounts by currency.',
+        noCurrencyData:
+          'No currency purchase data available.',
+
+        attentionTitle:
+          'Cases Requiring Attention',
+        attentionDescription:
+          'Purchases that are overdue or approaching their compliance deadline.',
+      },
+
+      currencyCard: {
+        currency: 'Currency',
+        remainingAmount: 'Remaining Amount',
+        purchased: 'Purchased',
+        documented: 'Documented',
+      },
+
+      attentionTable: {
+        company: 'Company',
+        order: 'Order',
+        currency: 'Currency',
+        remaining: 'Remaining',
+        deadline: 'Deadline',
+        status: 'Status',
+
+        empty:
+          'No cases currently require attention.',
+
+        overdue: 'Overdue',
+        dueSoon: 'Due Soon',
+
+        daysOverdue:
+          '{{count}} days overdue',
+        dueToday:
+          'Due today',
+        daysLeft:
+          '{{count}} days left',
       },
 
       registrationOrders: {

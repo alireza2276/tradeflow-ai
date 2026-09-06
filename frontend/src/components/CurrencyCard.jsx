@@ -1,23 +1,29 @@
+import { useTranslation } from 'react-i18next'
+
+
 function CurrencyCard({
   currency,
   purchasedAmount,
   documentedAmount,
   remainingAmount,
 }) {
+  const { t } = useTranslation()
+
   const formatAmount = (value) => {
     return Number(value).toLocaleString('en-US')
   }
 
   return (
     <div className="currency-card">
-
       <div className="currency-card-header">
         <div>
           <span className="currency-label">
-            Currency
+            {t('currencyCard.currency')}
           </span>
 
-          <h3>{currency}</h3>
+          <h3>
+            {currency}
+          </h3>
         </div>
 
         <span className="currency-badge">
@@ -26,7 +32,9 @@ function CurrencyCard({
       </div>
 
       <div className="currency-card-main">
-        <span>Remaining Amount</span>
+        <span>
+          {t('currencyCard.remainingAmount')}
+        </span>
 
         <strong>
           {formatAmount(remainingAmount)}
@@ -34,25 +42,29 @@ function CurrencyCard({
       </div>
 
       <div className="currency-card-details">
-
         <div>
-          <span>Purchased</span>
+          <span>
+            {t('currencyCard.purchased')}
+          </span>
+
           <strong>
             {formatAmount(purchasedAmount)}
           </strong>
         </div>
 
         <div>
-          <span>Documented</span>
+          <span>
+            {t('currencyCard.documented')}
+          </span>
+
           <strong>
             {formatAmount(documentedAmount)}
           </strong>
         </div>
-
       </div>
-
     </div>
   )
 }
+
 
 export default CurrencyCard
