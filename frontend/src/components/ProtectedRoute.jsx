@@ -3,15 +3,21 @@ import {
   Outlet,
 } from 'react-router-dom'
 
+import {
+  useTranslation,
+} from 'react-i18next'
+
 
 function ProtectedRoute({
   isAuthenticated,
   isLoading,
 }) {
+  const { t } = useTranslation()
+
   if (isLoading) {
     return (
       <div className="auth-loading">
-        Checking your session...
+        {t('auth.checkingSession')}
       </div>
     )
   }

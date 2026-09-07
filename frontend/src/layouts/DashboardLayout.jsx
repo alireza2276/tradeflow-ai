@@ -3,7 +3,9 @@ import {
   useNavigate,
 } from 'react-router-dom'
 
-import { useTranslation } from 'react-i18next'
+import {
+  useTranslation,
+} from 'react-i18next'
 
 import {
   logout,
@@ -40,7 +42,7 @@ function DashboardLayout({
     } catch (logoutError) {
       window.alert(
         logoutError.message ||
-        'Logout failed.'
+        t('common.logoutFailed')
       )
     }
   }

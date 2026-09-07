@@ -1,9 +1,16 @@
+import {
+  useTranslation,
+} from 'react-i18next'
+
+
 function StatCard({
   title,
   value,
   subtitle,
   tone = 'default',
 }) {
+  const { t } = useTranslation()
+
   return (
     <div className={`stat-card stat-card--${tone}`}>
       <div className="stat-card-header">
@@ -12,8 +19,16 @@ function StatCard({
         </span>
 
         {tone !== 'default' && (
-          <span className={`stat-status stat-status--${tone}`}>
-            {tone === 'warning' ? 'Attention' : 'Critical'}
+          <span
+            className={
+              `stat-status stat-status--${tone}`
+            }
+          >
+            {
+              tone === 'warning'
+                ? t('statCard.attention')
+                : t('statCard.critical')
+            }
           </span>
         )}
       </div>
@@ -30,5 +45,6 @@ function StatCard({
     </div>
   )
 }
+
 
 export default StatCard

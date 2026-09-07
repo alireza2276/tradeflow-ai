@@ -750,6 +750,22 @@ const resources = {
           'اگر به دسترسی بیشتری نیاز دارید، با مدیر سامانه تماس بگیرید.',
       },
 
+      auth: {
+        checkingSession:
+          'در حال بررسی نشست کاربری...',
+      },
+
+      statCard: {
+        attention:
+          'نیازمند توجه',
+
+        critical:
+          'بحرانی',
+      },
+
+      logoutFailed:
+        'خروج از سامانه انجام نشد.',
+
     },
   },
 
@@ -1499,6 +1515,22 @@ const resources = {
         contactAdministrator:
           'Please contact your administrator if you need additional access.',
       },
+
+      auth: {
+        checkingSession:
+          'Checking your session...',
+      },
+
+      statCard: {
+        attention:
+          'Attention',
+
+        critical:
+          'Critical',
+      },
+
+      logoutFailed:
+        'Logout failed.',
 
     },
   },
