@@ -2,6 +2,8 @@ import {
   useState,
 } from 'react'
 
+import { useTranslation } from 'react-i18next'
+
 
 function PaymentInstrumentFormModal({
   mode,
@@ -10,6 +12,8 @@ function PaymentInstrumentFormModal({
   onClose,
   onSubmit,
 }) {
+  const { t } = useTranslation()
+
   const [formData, setFormData] = useState(
     () => ({
       registration_order:
@@ -25,6 +29,7 @@ function PaymentInstrumentFormModal({
   const [saving, setSaving] =
     useState(false)
 
+
   function handleChange(event) {
     const {
       name,
@@ -37,8 +42,34 @@ function PaymentInstrumentFormModal({
     }))
   }
 
+
   async function handleSubmit(event) {
     event.preventDefault()
+
+    if (saving) {
+      return
+    }
+
+    if (
+      mode === 'create' &&
+      !formData.registration_order
+    ) {
+      setError(
+        t(
+          'paymentInstrumentForm.selectOrderError'
+        )
+      )
+      return
+    }
+
+    if (!formData.instrument_number.trim()) {
+      setError(
+        t(
+          'paymentInstrumentForm.instrumentNumberError'
+        )
+      )
+      return
+    }
 
     setError('')
     setSaving(true)
@@ -61,28 +92,50 @@ function PaymentInstrumentFormModal({
     } catch (submitError) {
       setError(
         submitError.message ||
-        'Failed to save payment instrument.'
+        t('paymentInstrumentForm.saveError')
       )
     } finally {
       setSaving(false)
     }
   }
 
+
+  const isCreateMode =
+    mode === 'create'
+
+
   return (
     <div className="modal-backdrop">
-      <div className="modal-card">
+      <div
+        className="modal-card"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="payment-instrument-modal-title"
+      >
         <div className="modal-header">
           <div>
-            <h2>
-              {mode === 'create'
-                ? 'Add Payment Instrument'
-                : 'Edit Payment Instrument'}
+            <h2 id="payment-instrument-modal-title">
+              {
+                isCreateMode
+                  ? t(
+                      'paymentInstrumentForm.addTitle'
+                    )
+                  : t(
+                      'paymentInstrumentForm.editTitle'
+                    )
+              }
             </h2>
 
             <p>
-              {mode === 'create'
-                ? 'Link a payment instrument to a registration order.'
-                : 'Update the payment instrument number.'}
+              {
+                isCreateMode
+                  ? t(
+                      'paymentInstrumentForm.addDescription'
+                    )
+                  : t(
+                      'paymentInstrumentForm.editDescription'
+                    )
+              }
             </p>
           </div>
 
@@ -91,19 +144,26 @@ function PaymentInstrumentFormModal({
             className="modal-close-button"
             onClick={onClose}
             disabled={saving}
+            aria-label={t(
+              'paymentInstrumentForm.close'
+            )}
           >
             ×
           </button>
         </div>
 
+
         <form
           onSubmit={handleSubmit}
           className="modal-form"
+          noValidate
         >
-          {mode === 'create' && (
+          {isCreateMode && (
             <div className="form-group">
               <label htmlFor="registration_order">
-                Registration Order
+                {t(
+                  'paymentInstrumentForm.registrationOrder'
+                )}
               </label>
 
               <select
@@ -115,7 +175,9 @@ function PaymentInstrumentFormModal({
                 disabled={saving}
               >
                 <option value="">
-                  Select registration order
+                  {t(
+                    'paymentInstrumentForm.selectRegistrationOrder'
+                  )}
                 </option>
 
                 {registrationOrders.map(
@@ -136,10 +198,13 @@ function PaymentInstrumentFormModal({
             </div>
           )}
 
-          {mode === 'edit' && (
+
+          {!isCreateMode && (
             <div className="form-group">
               <label>
-                Registration Order
+                {t(
+                  'paymentInstrumentForm.registrationOrder'
+                )}
               </label>
 
               <input
@@ -153,9 +218,12 @@ function PaymentInstrumentFormModal({
             </div>
           )}
 
+
           <div className="form-group">
             <label htmlFor="instrument_number">
-              Instrument Number
+              {t(
+                'paymentInstrumentForm.instrumentNumber'
+              )}
             </label>
 
             <input
@@ -164,7 +232,9 @@ function PaymentInstrumentFormModal({
               type="text"
               value={formData.instrument_number}
               onChange={handleChange}
-              placeholder="Example: PI-2026-0001"
+              placeholder={t(
+                'paymentInstrumentForm.instrumentNumberPlaceholder'
+              )}
               maxLength={100}
               required
               disabled={saving}
@@ -172,11 +242,16 @@ function PaymentInstrumentFormModal({
             />
           </div>
 
+
           {error && (
-            <div className="modal-error-message">
+            <div
+              className="modal-error-message"
+              role="alert"
+            >
               {error}
             </div>
           )}
+
 
           <div className="modal-actions">
             <button
@@ -185,7 +260,7 @@ function PaymentInstrumentFormModal({
               onClick={onClose}
               disabled={saving}
             >
-              Cancel
+              {t('common.cancel')}
             </button>
 
             <button
@@ -193,11 +268,21 @@ function PaymentInstrumentFormModal({
               className="primary-button"
               disabled={saving}
             >
-              {saving
-                ? 'Saving...'
-                : mode === 'create'
-                  ? 'Create'
-                  : 'Save Changes'}
+              {
+                saving
+                  ? t(
+                      'paymentInstrumentForm.saving'
+                    )
+                  : (
+                      isCreateMode
+                        ? t(
+                            'paymentInstrumentForm.create'
+                          )
+                        : t(
+                            'paymentInstrumentForm.saveChanges'
+                          )
+                    )
+              }
             </button>
           </div>
         </form>
@@ -205,5 +290,6 @@ function PaymentInstrumentFormModal({
     </div>
   )
 }
+
 
 export default PaymentInstrumentFormModal

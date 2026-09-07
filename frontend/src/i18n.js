@@ -570,6 +570,85 @@ const resources = {
           'ذخیره فاکتور انجام نشد.',
       },
 
+      paymentInstruments: {
+        title:
+          'ابزارهای پرداخت',
+
+        description:
+          'مدیریت شماره ابزارهای پرداخت مرتبط با ثبت سفارش‌ها',
+
+        addPaymentInstrument:
+          'افزودن ابزار پرداخت',
+
+        company:
+          'شرکت',
+
+        order:
+          'ثبت سفارش',
+
+        instrumentNumber:
+          'شماره ابزار پرداخت',
+
+        actions:
+          'عملیات',
+
+        empty:
+          'ابزار پرداختی ثبت نشده است.',
+
+        loading:
+          'در حال بارگذاری ابزارهای پرداخت...',
+
+        loadError:
+          'بارگذاری اطلاعات ابزارهای پرداخت انجام نشد.',
+      },
+
+      paymentInstrumentForm: {
+        addTitle:
+          'افزودن ابزار پرداخت',
+
+        editTitle:
+          'ویرایش ابزار پرداخت',
+
+        addDescription:
+          'اتصال یک ابزار پرداخت به ثبت سفارش',
+
+        editDescription:
+          'شماره ابزار پرداخت را ویرایش کنید.',
+
+        registrationOrder:
+          'ثبت سفارش',
+
+        selectRegistrationOrder:
+          'انتخاب ثبت سفارش',
+
+        instrumentNumber:
+          'شماره ابزار پرداخت',
+
+        instrumentNumberPlaceholder:
+          'مثال: PI-2026-0001',
+
+        create:
+          'ایجاد',
+
+        saveChanges:
+          'ذخیره تغییرات',
+
+        saving:
+          'در حال ذخیره...',
+
+        close:
+          'بستن فرم ابزار پرداخت',
+
+        selectOrderError:
+          'لطفاً یک ثبت سفارش انتخاب کنید.',
+
+        instrumentNumberError:
+          'لطفاً شماره ابزار پرداخت را وارد کنید.',
+
+        saveError:
+          'ذخیره ابزار پرداخت انجام نشد.',
+      },
+
     },
   },
 
@@ -1138,6 +1217,85 @@ const resources = {
 
         saveError:
           'Failed to save invoice.',
+      },
+
+      paymentInstruments: {
+        title:
+          'Payment Instruments',
+
+        description:
+          'Manage payment instrument numbers linked to registration orders.',
+
+        addPaymentInstrument:
+          'Add Payment Instrument',
+
+        company:
+          'Company',
+
+        order:
+          'Order',
+
+        instrumentNumber:
+          'Instrument Number',
+
+        actions:
+          'Actions',
+
+        empty:
+          'No payment instruments found.',
+
+        loading:
+          'Loading payment instruments...',
+
+        loadError:
+          'Failed to load payment instruments.',
+      },
+
+      paymentInstrumentForm: {
+        addTitle:
+          'Add Payment Instrument',
+
+        editTitle:
+          'Edit Payment Instrument',
+
+        addDescription:
+          'Link a payment instrument to a registration order.',
+
+        editDescription:
+          'Update the payment instrument number.',
+
+        registrationOrder:
+          'Registration Order',
+
+        selectRegistrationOrder:
+          'Select registration order',
+
+        instrumentNumber:
+          'Instrument Number',
+
+        instrumentNumberPlaceholder:
+          'Example: PI-2026-0001',
+
+        create:
+          'Create',
+
+        saveChanges:
+          'Save Changes',
+
+        saving:
+          'Saving...',
+
+        close:
+          'Close payment instrument form',
+
+        selectOrderError:
+          'Please select a registration order.',
+
+        instrumentNumberError:
+          'Please enter an instrument number.',
+
+        saveError:
+          'Failed to save payment instrument.',
       },
 
     },

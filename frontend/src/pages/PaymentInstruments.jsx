@@ -3,6 +3,8 @@ import {
   useState,
 } from 'react'
 
+import { useTranslation } from 'react-i18next'
+
 import PaymentInstrumentFormModal
   from '../components/PaymentInstrumentFormModal'
 
@@ -19,6 +21,8 @@ import {
 
 
 function PaymentInstruments({ user }) {
+  const { t } = useTranslation()
+
   const [
     paymentInstruments,
     setPaymentInstruments,
@@ -50,6 +54,7 @@ function PaymentInstruments({ user }) {
     setSelectedPaymentInstrument,
   ] = useState(null)
 
+
   const canAddPaymentInstrument =
     hasPermission(
       user,
@@ -61,6 +66,7 @@ function PaymentInstruments({ user }) {
       user,
       'trade_orders.change_paymentinstrument'
     )
+
 
   useEffect(() => {
     let isMounted = true
@@ -92,7 +98,7 @@ function PaymentInstruments({ user }) {
         if (isMounted) {
           setError(
             loadError.message ||
-            'Failed to load payment instruments.'
+            t('paymentInstruments.loadError')
           )
         }
       } finally {
@@ -107,13 +113,15 @@ function PaymentInstruments({ user }) {
     return () => {
       isMounted = false
     }
-  }, [canAddPaymentInstrument])
+  }, [canAddPaymentInstrument, t])
+
 
   function openCreateModal() {
     setSelectedPaymentInstrument(null)
     setModalMode('create')
     setIsModalOpen(true)
   }
+
 
   function openEditModal(paymentInstrument) {
     setSelectedPaymentInstrument(
@@ -123,10 +131,12 @@ function PaymentInstruments({ user }) {
     setIsModalOpen(true)
   }
 
+
   function closeModal() {
     setIsModalOpen(false)
     setSelectedPaymentInstrument(null)
   }
+
 
   async function handleSubmit(payload) {
     let savedPaymentInstrument
@@ -165,6 +175,7 @@ function PaymentInstruments({ user }) {
     closeModal()
   }
 
+
   const availableRegistrationOrders =
     registrationOrders.filter(
       (order) =>
@@ -175,13 +186,15 @@ function PaymentInstruments({ user }) {
         )
     )
 
+
   if (loading) {
     return (
       <div className="loading-state">
-        Loading payment instruments...
+        {t('paymentInstruments.loading')}
       </div>
     )
   }
+
 
   if (error) {
     return (
@@ -191,15 +204,17 @@ function PaymentInstruments({ user }) {
     )
   }
 
+
   return (
     <div className="payment-instruments-page">
       <div className="payment-instruments-header">
         <div>
-          <h1>Payment Instruments</h1>
+          <h1>
+            {t('paymentInstruments.title')}
+          </h1>
 
           <p>
-            Manage payment instrument numbers
-            linked to registration orders.
+            {t('paymentInstruments.description')}
           </p>
         </div>
 
@@ -209,24 +224,40 @@ function PaymentInstruments({ user }) {
             className="primary-button"
             onClick={openCreateModal}
           >
-            Add Payment Instrument
+            {t(
+              'paymentInstruments.addPaymentInstrument'
+            )}
           </button>
         )}
       </div>
 
+
       {paymentInstruments.length === 0 ? (
         <div className="empty-state">
-          No payment instruments found.
+          {t('paymentInstruments.empty')}
         </div>
       ) : (
         <div className="payment-instruments-table-wrapper">
           <table className="payment-instruments-table">
             <thead>
               <tr>
-                <th>Company</th>
-                <th>Order</th>
-                <th>Instrument Number</th>
-                <th>Actions</th>
+                <th>
+                  {t('paymentInstruments.company')}
+                </th>
+
+                <th>
+                  {t('paymentInstruments.order')}
+                </th>
+
+                <th>
+                  {t(
+                    'paymentInstruments.instrumentNumber'
+                  )}
+                </th>
+
+                <th>
+                  {t('paymentInstruments.actions')}
+                </th>
               </tr>
             </thead>
 
@@ -257,7 +288,7 @@ function PaymentInstruments({ user }) {
                             )
                           }
                         >
-                          Edit
+                          {t('common.edit')}
                         </button>
                       ) : (
                         '-'
@@ -270,6 +301,7 @@ function PaymentInstruments({ user }) {
           </table>
         </div>
       )}
+
 
       {isModalOpen && (
         <PaymentInstrumentFormModal
