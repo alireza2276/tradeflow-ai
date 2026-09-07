@@ -228,6 +228,49 @@ const resources = {
         exporting:
           'در حال تهیه خروجی...',
       },
+
+      registrationOrderForm: {
+        addTitle: 'افزودن ثبت سفارش',
+        editTitle: 'ویرایش ثبت سفارش',
+
+        addDescription:
+          'ثبت یک سفارش تجاری جدید',
+        editDescription:
+          'اطلاعات ثبت سفارش را ویرایش کنید.',
+
+        company: 'شرکت',
+        selectCompany: 'انتخاب شرکت',
+        loadingCompanies: 'در حال بارگذاری شرکت‌ها...',
+
+        orderNumber: 'شماره ثبت سفارش',
+        orderNumberPlaceholder: 'مثال: TF-USD-002',
+
+        registeredAmount: 'مبلغ ثبت‌شده',
+        registeredAmountPlaceholder: 'مثال: 50000',
+
+        currency: 'ارز',
+        currencyPlaceholder: 'USD',
+
+        activeOrder: 'ثبت سفارش فعال',
+
+        saveChanges: 'ذخیره تغییرات',
+        createOrder: 'ایجاد ثبت سفارش',
+        saving: 'در حال ذخیره...',
+        creating: 'در حال ایجاد...',
+
+        selectCompanyError:
+          'لطفاً یک شرکت انتخاب کنید.',
+
+        requiredFieldsError:
+          'لطفاً تمام فیلدهای الزامی را تکمیل کنید.',
+
+        invalidAmountError:
+          'مبلغ ثبت‌شده باید بیشتر از صفر باشد.',
+
+        invalidCurrencyError:
+          'کد ارز باید یک کد معتبر سه‌حرفی باشد.',
+      },
+
     },
   },
 
@@ -456,6 +499,49 @@ const resources = {
         exporting:
           'Exporting...',
       },
+
+      registrationOrderForm: {
+        addTitle: 'Add Registration Order',
+        editTitle: 'Edit Registration Order',
+
+        addDescription:
+          'Create a new registered trade order.',
+        editDescription:
+          'Update registration order information.',
+
+        company: 'Company',
+        selectCompany: 'Select a company',
+        loadingCompanies: 'Loading companies...',
+
+        orderNumber: 'Order Number',
+        orderNumberPlaceholder: 'e.g. TF-USD-002',
+
+        registeredAmount: 'Registered Amount',
+        registeredAmountPlaceholder: 'e.g. 50000',
+
+        currency: 'Currency',
+        currencyPlaceholder: 'USD',
+
+        activeOrder: 'Active registration order',
+
+        saveChanges: 'Save Changes',
+        createOrder: 'Create Order',
+        saving: 'Saving...',
+        creating: 'Creating...',
+
+        selectCompanyError:
+          'Please select a company.',
+
+        requiredFieldsError:
+          'Please complete all required fields.',
+
+        invalidAmountError:
+          'Registered amount must be greater than zero.',
+
+        invalidCurrencyError:
+          'Currency must be a valid 3-letter code.',
+      },
+
     },
   },
 }
