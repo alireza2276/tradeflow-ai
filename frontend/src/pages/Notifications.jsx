@@ -4,11 +4,20 @@ import {
 } from 'react'
 
 import {
+  useTranslation,
+} from 'react-i18next'
+
+import {
   getNotificationLogs,
 } from '../services/api'
 
 
 function Notifications() {
+  const {
+    t,
+    i18n,
+  } = useTranslation()
+
   const [
     notifications,
     setNotifications,
@@ -19,6 +28,7 @@ function Notifications() {
 
   const [error, setError] =
     useState('')
+
 
   useEffect(() => {
     let isMounted = true
@@ -37,7 +47,7 @@ function Notifications() {
         if (isMounted) {
           setError(
             loadError.message ||
-            'Failed to load notifications.'
+            t('notifications.loadError')
           )
         }
       } finally {
@@ -52,9 +62,24 @@ function Notifications() {
     return () => {
       isMounted = false
     }
-  }, [])
+  }, [t])
+
 
   function formatNotificationType(type) {
+    if (!type) {
+      return '-'
+    }
+
+    const translationKey =
+      `notifications.types.${type}`
+
+    const translated =
+      t(translationKey)
+
+    if (translated !== translationKey) {
+      return translated
+    }
+
     return type
       .replaceAll('_', ' ')
       .toLowerCase()
@@ -63,13 +88,19 @@ function Notifications() {
       )
   }
 
+
   function formatSentAt(value) {
     if (!value) {
       return '-'
     }
 
+    const locale =
+      i18n.resolvedLanguage === 'fa'
+        ? 'fa-IR'
+        : 'en-GB'
+
     return new Intl.DateTimeFormat(
-      'en-GB',
+      locale,
       {
         year: 'numeric',
         month: 'short',
@@ -80,13 +111,15 @@ function Notifications() {
     ).format(new Date(value))
   }
 
+
   if (loading) {
     return (
       <div className="loading-state">
-        Loading notifications...
+        {t('notifications.loading')}
       </div>
     )
   }
+
 
   if (error) {
     return (
@@ -96,35 +129,58 @@ function Notifications() {
     )
   }
 
+
   return (
     <div className="notifications-page">
       <div className="notifications-header">
         <div>
-          <h1>Notifications</h1>
+          <h1>
+            {t('notifications.title')}
+          </h1>
 
           <p>
-            Review deadline alerts generated
-            for currency purchases.
+            {t('notifications.description')}
           </p>
         </div>
       </div>
 
+
       {notifications.length === 0 ? (
         <div className="empty-state">
-          No notifications found.
+          {t('notifications.empty')}
         </div>
       ) : (
         <div className="notifications-table-wrapper">
           <table className="notifications-table">
             <thead>
               <tr>
-                <th>Company</th>
-                <th>Order</th>
-                <th>Purchase</th>
-                <th>Purchase Date</th>
-                <th>Deadline</th>
-                <th>Alert</th>
-                <th>Generated At</th>
+                <th>
+                  {t('notifications.company')}
+                </th>
+
+                <th>
+                  {t('notifications.order')}
+                </th>
+
+                <th>
+                  {t('notifications.purchase')}
+                </th>
+
+                <th>
+                  {t('notifications.purchaseDate')}
+                </th>
+
+                <th>
+                  {t('notifications.deadline')}
+                </th>
+
+                <th>
+                  {t('notifications.alert')}
+                </th>
+
+                <th>
+                  {t('notifications.generatedAt')}
+                </th>
               </tr>
             </thead>
 
@@ -139,7 +195,9 @@ function Notifications() {
                         </strong>
 
                         <span>
-                          {notification.company_national_id}
+                          {
+                            notification.company_national_id
+                          }
                         </span>
                       </div>
                     </td>
@@ -151,21 +209,34 @@ function Notifications() {
                     <td>
                       <span className="notification-amount">
                         {notification.purchase_amount}
-                      </span>{' '}
+                      </span>
+                      {' '}
                       {notification.currency}
                     </td>
 
                     <td>
-                      {notification.purchase_date_dual}
+                      {
+                        notification.purchase_date_dual ||
+                        '-'
+                      }
                     </td>
 
                     <td>
-                      {notification.deadline_dual}
+                      {
+                        notification.deadline_dual ||
+                        '-'
+                      }
                     </td>
 
                     <td>
                       <span
-                        className={`notification-badge notification-badge-${notification.notification_type.toLowerCase()}`}
+                        className={
+                          `notification-badge ` +
+                          `notification-badge-${
+                            notification.notification_type
+                              ?.toLowerCase() || 'unknown'
+                          }`
+                        }
                       >
                         {formatNotificationType(
                           notification.notification_type
@@ -188,5 +259,6 @@ function Notifications() {
     </div>
   )
 }
+
 
 export default Notifications

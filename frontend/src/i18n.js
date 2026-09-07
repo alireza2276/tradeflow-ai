@@ -649,6 +649,70 @@ const resources = {
           'ذخیره ابزار پرداخت انجام نشد.',
       },
 
+      notifications: {
+        title:
+          'اعلان‌ها',
+
+        description:
+          'بررسی هشدارهای سررسید ایجادشده برای خریدهای ارز',
+
+        company:
+          'شرکت',
+
+        order:
+          'ثبت سفارش',
+
+        purchase:
+          'خرید ارز',
+
+        purchaseDate:
+          'تاریخ خرید',
+
+        deadline:
+          'سررسید',
+
+        alert:
+          'نوع هشدار',
+
+        generatedAt:
+          'زمان ایجاد',
+
+        empty:
+          'اعلانی ثبت نشده است.',
+
+        loading:
+          'در حال بارگذاری اعلان‌ها...',
+
+        loadError:
+          'بارگذاری اعلان‌ها انجام نشد.',
+
+        types: {
+          NINETY_DAYS:
+            '۹۰ روز مانده',
+
+          SIXTY_DAYS:
+            '۶۰ روز مانده',
+
+          THIRTY_DAYS:
+            '۳۰ روز مانده',
+
+          TWENTY_DAYS:
+            '۲۰ روز مانده',
+
+          TEN_DAYS:
+            '۱۰ روز مانده',
+
+          FIVE_DAYS:
+            '۵ روز مانده',
+
+          LAST_DAY:
+            'آخرین روز',
+
+          OVERDUE:
+            'سررسید گذشته',
+        },
+      },
+
     },
   },
 
@@ -1296,6 +1360,70 @@ const resources = {
 
         saveError:
           'Failed to save payment instrument.',
+      },
+
+      notifications: {
+        title:
+          'Notifications',
+
+        description:
+          'Review deadline alerts generated for currency purchases.',
+
+        company:
+          'Company',
+
+        order:
+          'Order',
+
+        purchase:
+          'Purchase',
+
+        purchaseDate:
+          'Purchase Date',
+
+        deadline:
+          'Deadline',
+
+        alert:
+          'Alert',
+
+        generatedAt:
+          'Generated At',
+
+        empty:
+          'No notifications found.',
+
+        loading:
+          'Loading notifications...',
+
+        loadError:
+          'Failed to load notifications.',
+
+        types: {
+          NINETY_DAYS:
+            '90 Days Remaining',
+
+          SIXTY_DAYS:
+            '60 Days Remaining',
+
+          THIRTY_DAYS:
+            '30 Days Remaining',
+
+          TWENTY_DAYS:
+            '20 Days Remaining',
+
+          TEN_DAYS:
+            '10 Days Remaining',
+
+          FIVE_DAYS:
+            '5 Days Remaining',
+
+          LAST_DAY:
+            'Last Day',
+
+          OVERDUE:
+            'Overdue',
+        },
       },
 
     },
