@@ -467,6 +467,109 @@ const resources = {
           'ذخیره سند حمل انجام نشد.',
       },
 
+      invoices: {
+        title:
+          'فاکتورها',
+
+        description:
+          'مدیریت فاکتورهای اسناد حمل و مقادیر مالی آن‌ها',
+
+        addInvoice:
+          'افزودن فاکتور',
+
+        company:
+          'شرکت',
+
+        order:
+          'ثبت سفارش',
+
+        fob:
+          'مبلغ FOB',
+
+        freight:
+          'کرایه حمل',
+
+        total:
+          'مبلغ کل',
+
+        currency:
+          'ارز',
+
+        submissionDate:
+          'تاریخ ارائه',
+
+        actions:
+          'عملیات',
+
+        empty:
+          'فاکتوری ثبت نشده است.',
+
+        loading:
+          'در حال بارگذاری فاکتورها...',
+
+        loadError:
+          'بارگذاری اطلاعات فاکتورها انجام نشد.',
+      },
+
+      invoiceForm: {
+        addTitle:
+          'افزودن فاکتور',
+
+        editTitle:
+          'ویرایش فاکتور',
+
+        addDescription:
+          'ثبت فاکتور برای یک سند حمل',
+
+        editDescription:
+          'اطلاعات مالی فاکتور را ویرایش کنید.',
+
+        shipmentPart:
+          'سند حمل',
+
+        selectShipmentPart:
+          'انتخاب سند حمل',
+
+        noReference:
+          'بدون شماره مرجع',
+
+        fobAmount:
+          'مبلغ FOB',
+
+        freightAmount:
+          'کرایه حمل',
+
+        submissionDate:
+          'تاریخ ارائه',
+
+        createInvoice:
+          'ایجاد فاکتور',
+
+        saveChanges:
+          'ذخیره تغییرات',
+
+        saving:
+          'در حال ذخیره...',
+
+        close:
+          'بستن فرم فاکتور',
+
+        selectShipmentError:
+          'لطفاً یک سند حمل انتخاب کنید.',
+
+        invalidFobError:
+          'مبلغ FOB نمی‌تواند منفی باشد.',
+
+        invalidFreightError:
+          'کرایه حمل نمی‌تواند منفی باشد.',
+
+        submissionDateError:
+          'لطفاً تاریخ ارائه را انتخاب کنید.',
+
+        saveError:
+          'ذخیره فاکتور انجام نشد.',
+      },
+
     },
   },
 
@@ -932,6 +1035,109 @@ const resources = {
 
         saveError:
           'Failed to save shipment part.',
+      },
+
+      invoices: {
+        title:
+          'Invoices',
+
+        description:
+          'Manage shipment invoices and financial document values.',
+
+        addInvoice:
+          'Add Invoice',
+
+        company:
+          'Company',
+
+        order:
+          'Order',
+
+        fob:
+          'FOB',
+
+        freight:
+          'Freight',
+
+        total:
+          'Total',
+
+        currency:
+          'Currency',
+
+        submissionDate:
+          'Submission Date',
+
+        actions:
+          'Actions',
+
+        empty:
+          'No invoices found.',
+
+        loading:
+          'Loading invoices...',
+
+        loadError:
+          'Failed to load invoice data.',
+      },
+
+      invoiceForm: {
+        addTitle:
+          'Add Invoice',
+
+        editTitle:
+          'Edit Invoice',
+
+        addDescription:
+          'Create an invoice for a shipment part.',
+
+        editDescription:
+          'Update invoice financial details.',
+
+        shipmentPart:
+          'Shipment Part',
+
+        selectShipmentPart:
+          'Select shipment part',
+
+        noReference:
+          'No reference',
+
+        fobAmount:
+          'FOB Amount',
+
+        freightAmount:
+          'Freight Amount',
+
+        submissionDate:
+          'Submission Date',
+
+        createInvoice:
+          'Create Invoice',
+
+        saveChanges:
+          'Save Changes',
+
+        saving:
+          'Saving...',
+
+        close:
+          'Close invoice form',
+
+        selectShipmentError:
+          'Please select a shipment part.',
+
+        invalidFobError:
+          'FOB amount cannot be negative.',
+
+        invalidFreightError:
+          'Freight amount cannot be negative.',
+
+        submissionDateError:
+          'Please select a submission date.',
+
+        saveError:
+          'Failed to save invoice.',
       },
 
     },

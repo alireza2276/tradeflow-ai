@@ -2,6 +2,8 @@ import {
   useState,
 } from 'react'
 
+import { useTranslation } from 'react-i18next'
+
 
 function InvoiceFormModal({
   mode,
@@ -10,6 +12,8 @@ function InvoiceFormModal({
   onClose,
   onSubmit,
 }) {
+  const { t } = useTranslation()
+
   const [formData, setFormData] = useState(() => {
     if (
       mode === 'edit' &&
@@ -41,6 +45,7 @@ function InvoiceFormModal({
   const [submitError, setSubmitError] =
     useState('')
 
+
   function handleChange(event) {
     const {
       name,
@@ -53,8 +58,56 @@ function InvoiceFormModal({
     }))
   }
 
+
   async function handleSubmit(event) {
     event.preventDefault()
+
+    if (submitting) {
+      return
+    }
+
+    if (
+      mode === 'create' &&
+      !formData.shipment_part
+    ) {
+      setSubmitError(
+        t('invoiceForm.selectShipmentError')
+      )
+      return
+    }
+
+    const fobAmount =
+      Number(formData.fob_amount)
+
+    if (
+      !Number.isFinite(fobAmount) ||
+      fobAmount < 0
+    ) {
+      setSubmitError(
+        t('invoiceForm.invalidFobError')
+      )
+      return
+    }
+
+    const freightAmount =
+      Number(formData.freight_amount)
+
+    if (
+      !Number.isFinite(freightAmount) ||
+      freightAmount < 0
+    ) {
+      setSubmitError(
+        t('invoiceForm.invalidFreightError')
+      )
+      return
+    }
+
+    if (!formData.submission_date) {
+      setSubmitError(
+        t('invoiceForm.submissionDateError')
+      )
+      return
+    }
 
     setSubmitting(true)
     setSubmitError('')
@@ -75,15 +128,20 @@ function InvoiceFormModal({
 
     try {
       await onSubmit(payload)
-    } catch (submitErrorValue) {
+    } catch (error) {
       setSubmitError(
-        submitErrorValue.message ||
-        'Failed to save invoice.'
+        error.message ||
+        t('invoiceForm.saveError')
       )
     } finally {
       setSubmitting(false)
     }
   }
+
+
+  const isCreateMode =
+    mode === 'create'
+
 
   return (
     <div
@@ -99,15 +157,23 @@ function InvoiceFormModal({
         <div className="modal-header">
           <div>
             <h2 id="invoice-modal-title">
-              {mode === 'create'
-                ? 'Add Invoice'
-                : 'Edit Invoice'}
+              {
+                isCreateMode
+                  ? t('invoiceForm.addTitle')
+                  : t('invoiceForm.editTitle')
+              }
             </h2>
 
             <p>
-              {mode === 'create'
-                ? 'Create an invoice for a shipment part.'
-                : 'Update invoice financial details.'}
+              {
+                isCreateMode
+                  ? t(
+                      'invoiceForm.addDescription'
+                    )
+                  : t(
+                      'invoiceForm.editDescription'
+                    )
+              }
             </p>
           </div>
 
@@ -116,20 +182,22 @@ function InvoiceFormModal({
             className="modal-close-button"
             onClick={onClose}
             disabled={submitting}
-            aria-label="Close invoice form"
+            aria-label={t('invoiceForm.close')}
           >
             ×
           </button>
         </div>
 
+
         <form
           className="modal-form"
           onSubmit={handleSubmit}
+          noValidate
         >
           <label>
-            Shipment Part
+            {t('invoiceForm.shipmentPart')}
 
-            {mode === 'create' ? (
+            {isCreateMode ? (
               <select
                 name="shipment_part"
                 value={formData.shipment_part}
@@ -138,7 +206,9 @@ function InvoiceFormModal({
                 disabled={submitting}
               >
                 <option value="">
-                  Select shipment part
+                  {t(
+                    'invoiceForm.selectShipmentPart'
+                  )}
                 </option>
 
                 {shipmentParts.map(
@@ -151,8 +221,10 @@ function InvoiceFormModal({
                       {' | '}
                       {shipmentPart.order_number}
                       {' | '}
-                      {shipmentPart.reference_number ||
-                        'No reference'}
+                      {
+                        shipmentPart.reference_number ||
+                        t('invoiceForm.noReference')
+                      }
                       {' | '}
                       {shipmentPart.amount}
                       {' '}
@@ -175,8 +247,9 @@ function InvoiceFormModal({
             )}
           </label>
 
+
           <label>
-            FOB Amount
+            {t('invoiceForm.fobAmount')}
 
             <input
               type="number"
@@ -190,8 +263,9 @@ function InvoiceFormModal({
             />
           </label>
 
+
           <label>
-            Freight Amount
+            {t('invoiceForm.freightAmount')}
 
             <input
               type="number"
@@ -205,8 +279,9 @@ function InvoiceFormModal({
             />
           </label>
 
+
           <label>
-            Submission Date
+            {t('invoiceForm.submissionDate')}
 
             <input
               type="date"
@@ -218,6 +293,7 @@ function InvoiceFormModal({
             />
           </label>
 
+
           {submitError && (
             <div
               className="modal-error-message"
@@ -227,6 +303,7 @@ function InvoiceFormModal({
             </div>
           )}
 
+
           <div className="modal-actions">
             <button
               type="button"
@@ -234,7 +311,7 @@ function InvoiceFormModal({
               onClick={onClose}
               disabled={submitting}
             >
-              Cancel
+              {t('common.cancel')}
             </button>
 
             <button
@@ -242,11 +319,19 @@ function InvoiceFormModal({
               className="primary-button"
               disabled={submitting}
             >
-              {submitting
-                ? 'Saving...'
-                : mode === 'create'
-                  ? 'Create Invoice'
-                  : 'Save Changes'}
+              {
+                submitting
+                  ? t('invoiceForm.saving')
+                  : (
+                      isCreateMode
+                        ? t(
+                            'invoiceForm.createInvoice'
+                          )
+                        : t(
+                            'invoiceForm.saveChanges'
+                          )
+                    )
+              }
             </button>
           </div>
         </form>
@@ -254,5 +339,6 @@ function InvoiceFormModal({
     </div>
   )
 }
+
 
 export default InvoiceFormModal

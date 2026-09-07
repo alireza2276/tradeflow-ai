@@ -3,7 +3,10 @@ import {
   useState,
 } from 'react'
 
-import InvoiceFormModal from '../components/InvoiceFormModal'
+import { useTranslation } from 'react-i18next'
+
+import InvoiceFormModal
+  from '../components/InvoiceFormModal'
 
 import {
   createInvoice,
@@ -18,6 +21,8 @@ import {
 
 
 function Invoices({ user }) {
+  const { t } = useTranslation()
+
   const [invoices, setInvoices] =
     useState([])
 
@@ -47,6 +52,7 @@ function Invoices({ user }) {
     setSelectedInvoice,
   ] = useState(null)
 
+
   const canAddInvoice = hasPermission(
     user,
     'documents.add_invoice'
@@ -56,6 +62,7 @@ function Invoices({ user }) {
     user,
     'documents.change_invoice'
   )
+
 
   useEffect(() => {
     let isMounted = true
@@ -87,7 +94,7 @@ function Invoices({ user }) {
         if (isMounted) {
           setError(
             loadError.message ||
-            'Failed to load invoice data.'
+            t('invoices.loadError')
           )
         }
       } finally {
@@ -102,7 +109,8 @@ function Invoices({ user }) {
     return () => {
       isMounted = false
     }
-  }, [canAddInvoice])
+  }, [canAddInvoice, t])
+
 
   function openCreateModal() {
     setSelectedInvoice(null)
@@ -110,16 +118,19 @@ function Invoices({ user }) {
     setIsModalOpen(true)
   }
 
+
   function openEditModal(invoice) {
     setSelectedInvoice(invoice)
     setModalMode('edit')
     setIsModalOpen(true)
   }
 
+
   function closeModal() {
     setIsModalOpen(false)
     setSelectedInvoice(null)
   }
+
 
   async function loadData() {
     const invoiceData =
@@ -137,6 +148,7 @@ function Invoices({ user }) {
     }
   }
 
+
   async function handleSubmit(payload) {
     if (modalMode === 'create') {
       await createInvoice(payload)
@@ -151,6 +163,7 @@ function Invoices({ user }) {
     await loadData()
   }
 
+
   const availableShipmentParts =
     shipmentParts.filter(
       (shipmentPart) =>
@@ -161,13 +174,15 @@ function Invoices({ user }) {
         )
     )
 
+
   if (loading) {
     return (
       <div className="loading-state">
-        Loading invoices...
+        {t('invoices.loading')}
       </div>
     )
   }
+
 
   if (error) {
     return (
@@ -177,15 +192,17 @@ function Invoices({ user }) {
     )
   }
 
+
   return (
     <div className="invoices-page">
       <div className="invoices-header">
         <div>
-          <h1>Invoices</h1>
+          <h1>
+            {t('invoices.title')}
+          </h1>
 
           <p>
-            Manage shipment invoices and
-            financial document values.
+            {t('invoices.description')}
           </p>
         </div>
 
@@ -195,28 +212,52 @@ function Invoices({ user }) {
             className="primary-button"
             onClick={openCreateModal}
           >
-            Add Invoice
+            {t('invoices.addInvoice')}
           </button>
         )}
       </div>
 
+
       {invoices.length === 0 ? (
         <div className="empty-state">
-          No invoices found.
+          {t('invoices.empty')}
         </div>
       ) : (
         <div className="invoices-table-wrapper">
           <table className="invoices-table">
             <thead>
               <tr>
-                <th>Company</th>
-                <th>Order</th>
-                <th>FOB</th>
-                <th>Freight</th>
-                <th>Total</th>
-                <th>Currency</th>
-                <th>Submission Date</th>
-                <th>Actions</th>
+                <th>
+                  {t('invoices.company')}
+                </th>
+
+                <th>
+                  {t('invoices.order')}
+                </th>
+
+                <th>
+                  {t('invoices.fob')}
+                </th>
+
+                <th>
+                  {t('invoices.freight')}
+                </th>
+
+                <th>
+                  {t('invoices.total')}
+                </th>
+
+                <th>
+                  {t('invoices.currency')}
+                </th>
+
+                <th>
+                  {t('invoices.submissionDate')}
+                </th>
+
+                <th>
+                  {t('invoices.actions')}
+                </th>
               </tr>
             </thead>
 
@@ -251,8 +292,10 @@ function Invoices({ user }) {
                     </td>
 
                     <td>
-                      {invoice.submission_date_dual ||
-                        invoice.submission_date}
+                      {
+                        invoice.submission_date_dual ||
+                        invoice.submission_date
+                      }
                     </td>
 
                     <td>
@@ -266,7 +309,7 @@ function Invoices({ user }) {
                             )
                           }
                         >
-                          Edit
+                          {t('common.edit')}
                         </button>
                       ) : (
                         '-'
@@ -279,6 +322,7 @@ function Invoices({ user }) {
           </table>
         </div>
       )}
+
 
       {isModalOpen && (
         <InvoiceFormModal
@@ -294,5 +338,6 @@ function Invoices({ user }) {
     </div>
   )
 }
+
 
 export default Invoices
