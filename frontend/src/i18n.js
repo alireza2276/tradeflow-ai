@@ -271,6 +271,104 @@ const resources = {
           'کد ارز باید یک کد معتبر سه‌حرفی باشد.',
       },
 
+      currencyPurchases: {
+        title: 'خریدهای ارز',
+        description:
+          'مدیریت خریدهای ارز و سررسیدهای مرتبط با آن‌ها',
+
+        addPurchase:
+          'افزودن خرید ارز',
+
+        company:
+          'شرکت',
+
+        orderNumber:
+          'شماره ثبت سفارش',
+
+        amount:
+          'مبلغ',
+
+        currency:
+          'ارز',
+
+        purchaseDate:
+          'تاریخ خرید',
+
+        deadline:
+          'سررسید',
+
+        actions:
+          'عملیات',
+
+        empty:
+          'خرید ارزی ثبت نشده است.',
+
+        loading:
+          'در حال بارگذاری خریدهای ارز...',
+
+        loadError:
+          'بارگذاری خریدهای ارز انجام نشد.',
+      },
+
+      currencyPurchaseForm: {
+        addTitle:
+          'افزودن خرید ارز',
+
+        editTitle:
+          'ویرایش خرید ارز',
+
+        addDescription:
+          'ثبت یک خرید ارز جدید',
+
+        editDescription:
+          'مبلغ یا تاریخ خرید ارز را ویرایش کنید.',
+
+        registrationOrder:
+          'ثبت سفارش',
+
+        selectOrder:
+          'انتخاب ثبت سفارش',
+
+        loadingOrders:
+          'در حال بارگذاری ثبت سفارش‌ها...',
+
+        currency:
+          'ارز',
+
+        purchaseAmount:
+          'مبلغ خرید',
+
+        purchaseAmountPlaceholder:
+          'مثال: 50000',
+
+        purchaseDate:
+          'تاریخ خرید',
+
+        saveChanges:
+          'ذخیره تغییرات',
+
+        createPurchase:
+          'ایجاد خرید ارز',
+
+        saving:
+          'در حال ذخیره...',
+
+        creating:
+          'در حال ایجاد...',
+
+        selectOrderError:
+          'لطفاً یک ثبت سفارش انتخاب کنید.',
+
+        invalidAmountError:
+          'مبلغ خرید باید بیشتر از صفر باشد.',
+
+        purchaseDateError:
+          'لطفاً تاریخ خرید را انتخاب کنید.',
+
+        currencyUnavailableError:
+          'ارز برای ثبت سفارش انتخاب‌شده در دسترس نیست.',
+      },
+
     },
   },
 
@@ -540,6 +638,104 @@ const resources = {
 
         invalidCurrencyError:
           'Currency must be a valid 3-letter code.',
+      },
+
+      currencyPurchases: {
+        title: 'Currency Purchases',
+        description:
+          'Manage currency purchases and their deadlines.',
+
+        addPurchase:
+          'Add Currency Purchase',
+
+        company:
+          'Company',
+
+        orderNumber:
+          'Order Number',
+
+        amount:
+          'Amount',
+
+        currency:
+          'Currency',
+
+        purchaseDate:
+          'Purchase Date',
+
+        deadline:
+          'Deadline',
+
+        actions:
+          'Actions',
+
+        empty:
+          'No currency purchases found.',
+
+        loading:
+          'Loading currency purchases...',
+
+        loadError:
+          'Failed to load currency purchases.',
+      },
+
+      currencyPurchaseForm: {
+        addTitle:
+          'Add Currency Purchase',
+
+        editTitle:
+          'Edit Currency Purchase',
+
+        addDescription:
+          'Record a new currency purchase.',
+
+        editDescription:
+          'Update purchase amount or purchase date.',
+
+        registrationOrder:
+          'Registration Order',
+
+        selectOrder:
+          'Select a registration order',
+
+        loadingOrders:
+          'Loading orders...',
+
+        currency:
+          'Currency',
+
+        purchaseAmount:
+          'Purchase Amount',
+
+        purchaseAmountPlaceholder:
+          'e.g. 50000',
+
+        purchaseDate:
+          'Purchase Date',
+
+        saveChanges:
+          'Save Changes',
+
+        createPurchase:
+          'Create Purchase',
+
+        saving:
+          'Saving...',
+
+        creating:
+          'Creating...',
+
+        selectOrderError:
+          'Please select a registration order.',
+
+        invalidAmountError:
+          'Purchase amount must be greater than zero.',
+
+        purchaseDateError:
+          'Please select a purchase date.',
+
+        currencyUnavailableError:
+          'Currency is unavailable for the selected order.',
       },
 
     },

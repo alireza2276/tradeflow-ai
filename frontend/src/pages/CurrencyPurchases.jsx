@@ -3,6 +3,8 @@ import {
   useState,
 } from 'react'
 
+import { useTranslation } from 'react-i18next'
+
 import {
   hasPermission,
 } from '../utils/permissions'
@@ -15,6 +17,7 @@ import {
   getCurrencyPurchases,
   updateCurrencyPurchase,
 } from '../services/api'
+
 
 function formatAmount(value) {
   const [integerPart, decimalPart = ''] =
@@ -39,14 +42,18 @@ function formatAmount(value) {
   }`
 }
 
+
 function CurrencyPurchases({
   user,
 }) {
+  const { t } = useTranslation()
+
   const [purchases, setPurchases] = useState([])
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState('')
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [selectedPurchase, setSelectedPurchase] = useState(null)
+
 
   async function loadPurchases() {
     try {
@@ -57,31 +64,36 @@ function CurrencyPurchases({
     } catch (loadError) {
       setError(
         loadError.message ||
-        'Failed to load currency purchases.'
+        t('currencyPurchases.loadError')
       )
     } finally {
       setIsLoading(false)
     }
   }
 
+
   useEffect(() => {
     loadPurchases()
   }, [])
+
 
   function handleAddPurchase() {
     setSelectedPurchase(null)
     setIsModalOpen(true)
   }
 
+
   function handleEditPurchase(purchase) {
     setSelectedPurchase(purchase)
     setIsModalOpen(true)
   }
 
+
   function handleCloseModal() {
     setIsModalOpen(false)
     setSelectedPurchase(null)
   }
+
 
   async function handleSubmit(purchaseData) {
     if (selectedPurchase) {
@@ -97,13 +109,15 @@ function CurrencyPurchases({
     await loadPurchases()
   }
 
+
   if (isLoading) {
     return (
       <div className="page-state">
-        Loading currency purchases...
+        {t('currencyPurchases.loading')}
       </div>
     )
   }
+
 
   if (error) {
     return (
@@ -113,14 +127,23 @@ function CurrencyPurchases({
     )
   }
 
+
+  const canEditPurchase = hasPermission(
+    user,
+    'trade_orders.change_currencypurchase'
+  )
+
+
   return (
     <div className="purchases-page">
       <div className="purchases-header">
         <div>
-          <h1>Currency Purchases</h1>
+          <h1>
+            {t('currencyPurchases.title')}
+          </h1>
 
           <p>
-            Manage currency purchases and their deadlines.
+            {t('currencyPurchases.description')}
           </p>
         </div>
 
@@ -133,27 +156,44 @@ function CurrencyPurchases({
             className="primary-button"
             onClick={handleAddPurchase}
           >
-            Add Currency Purchase
+            {t('currencyPurchases.addPurchase')}
           </button>
         )}
-
       </div>
+
 
       <div className="purchases-table-wrapper">
         <table className="purchases-table">
           <thead>
             <tr>
-              <th>Company</th>
-              <th>Order Number</th>
-              <th>Amount</th>
-              <th>Currency</th>
-              <th>Purchase Date</th>
-              <th>Deadline</th>
-              {hasPermission(
-                user,
-                'trade_orders.change_currencypurchase'
-              ) && (
-                <th>Actions</th>
+              <th>
+                {t('currencyPurchases.company')}
+              </th>
+
+              <th>
+                {t('currencyPurchases.orderNumber')}
+              </th>
+
+              <th>
+                {t('currencyPurchases.amount')}
+              </th>
+
+              <th>
+                {t('currencyPurchases.currency')}
+              </th>
+
+              <th>
+                {t('currencyPurchases.purchaseDate')}
+              </th>
+
+              <th>
+                {t('currencyPurchases.deadline')}
+              </th>
+
+              {canEditPurchase && (
+                <th>
+                  {t('currencyPurchases.actions')}
+                </th>
               )}
             </tr>
           </thead>
@@ -193,10 +233,7 @@ function CurrencyPurchases({
                   </span>
                 </td>
 
-                {hasPermission(
-                  user,
-                  'trade_orders.change_currencypurchase'
-                ) && (
+                {canEditPurchase && (
                   <td>
                     <div className="table-actions">
                       <button
@@ -206,29 +243,26 @@ function CurrencyPurchases({
                           handleEditPurchase(purchase)
                         }
                       >
-                        Edit
+                        {t('common.edit')}
                       </button>
                     </div>
                   </td>
                 )}
-
               </tr>
             ))}
+
 
             {purchases.length === 0 && (
               <tr>
                 <td
-                    colSpan={
-                      hasPermission(
-                          user,
-                          'trade_orders.change_currencypurchase'
-                      )
-                          ? 7
-                          : 6
-                    }
+                  colSpan={
+                    canEditPurchase
+                      ? 7
+                      : 6
+                  }
                 >
                   <div className="empty-state">
-                    No currency purchases found.
+                    {t('currencyPurchases.empty')}
                   </div>
                 </td>
               </tr>
@@ -237,8 +271,9 @@ function CurrencyPurchases({
         </table>
       </div>
 
+
       <CurrencyPurchaseFormModal
-          isOpen={isModalOpen}
+        isOpen={isModalOpen}
         purchase={selectedPurchase}
         onClose={handleCloseModal}
         onSubmit={handleSubmit}
@@ -246,5 +281,6 @@ function CurrencyPurchases({
     </div>
   )
 }
+
 
 export default CurrencyPurchases

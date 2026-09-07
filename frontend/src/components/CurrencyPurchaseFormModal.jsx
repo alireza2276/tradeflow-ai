@@ -4,6 +4,8 @@ import {
   useState,
 } from 'react'
 
+import { useTranslation } from 'react-i18next'
+
 import {
   getRegistrationOrders,
 } from '../services/api'
@@ -15,6 +17,8 @@ function CurrencyPurchaseFormModal({
   onClose,
   onSubmit,
 }) {
+  const { t } = useTranslation()
+
   const [orders, setOrders] = useState([])
 
   const [formData, setFormData] = useState({
@@ -30,6 +34,7 @@ function CurrencyPurchaseFormModal({
 
   const isEditMode = Boolean(purchase)
 
+
   const selectedOrder = useMemo(
     () => (
       orders.find(
@@ -43,6 +48,7 @@ function CurrencyPurchaseFormModal({
       formData.registration_order,
     ]
   )
+
 
   useEffect(() => {
     if (!isOpen) {
@@ -87,6 +93,7 @@ function CurrencyPurchaseFormModal({
     loadOrders()
   }, [isOpen, purchase])
 
+
   function handleOrderChange(event) {
     const orderId = event.target.value
 
@@ -105,6 +112,7 @@ function CurrencyPurchaseFormModal({
     }))
   }
 
+
   function handleChange(event) {
     const {
       name,
@@ -117,12 +125,13 @@ function CurrencyPurchaseFormModal({
     }))
   }
 
+
   async function handleSubmit(event) {
     event.preventDefault()
 
     if (!formData.registration_order) {
       setError(
-        'Please select a registration order.'
+        t('currencyPurchaseForm.selectOrderError')
       )
       return
     }
@@ -131,21 +140,23 @@ function CurrencyPurchaseFormModal({
 
     if (!Number.isFinite(amount) || amount <= 0) {
       setError(
-        'Purchase amount must be greater than zero.'
+        t('currencyPurchaseForm.invalidAmountError')
       )
       return
     }
 
     if (!formData.purchase_date) {
       setError(
-        'Please select a purchase date.'
+        t('currencyPurchaseForm.purchaseDateError')
       )
       return
     }
 
     if (!formData.currency) {
       setError(
-        'Currency is unavailable for the selected order.'
+        t(
+          'currencyPurchaseForm.currencyUnavailableError'
+        )
       )
       return
     }
@@ -177,26 +188,35 @@ function CurrencyPurchaseFormModal({
     }
   }
 
+
   if (!isOpen) {
     return null
   }
 
+
   return (
     <div className="modal-backdrop">
       <div className="company-modal">
-
         <div className="modal-header">
           <div>
             <h2>
-              {isEditMode
-                ? 'Edit Currency Purchase'
-                : 'Add Currency Purchase'}
+              {
+                isEditMode
+                  ? t('currencyPurchaseForm.editTitle')
+                  : t('currencyPurchaseForm.addTitle')
+              }
             </h2>
 
             <p>
-              {isEditMode
-                ? 'Update purchase amount or purchase date.'
-                : 'Record a new currency purchase.'}
+              {
+                isEditMode
+                  ? t(
+                      'currencyPurchaseForm.editDescription'
+                    )
+                  : t(
+                      'currencyPurchaseForm.addDescription'
+                    )
+              }
             </p>
           </div>
 
@@ -205,17 +225,22 @@ function CurrencyPurchaseFormModal({
             className="modal-close-button"
             onClick={onClose}
             disabled={submitting}
-            aria-label="Close"
+            aria-label={t('common.close')}
           >
             ×
           </button>
         </div>
 
-        <form onSubmit={handleSubmit}>
 
+        <form
+          onSubmit={handleSubmit}
+          noValidate
+        >
           <div className="form-group">
             <label htmlFor="purchase-order">
-              Registration Order
+              {t(
+                'currencyPurchaseForm.registrationOrder'
+              )}
             </label>
 
             <select
@@ -233,9 +258,15 @@ function CurrencyPurchaseFormModal({
               required
             >
               <option value="">
-                {loadingOrders
-                  ? 'Loading orders...'
-                  : 'Select a registration order'}
+                {
+                  loadingOrders
+                    ? t(
+                        'currencyPurchaseForm.loadingOrders'
+                      )
+                    : t(
+                        'currencyPurchaseForm.selectOrder'
+                      )
+                }
               </option>
 
               {orders.map((order) => (
@@ -253,9 +284,10 @@ function CurrencyPurchaseFormModal({
             </select>
           </div>
 
+
           <div className="form-group">
             <label htmlFor="purchase-currency">
-              Currency
+              {t('currencyPurchaseForm.currency')}
             </label>
 
             <input
@@ -270,9 +302,12 @@ function CurrencyPurchaseFormModal({
             />
           </div>
 
+
           <div className="form-group">
             <label htmlFor="purchase-amount">
-              Purchase Amount
+              {t(
+                'currencyPurchaseForm.purchaseAmount'
+              )}
             </label>
 
             <input
@@ -283,15 +318,20 @@ function CurrencyPurchaseFormModal({
               step="0.01"
               value={formData.amount}
               onChange={handleChange}
-              placeholder="e.g. 50000"
+              placeholder={t(
+                'currencyPurchaseForm.purchaseAmountPlaceholder'
+              )}
               disabled={submitting}
               required
             />
           </div>
 
+
           <div className="form-group">
             <label htmlFor="purchase-date">
-              Purchase Date
+              {t(
+                'currencyPurchaseForm.purchaseDate'
+              )}
             </label>
 
             <input
@@ -305,11 +345,13 @@ function CurrencyPurchaseFormModal({
             />
           </div>
 
+
           {error && (
             <div className="form-error">
               {error}
             </div>
           )}
+
 
           <div className="modal-actions">
             <button
@@ -318,7 +360,7 @@ function CurrencyPurchaseFormModal({
               onClick={onClose}
               disabled={submitting}
             >
-              Cancel
+              {t('common.cancel')}
             </button>
 
             <button
@@ -329,20 +371,25 @@ function CurrencyPurchaseFormModal({
                 loadingOrders
               }
             >
-              {submitting
-                ? (
-                    isEditMode
-                      ? 'Saving...'
-                      : 'Creating...'
-                  )
-                : (
-                    isEditMode
-                      ? 'Save Changes'
-                      : 'Create Purchase'
-                  )}
+              {
+                submitting
+                  ? (
+                      isEditMode
+                        ? t('currencyPurchaseForm.saving')
+                        : t('currencyPurchaseForm.creating')
+                    )
+                  : (
+                      isEditMode
+                        ? t(
+                            'currencyPurchaseForm.saveChanges'
+                          )
+                        : t(
+                            'currencyPurchaseForm.createPurchase'
+                          )
+                    )
+              }
             </button>
           </div>
-
         </form>
       </div>
     </div>
