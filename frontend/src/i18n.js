@@ -20,6 +20,7 @@ const resources = {
         logout: 'خروج',
         persian: 'فارسی',
         english: 'English',
+        close: 'بستن',
       },
 
       navigation: {
@@ -102,6 +103,98 @@ const resources = {
           '{{count}} روز تا سررسید باقی مانده است',
       },
 
+      companies: {
+        title: 'شرکت‌ها',
+        description:
+          'مدیریت شرکت‌های مرتبط با عملیات ارزی و تجاری',
+
+        addCompany:
+          'افزودن شرکت',
+
+        company:
+          'شرکت',
+
+        nationalId:
+          'شناسه ملی',
+
+        companyType:
+          'نوع شرکت',
+
+        commercial:
+          'بازرگانی',
+
+        production:
+          'تولیدی',
+
+        actions:
+          'عملیات',
+
+        empty:
+          'هنوز شرکتی ثبت نشده است.',
+
+        loadingTitle:
+          'در حال بارگذاری شرکت‌ها',
+
+        loadingDescription:
+          'اطلاعات شرکت‌ها در حال دریافت است.',
+
+        loadError:
+          'بارگذاری شرکت‌ها انجام نشد.',
+
+        deleting:
+          'در حال حذف...',
+
+        deleteConfirmation:
+          'آیا از حذف شرکت «{{name}}» مطمئن هستید؟ این عملیات قابل بازگشت نیست.',
+      },
+
+      companyForm: {
+        addTitle:
+          'افزودن شرکت',
+
+        editTitle:
+          'ویرایش شرکت',
+
+        addDescription:
+          'ثبت شرکت جدید در TradeFlowAI',
+
+        editDescription:
+          'اطلاعات شرکت را ویرایش کنید.',
+
+        companyName:
+          'نام شرکت',
+
+        companyNamePlaceholder:
+          'نام شرکت را وارد کنید',
+
+        nationalId:
+          'شناسه ملی',
+
+        nationalIdPlaceholder:
+          'شناسه ملی را وارد کنید',
+
+        companyType:
+          'نوع شرکت',
+
+        commercial:
+          'بازرگانی',
+
+        production:
+          'تولیدی',
+
+        saveChanges:
+          'ذخیره تغییرات',
+
+        createCompany:
+          'ایجاد شرکت',
+
+        saving:
+          'در حال ذخیره...',
+
+        creating:
+          'در حال ایجاد...',
+      },
+
       registrationOrders: {
         title: 'ثبت سفارش‌ها',
         description:
@@ -155,6 +248,7 @@ const resources = {
         logout: 'Logout',
         persian: 'فارسی',
         english: 'English',
+        close: 'Close',
       },
 
       navigation: {
@@ -235,6 +329,98 @@ const resources = {
           'Due today',
         daysLeft:
           '{{count}} days left',
+      },
+
+      companies: {
+        title: 'Companies',
+        description:
+          'Manage companies involved in trade finance operations.',
+
+        addCompany:
+          'Add Company',
+
+        company:
+          'Company',
+
+        nationalId:
+          'National ID',
+
+        companyType:
+          'Company Type',
+
+        commercial:
+          'Commercial',
+
+        production:
+          'Production',
+
+        actions:
+          'Actions',
+
+        empty:
+          'No companies have been registered yet.',
+
+        loadingTitle:
+          'Loading companies',
+
+        loadingDescription:
+          'Fetching company records from TradeFlowAI.',
+
+        loadError:
+          'Unable to load companies',
+
+        deleting:
+          'Deleting...',
+
+        deleteConfirmation:
+          'Delete "{{name}}"? This action cannot be undone.',
+      },
+
+      companyForm: {
+        addTitle:
+          'Add Company',
+
+        editTitle:
+          'Edit Company',
+
+        addDescription:
+          'Register a new company in TradeFlowAI.',
+
+        editDescription:
+          'Update company information.',
+
+        companyName:
+          'Company Name',
+
+        companyNamePlaceholder:
+          'Enter company name',
+
+        nationalId:
+          'National ID',
+
+        nationalIdPlaceholder:
+          'Enter national ID',
+
+        companyType:
+          'Company Type',
+
+        commercial:
+          'Commercial',
+
+        production:
+          'Production',
+
+        saveChanges:
+          'Save Changes',
+
+        createCompany:
+          'Create Company',
+
+        saving:
+          'Saving...',
+
+        creating:
+          'Creating...',
       },
 
       registrationOrders: {

@@ -1,10 +1,12 @@
 import { useEffect, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 
 import {
   hasPermission,
 } from '../utils/permissions'
 
 import CompanyFormModal from '../components/CompanyFormModal'
+
 import {
   createCompany,
   deleteCompany,
@@ -16,6 +18,8 @@ import {
 function Companies({
   user,
 }) {
+  const { t } = useTranslation()
+
   const [companies, setCompanies] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
@@ -90,7 +94,12 @@ function Companies({
 
   async function handleDeleteCompany(company) {
     const confirmed = window.confirm(
-      `Delete "${company.name}"? This action cannot be undone.`
+      t(
+        'companies.deleteConfirmation',
+        {
+          name: company.name,
+        }
+      )
     )
 
     if (!confirmed) {
@@ -121,10 +130,12 @@ function Companies({
         <div className="page-state">
           <div className="loading-spinner" />
 
-          <h2>Loading companies</h2>
+          <h2>
+            {t('companies.loadingTitle')}
+          </h2>
 
           <p>
-            Fetching company records from TradeFlowAI.
+            {t('companies.loadingDescription')}
           </p>
         </div>
       </div>
@@ -140,7 +151,9 @@ function Companies({
             !
           </div>
 
-          <h2>Unable to load companies</h2>
+          <h2>
+            {t('companies.loadError')}
+          </h2>
 
           <p>
             {error}
@@ -149,6 +162,7 @@ function Companies({
       </div>
     )
   }
+
 
   const canEditCompany = hasPermission(
     user,
@@ -163,15 +177,17 @@ function Companies({
   const canManageCompanies =
     canEditCompany || canDeleteCompany
 
+
   return (
     <div className="companies-page">
-
       <header className="companies-header">
         <div>
-          <h1>Companies</h1>
+          <h1>
+            {t('companies.title')}
+          </h1>
 
           <p>
-            Manage companies involved in trade finance operations.
+            {t('companies.description')}
           </p>
         </div>
 
@@ -184,28 +200,37 @@ function Companies({
             className="primary-button"
             onClick={handleOpenCreateModal}
           >
-            Add Company
+            {t('companies.addCompany')}
           </button>
         )}
-
       </header>
 
 
       {companies.length === 0 ? (
         <div className="empty-state">
-          No companies have been registered yet.
+          {t('companies.empty')}
         </div>
       ) : (
         <div className="companies-table-wrapper">
           <table className="companies-table">
-
             <thead>
               <tr>
-                <th>Company</th>
-                <th>National ID</th>
-                <th>Type</th>
+                <th>
+                  {t('companies.company')}
+                </th>
+
+                <th>
+                  {t('companies.nationalId')}
+                </th>
+
+                <th>
+                  {t('companies.companyType')}
+                </th>
+
                 {canManageCompanies && (
-                  <th>Actions</th>
+                  <th>
+                    {t('companies.actions')}
+                  </th>
                 )}
               </tr>
             </thead>
@@ -213,7 +238,6 @@ function Companies({
             <tbody>
               {companies.map((company) => (
                 <tr key={company.id}>
-
                   <td>
                     {company.name}
                   </td>
@@ -224,9 +248,11 @@ function Companies({
 
                   <td>
                     <span className="company-type-badge">
-                      {company.company_type === 'PRODUCTION'
-                        ? 'Production'
-                        : 'Commercial'}
+                      {
+                        company.company_type === 'PRODUCTION'
+                          ? t('companies.production')
+                          : t('companies.commercial')
+                      }
                     </span>
                   </td>
 
@@ -241,7 +267,7 @@ function Companies({
                               handleOpenEditModal(company)
                             }
                           >
-                            Edit
+                            {t('common.edit')}
                           </button>
                         )}
 
@@ -256,19 +282,19 @@ function Companies({
                               deletingCompanyId === company.id
                             }
                           >
-                            {deletingCompanyId === company.id
-                              ? 'Deleting...'
-                              : 'Delete'}
+                            {
+                              deletingCompanyId === company.id
+                                ? t('companies.deleting')
+                                : t('common.delete')
+                            }
                           </button>
                         )}
                       </div>
                     </td>
                   )}
-
                 </tr>
               ))}
             </tbody>
-
           </table>
         </div>
       )}
@@ -281,9 +307,9 @@ function Companies({
           onSubmit={handleSubmitCompany}
         />
       )}
-
     </div>
   )
 }
+
 
 export default Companies

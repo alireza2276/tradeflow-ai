@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 
 
 function CompanyFormModal({
@@ -6,6 +7,8 @@ function CompanyFormModal({
   onClose,
   onSubmit,
 }) {
+  const { t } = useTranslation()
+
   const [formData, setFormData] = useState({
     name: '',
     national_id: '',
@@ -16,6 +19,7 @@ function CompanyFormModal({
   const [error, setError] = useState('')
 
   const isEditMode = Boolean(company)
+
 
   useEffect(() => {
     if (company) {
@@ -28,6 +32,7 @@ function CompanyFormModal({
     }
   }, [company])
 
+
   function handleChange(event) {
     const { name, value } = event.target
 
@@ -36,6 +41,7 @@ function CompanyFormModal({
       [name]: value,
     }))
   }
+
 
   async function handleSubmit(event) {
     event.preventDefault()
@@ -52,22 +58,26 @@ function CompanyFormModal({
     }
   }
 
+
   return (
     <div className="modal-backdrop">
       <div className="company-modal">
-
         <div className="modal-header">
           <div>
             <h2>
-              {isEditMode
-                ? 'Edit Company'
-                : 'Add Company'}
+              {
+                isEditMode
+                  ? t('companyForm.editTitle')
+                  : t('companyForm.addTitle')
+              }
             </h2>
 
             <p>
-              {isEditMode
-                ? 'Update company information.'
-                : 'Register a new company in TradeFlowAI.'}
+              {
+                isEditMode
+                  ? t('companyForm.editDescription')
+                  : t('companyForm.addDescription')
+              }
             </p>
           </div>
 
@@ -75,17 +85,17 @@ function CompanyFormModal({
             type="button"
             className="modal-close-button"
             onClick={onClose}
-            aria-label="Close"
+            aria-label={t('common.close')}
           >
             ×
           </button>
         </div>
 
-        <form onSubmit={handleSubmit}>
 
+        <form onSubmit={handleSubmit}>
           <div className="form-group">
             <label htmlFor="company-name">
-              Company Name
+              {t('companyForm.companyName')}
             </label>
 
             <input
@@ -94,14 +104,17 @@ function CompanyFormModal({
               type="text"
               value={formData.name}
               onChange={handleChange}
-              placeholder="Enter company name"
+              placeholder={t(
+                'companyForm.companyNamePlaceholder'
+              )}
               required
             />
           </div>
 
+
           <div className="form-group">
             <label htmlFor="national-id">
-              National ID
+              {t('companyForm.nationalId')}
             </label>
 
             <input
@@ -110,14 +123,17 @@ function CompanyFormModal({
               type="text"
               value={formData.national_id}
               onChange={handleChange}
-              placeholder="Enter national ID"
+              placeholder={t(
+                'companyForm.nationalIdPlaceholder'
+              )}
               required
             />
           </div>
 
+
           <div className="form-group">
             <label htmlFor="company-type">
-              Company Type
+              {t('companyForm.companyType')}
             </label>
 
             <select
@@ -127,20 +143,22 @@ function CompanyFormModal({
               onChange={handleChange}
             >
               <option value="COMMERCIAL">
-                Commercial
+                {t('companyForm.commercial')}
               </option>
 
               <option value="PRODUCTION">
-                Production
+                {t('companyForm.production')}
               </option>
             </select>
           </div>
+
 
           {error && (
             <div className="form-error">
               {error}
             </div>
           )}
+
 
           <div className="modal-actions">
             <button
@@ -149,7 +167,7 @@ function CompanyFormModal({
               onClick={onClose}
               disabled={submitting}
             >
-              Cancel
+              {t('common.cancel')}
             </button>
 
             <button
@@ -157,24 +175,26 @@ function CompanyFormModal({
               className="primary-button"
               disabled={submitting}
             >
-              {submitting
-                ? (
-                    isEditMode
-                      ? 'Saving...'
-                      : 'Creating...'
-                  )
-                : (
-                    isEditMode
-                      ? 'Save Changes'
-                      : 'Create Company'
-                  )}
+              {
+                submitting
+                  ? (
+                      isEditMode
+                        ? t('companyForm.saving')
+                        : t('companyForm.creating')
+                    )
+                  : (
+                      isEditMode
+                        ? t('companyForm.saveChanges')
+                        : t('companyForm.createCompany')
+                    )
+              }
             </button>
           </div>
-
         </form>
       </div>
     </div>
   )
 }
+
 
 export default CompanyFormModal
