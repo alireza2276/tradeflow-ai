@@ -3,6 +3,10 @@ import {
 } from 'react-router-dom'
 
 import {
+  useTranslation,
+} from 'react-i18next'
+
+import {
   hasPermission,
 } from '../utils/permissions'
 
@@ -10,6 +14,8 @@ import {
 function Forbidden({
   user,
 }) {
+  const { t } = useTranslation()
+
   const canViewDashboard =
     hasPermission(
       user,
@@ -27,10 +33,12 @@ function Forbidden({
           403
         </span>
 
-        <h1>Access Denied</h1>
+        <h1>
+          {t('forbidden.title')}
+        </h1>
 
         <p>
-          You do not have permission to access this page.
+          {t('forbidden.message')}
         </p>
 
         {canViewDashboard ? (
@@ -38,11 +46,11 @@ function Forbidden({
             to="/"
             className="forbidden-link"
           >
-            Back to Dashboard
+            {t('forbidden.backToDashboard')}
           </Link>
         ) : (
           <p>
-            Please contact your administrator if you need additional access.
+            {t('forbidden.contactAdministrator')}
           </p>
         )}
       </div>

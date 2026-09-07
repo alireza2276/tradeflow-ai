@@ -7,20 +7,37 @@ import {
 } from 'react-router-dom'
 
 import {
+  useTranslation,
+} from 'react-i18next'
+
+import {
   login,
 } from '../services/api'
 
 
 function Login({ onLogin }) {
   const navigate = useNavigate()
+  const { t } = useTranslation()
 
-  const [username, setUsername] = useState('')
-  const [password, setPassword] = useState('')
-  const [error, setError] = useState('')
-  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [username, setUsername] =
+    useState('')
+
+  const [password, setPassword] =
+    useState('')
+
+  const [error, setError] =
+    useState('')
+
+  const [isSubmitting, setIsSubmitting] =
+    useState(false)
+
 
   async function handleSubmit(event) {
     event.preventDefault()
+
+    if (isSubmitting) {
+      return
+    }
 
     setError('')
     setIsSubmitting(true)
@@ -39,32 +56,37 @@ function Login({ onLogin }) {
           replace: true,
         }
       )
-
     } catch (loginError) {
       setError(
         loginError.message ||
-        'Login failed.'
+        t('login.loginFailed')
       )
     } finally {
       setIsSubmitting(false)
     }
   }
 
+
   return (
     <div className="login-page">
       <div className="login-card">
         <div className="login-brand">
-          <h1>TradeFlowAI</h1>
+          <h1>
+            {t('login.title')}
+          </h1>
 
           <p>
-            Trade Finance Management System
+            {t('login.subtitle')}
           </p>
         </div>
 
-        <form onSubmit={handleSubmit}>
+        <form
+          onSubmit={handleSubmit}
+          noValidate
+        >
           <div className="form-group">
             <label htmlFor="username">
-              Username
+              {t('login.username')}
             </label>
 
             <input
@@ -81,9 +103,10 @@ function Login({ onLogin }) {
             />
           </div>
 
+
           <div className="form-group">
             <label htmlFor="password">
-              Password
+              {t('login.password')}
             </label>
 
             <input
@@ -100,6 +123,7 @@ function Login({ onLogin }) {
             />
           </div>
 
+
           {error && (
             <div
               className="form-error"
@@ -109,6 +133,7 @@ function Login({ onLogin }) {
             </div>
           )}
 
+
           <button
             type="submit"
             className="login-button"
@@ -116,8 +141,8 @@ function Login({ onLogin }) {
           >
             {
               isSubmitting
-                ? 'Signing in...'
-                : 'Sign in'
+                ? t('login.signingIn')
+                : t('login.signIn')
             }
           </button>
         </form>

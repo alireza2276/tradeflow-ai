@@ -713,6 +713,43 @@ const resources = {
         },
       },
 
+      login: {
+        title:
+          'TradeFlowAI',
+
+        subtitle:
+          'سامانه مدیریت تأمین مالی تجارت',
+
+        username:
+          'نام کاربری',
+
+        password:
+          'رمز عبور',
+
+        signIn:
+          'ورود',
+
+        signingIn:
+          'در حال ورود...',
+
+        loginFailed:
+          'ورود ناموفق بود.',
+      },
+
+      forbidden: {
+        title:
+          'دسترسی غیرمجاز',
+
+        message:
+          'شما مجوز دسترسی به این صفحه را ندارید.',
+
+        backToDashboard:
+          'بازگشت به داشبورد',
+
+        contactAdministrator:
+          'اگر به دسترسی بیشتری نیاز دارید، با مدیر سامانه تماس بگیرید.',
+      },
+
     },
   },
 
@@ -1424,6 +1461,43 @@ const resources = {
           OVERDUE:
             'Overdue',
         },
+      },
+
+      login: {
+        title:
+          'TradeFlowAI',
+
+        subtitle:
+          'Trade Finance Management System',
+
+        username:
+          'Username',
+
+        password:
+          'Password',
+
+        signIn:
+          'Sign in',
+
+        signingIn:
+          'Signing in...',
+
+        loginFailed:
+          'Login failed.',
+      },
+
+      forbidden: {
+        title:
+          'Access Denied',
+
+        message:
+          'You do not have permission to access this page.',
+
+        backToDashboard:
+          'Back to Dashboard',
+
+        contactAdministrator:
+          'Please contact your administrator if you need additional access.',
       },
 
     },
