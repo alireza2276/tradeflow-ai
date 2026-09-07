@@ -369,6 +369,104 @@ const resources = {
           'ارز برای ثبت سفارش انتخاب‌شده در دسترس نیست.',
       },
 
+      shipmentParts: {
+        title: 'اسناد حمل',
+        description:
+          'مدیریت تخصیص اسناد حمل مرتبط با خریدهای ارز',
+
+        addShipmentPart:
+          'افزودن سند حمل',
+
+        company:
+          'شرکت',
+
+        orderNumber:
+          'شماره ثبت سفارش',
+
+        reference:
+          'شماره مرجع',
+
+        amount:
+          'مبلغ',
+
+        currency:
+          'ارز',
+
+        shipmentDate:
+          'تاریخ حمل',
+
+        receivedDate:
+          'تاریخ دریافت',
+
+        notes:
+          'یادداشت',
+
+        actions:
+          'عملیات',
+
+        empty:
+          'سند حملی ثبت نشده است.',
+
+        loading:
+          'در حال بارگذاری اسناد حمل...',
+
+        loadError:
+          'بارگذاری اطلاعات اسناد حمل انجام نشد.',
+      },
+
+      shipmentPartForm: {
+        addTitle:
+          'افزودن سند حمل',
+
+        editTitle:
+          'ویرایش سند حمل',
+
+        addDescription:
+          'ثبت تخصیص جدید سند حمل برای یک خرید ارز',
+
+        editDescription:
+          'اطلاعات تخصیص سند حمل را ویرایش کنید.',
+
+        currencyPurchase:
+          'خرید ارز',
+
+        selectCurrencyPurchase:
+          'انتخاب خرید ارز',
+
+        amount:
+          'مبلغ',
+
+        shipmentDate:
+          'تاریخ حمل',
+
+        receivedDate:
+          'تاریخ دریافت',
+
+        referenceNumber:
+          'شماره مرجع',
+
+        notes:
+          'یادداشت',
+
+        saveChanges:
+          'ذخیره تغییرات',
+
+        addShipmentPart:
+          'افزودن سند حمل',
+
+        saving:
+          'در حال ذخیره...',
+
+        selectPurchaseError:
+          'لطفاً یک خرید ارز انتخاب کنید.',
+
+        invalidAmountError:
+          'مبلغ سند حمل باید بیشتر از صفر باشد.',
+
+        saveError:
+          'ذخیره سند حمل انجام نشد.',
+      },
+
     },
   },
 
@@ -736,6 +834,104 @@ const resources = {
 
         currencyUnavailableError:
           'Currency is unavailable for the selected order.',
+      },
+
+      shipmentParts: {
+        title: 'Shipment Parts',
+        description:
+          'Track shipment allocations linked to currency purchases.',
+
+        addShipmentPart:
+          'Add Shipment Part',
+
+        company:
+          'Company',
+
+        orderNumber:
+          'Order Number',
+
+        reference:
+          'Reference',
+
+        amount:
+          'Amount',
+
+        currency:
+          'Currency',
+
+        shipmentDate:
+          'Shipment Date',
+
+        receivedDate:
+          'Received Date',
+
+        notes:
+          'Notes',
+
+        actions:
+          'Actions',
+
+        empty:
+          'No shipment parts found.',
+
+        loading:
+          'Loading shipment parts...',
+
+        loadError:
+          'Failed to load shipment data.',
+      },
+
+      shipmentPartForm: {
+        addTitle:
+          'Add Shipment Part',
+
+        editTitle:
+          'Edit Shipment Part',
+
+        addDescription:
+          'Create a shipment allocation for a currency purchase.',
+
+        editDescription:
+          'Update the shipment allocation details.',
+
+        currencyPurchase:
+          'Currency Purchase',
+
+        selectCurrencyPurchase:
+          'Select currency purchase',
+
+        amount:
+          'Amount',
+
+        shipmentDate:
+          'Shipment Date',
+
+        receivedDate:
+          'Received Date',
+
+        referenceNumber:
+          'Reference Number',
+
+        notes:
+          'Notes',
+
+        saveChanges:
+          'Save Changes',
+
+        addShipmentPart:
+          'Add Shipment Part',
+
+        saving:
+          'Saving...',
+
+        selectPurchaseError:
+          'Please select a currency purchase.',
+
+        invalidAmountError:
+          'Shipment amount must be greater than zero.',
+
+        saveError:
+          'Failed to save shipment part.',
       },
 
     },

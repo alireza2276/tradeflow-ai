@@ -2,6 +2,8 @@ import {
   useState,
 } from 'react'
 
+import { useTranslation } from 'react-i18next'
+
 
 function ShipmentPartFormModal({
   isOpen,
@@ -11,40 +13,45 @@ function ShipmentPartFormModal({
   onClose,
   onSubmit,
 }) {
-const [formData, setFormData] = useState(() => {
-  if (
-    mode === 'edit' &&
-    shipmentPart
-  ) {
-    return {
-      currency_purchase:
-        shipmentPart.currency_purchase || '',
-      amount:
-        shipmentPart.amount || '',
-      shipment_date:
-        shipmentPart.shipment_date || '',
-      received_date:
-        shipmentPart.received_date || '',
-      reference_number:
-        shipmentPart.reference_number || '',
-      notes:
-        shipmentPart.notes || '',
+  const { t } = useTranslation()
+
+  const [formData, setFormData] = useState(() => {
+    if (
+      mode === 'edit' &&
+      shipmentPart
+    ) {
+      return {
+        currency_purchase:
+          shipmentPart.currency_purchase || '',
+        amount:
+          shipmentPart.amount || '',
+        shipment_date:
+          shipmentPart.shipment_date || '',
+        received_date:
+          shipmentPart.received_date || '',
+        reference_number:
+          shipmentPart.reference_number || '',
+        notes:
+          shipmentPart.notes || '',
+      }
     }
-  }
 
-  return {
-    currency_purchase: '',
-    amount: '',
-    shipment_date: '',
-    received_date: '',
-    reference_number: '',
-    notes: '',
-  }
-})
+    return {
+      currency_purchase: '',
+      amount: '',
+      shipment_date: '',
+      received_date: '',
+      reference_number: '',
+      notes: '',
+    }
+  })
 
-    const [isSubmitting, setIsSubmitting] = useState(false)
-    const [submitError, setSubmitError] = useState('')
 
+  const [isSubmitting, setIsSubmitting] =
+    useState(false)
+
+  const [submitError, setSubmitError] =
+    useState('')
 
 
   function handleChange(event) {
@@ -59,51 +66,77 @@ const [formData, setFormData] = useState(() => {
     }))
   }
 
+
   async function handleSubmit(event) {
-      event.preventDefault()
+    event.preventDefault()
 
-      if (isSubmitting) {
-        return
-      }
-
-      try {
-        setIsSubmitting(true)
-        setSubmitError('')
-
-        const payload = {
-          amount: formData.amount,
-          shipment_date:
-            formData.shipment_date || null,
-          received_date:
-            formData.received_date || null,
-          reference_number:
-            formData.reference_number.trim(),
-          notes:
-            formData.notes.trim(),
-        }
-
-        if (mode === 'create') {
-          payload.currency_purchase =
-            formData.currency_purchase
-        }
-
-        await onSubmit(payload)
-      } catch (submitError) {
-        setSubmitError(
-          submitError.message ||
-          'Failed to save shipment part.'
-        )
-      } finally {
-        setIsSubmitting(false)
-      }
+    if (isSubmitting) {
+      return
     }
+
+    if (
+      mode === 'create' &&
+      !formData.currency_purchase
+    ) {
+      setSubmitError(
+        t('shipmentPartForm.selectPurchaseError')
+      )
+      return
+    }
+
+    const amount = Number(formData.amount)
+
+    if (
+      !Number.isFinite(amount) ||
+      amount <= 0
+    ) {
+      setSubmitError(
+        t('shipmentPartForm.invalidAmountError')
+      )
+      return
+    }
+
+    try {
+      setIsSubmitting(true)
+      setSubmitError('')
+
+      const payload = {
+        amount: formData.amount,
+        shipment_date:
+          formData.shipment_date || null,
+        received_date:
+          formData.received_date || null,
+        reference_number:
+          formData.reference_number.trim(),
+        notes:
+          formData.notes.trim(),
+      }
+
+      if (mode === 'create') {
+        payload.currency_purchase =
+          formData.currency_purchase
+      }
+
+      await onSubmit(payload)
+    } catch (error) {
+      setSubmitError(
+        error.message ||
+        t('shipmentPartForm.saveError')
+      )
+    } finally {
+      setIsSubmitting(false)
+    }
+  }
+
 
   if (!isOpen) {
     return null
   }
 
+
   const isEditMode =
     mode === 'edit'
+
 
   return (
     <div className="modal-backdrop">
@@ -111,15 +144,23 @@ const [formData, setFormData] = useState(() => {
         <div className="modal-header">
           <div>
             <h2>
-              {isEditMode
-                ? 'Edit Shipment Part'
-                : 'Add Shipment Part'}
+              {
+                isEditMode
+                  ? t('shipmentPartForm.editTitle')
+                  : t('shipmentPartForm.addTitle')
+              }
             </h2>
 
             <p>
-              {isEditMode
-                ? 'Update the shipment allocation details.'
-                : 'Create a shipment allocation for a currency purchase.'}
+              {
+                isEditMode
+                  ? t(
+                      'shipmentPartForm.editDescription'
+                    )
+                  : t(
+                      'shipmentPartForm.addDescription'
+                    )
+              }
             </p>
           </div>
 
@@ -128,18 +169,23 @@ const [formData, setFormData] = useState(() => {
             className="modal-close-button"
             onClick={onClose}
             disabled={isSubmitting}
+            aria-label={t('common.close')}
           >
             ×
           </button>
         </div>
 
+
         <form
           onSubmit={handleSubmit}
           className="modal-form"
+          noValidate
         >
           <div className="form-group">
             <label htmlFor="currency_purchase">
-              Currency Purchase
+              {t(
+                'shipmentPartForm.currencyPurchase'
+              )}
             </label>
 
             <select
@@ -154,7 +200,9 @@ const [formData, setFormData] = useState(() => {
               required
             >
               <option value="">
-                Select currency purchase
+                {t(
+                  'shipmentPartForm.selectCurrencyPurchase'
+                )}
               </option>
 
               {currencyPurchases.map(
@@ -176,9 +224,10 @@ const [formData, setFormData] = useState(() => {
             </select>
           </div>
 
+
           <div className="form-group">
             <label htmlFor="amount">
-              Amount
+              {t('shipmentPartForm.amount')}
             </label>
 
             <input
@@ -194,10 +243,13 @@ const [formData, setFormData] = useState(() => {
             />
           </div>
 
+
           <div className="form-row">
             <div className="form-group">
               <label htmlFor="shipment_date">
-                Shipment Date
+                {t(
+                  'shipmentPartForm.shipmentDate'
+                )}
               </label>
 
               <input
@@ -212,7 +264,9 @@ const [formData, setFormData] = useState(() => {
 
             <div className="form-group">
               <label htmlFor="received_date">
-                Received Date
+                {t(
+                  'shipmentPartForm.receivedDate'
+                )}
               </label>
 
               <input
@@ -226,9 +280,12 @@ const [formData, setFormData] = useState(() => {
             </div>
           </div>
 
+
           <div className="form-group">
             <label htmlFor="reference_number">
-              Reference Number
+              {t(
+                'shipmentPartForm.referenceNumber'
+              )}
             </label>
 
             <input
@@ -241,9 +298,10 @@ const [formData, setFormData] = useState(() => {
             />
           </div>
 
+
           <div className="form-group">
             <label htmlFor="notes">
-              Notes
+              {t('shipmentPartForm.notes')}
             </label>
 
             <textarea
@@ -255,11 +313,15 @@ const [formData, setFormData] = useState(() => {
               disabled={isSubmitting}
             />
           </div>
-            {submitError && (
-              <div className="modal-error-message">
-                {submitError}
-              </div>
-            )}
+
+
+          {submitError && (
+            <div className="modal-error-message">
+              {submitError}
+            </div>
+          )}
+
+
           <div className="modal-actions">
             <button
               type="button"
@@ -267,7 +329,7 @@ const [formData, setFormData] = useState(() => {
               onClick={onClose}
               disabled={isSubmitting}
             >
-              Cancel
+              {t('common.cancel')}
             </button>
 
             <button
@@ -275,11 +337,19 @@ const [formData, setFormData] = useState(() => {
               className="primary-button"
               disabled={isSubmitting}
             >
-              {isSubmitting
-                ? 'Saving...'
-                : isEditMode
-                  ? 'Save Changes'
-                  : 'Add Shipment Part'}
+              {
+                isSubmitting
+                  ? t('shipmentPartForm.saving')
+                  : (
+                      isEditMode
+                        ? t(
+                            'shipmentPartForm.saveChanges'
+                          )
+                        : t(
+                            'shipmentPartForm.addShipmentPart'
+                          )
+                    )
+              }
             </button>
           </div>
         </form>

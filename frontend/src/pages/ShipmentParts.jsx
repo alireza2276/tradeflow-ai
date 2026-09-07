@@ -3,7 +3,10 @@ import {
   useState,
 } from 'react'
 
-import ShipmentPartFormModal from '../components/ShipmentPartFormModal'
+import { useTranslation } from 'react-i18next'
+
+import ShipmentPartFormModal
+  from '../components/ShipmentPartFormModal'
 
 import {
   createShipmentPart,
@@ -20,6 +23,8 @@ import {
 function ShipmentParts({
   user,
 }) {
+  const { t } = useTranslation()
+
   const [shipmentParts, setShipmentParts] = useState([])
   const [currencyPurchases, setCurrencyPurchases] = useState([])
 
@@ -28,7 +33,9 @@ function ShipmentParts({
 
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [modalMode, setModalMode] = useState('create')
-  const [selectedShipmentPart, setSelectedShipmentPart] = useState(null)
+  const [selectedShipmentPart, setSelectedShipmentPart] =
+    useState(null)
+
 
   const canAddShipmentPart = hasPermission(
     user,
@@ -39,6 +46,7 @@ function ShipmentParts({
     user,
     'trade_orders.change_shipmentpart'
   )
+
 
   async function loadData() {
     const shipmentData = await getShipmentParts()
@@ -54,6 +62,7 @@ function ShipmentParts({
       setCurrencyPurchases([])
     }
   }
+
 
   useEffect(() => {
     let isMounted = true
@@ -85,7 +94,7 @@ function ShipmentParts({
         if (isMounted) {
           setError(
             loadError.message ||
-            'Failed to load shipment data.'
+            t('shipmentParts.loadError')
           )
         }
       } finally {
@@ -100,7 +109,8 @@ function ShipmentParts({
     return () => {
       isMounted = false
     }
-  }, [canAddShipmentPart])
+  }, [canAddShipmentPart, t])
+
 
   function openCreateModal() {
     setModalMode('create')
@@ -108,16 +118,19 @@ function ShipmentParts({
     setIsModalOpen(true)
   }
 
+
   function openEditModal(shipmentPart) {
     setModalMode('edit')
     setSelectedShipmentPart(shipmentPart)
     setIsModalOpen(true)
   }
 
+
   function closeModal() {
     setIsModalOpen(false)
     setSelectedShipmentPart(null)
   }
+
 
   async function handleSubmit(payload) {
     if (modalMode === 'create') {
@@ -133,164 +146,196 @@ function ShipmentParts({
     await loadData()
   }
 
+
   if (loading) {
     return (
       <div className="page-loading">
-        Loading shipment parts...
+        {t('shipmentParts.loading')}
       </div>
     )
   }
 
+
   return (
-      <div className="shipments-page">
-        <div className="shipments-header">
-          <div>
-            <h1>Shipment Parts</h1>
+    <div className="shipments-page">
+      <div className="shipments-header">
+        <div>
+          <h1>
+            {t('shipmentParts.title')}
+          </h1>
 
-            <p>
-              Track shipment allocations linked to currency purchases.
-            </p>
-          </div>
-
-          {canAddShipmentPart && (
-              <button
-                  type="button"
-                  className="primary-button"
-                  onClick={openCreateModal}
-              >
-                Add Shipment Part
-              </button>
-          )}
+          <p>
+            {t('shipmentParts.description')}
+          </p>
         </div>
 
-        {error && (
-            <div className="error-message">
-              {error}
-            </div>
+        {canAddShipmentPart && (
+          <button
+            type="button"
+            className="primary-button"
+            onClick={openCreateModal}
+          >
+            {t('shipmentParts.addShipmentPart')}
+          </button>
         )}
+      </div>
 
-        <div className="shipments-table-wrapper">
-          <table className="shipments-table">
-            <thead>
+
+      {error && (
+        <div className="error-message">
+          {error}
+        </div>
+      )}
+
+
+      <div className="shipments-table-wrapper">
+        <table className="shipments-table">
+          <thead>
             <tr>
-              <th>Company</th>
-              <th>Order Number</th>
-              <th>Reference</th>
-              <th>Amount</th>
-              <th>Currency</th>
-              <th>Shipment Date</th>
-              <th>Received Date</th>
-              <th>Notes</th>
+              <th>
+                {t('shipmentParts.company')}
+              </th>
+
+              <th>
+                {t('shipmentParts.orderNumber')}
+              </th>
+
+              <th>
+                {t('shipmentParts.reference')}
+              </th>
+
+              <th>
+                {t('shipmentParts.amount')}
+              </th>
+
+              <th>
+                {t('shipmentParts.currency')}
+              </th>
+
+              <th>
+                {t('shipmentParts.shipmentDate')}
+              </th>
+
+              <th>
+                {t('shipmentParts.receivedDate')}
+              </th>
+
+              <th>
+                {t('shipmentParts.notes')}
+              </th>
 
               {canEditShipmentPart && (
-                  <th>Actions</th>
+                <th>
+                  {t('shipmentParts.actions')}
+                </th>
               )}
             </tr>
-            </thead>
+          </thead>
 
-            <tbody>
+          <tbody>
             {shipmentParts.length === 0 ? (
-                <tr>
-                  <td
-                      colSpan={
-                        canEditShipmentPart
-                            ? 9
-                            : 8
-                      }
-                      className="empty-state"
-                  >
-                    No shipment parts found.
-                  </td>
-                </tr>
+              <tr>
+                <td
+                  colSpan={
+                    canEditShipmentPart
+                      ? 9
+                      : 8
+                  }
+                  className="empty-state"
+                >
+                  {t('shipmentParts.empty')}
+                </td>
+              </tr>
             ) : (
-                shipmentParts.map((shipmentPart) => (
-                    <tr key={shipmentPart.id}>
-                      <td>
-                        {shipmentPart.company_name || '-'}
-                      </td>
+              shipmentParts.map((shipmentPart) => (
+                <tr key={shipmentPart.id}>
+                  <td>
+                    {shipmentPart.company_name || '-'}
+                  </td>
 
-                      <td>
-                        {shipmentPart.order_number || '-'}
-                      </td>
+                  <td>
+                    {shipmentPart.order_number || '-'}
+                  </td>
 
-                      <td>
-                        <span className="shipment-reference">
-                          {shipmentPart.reference_number || '-'}
-                        </span>
-                      </td>
+                  <td>
+                    <span className="shipment-reference">
+                      {shipmentPart.reference_number || '-'}
+                    </span>
+                  </td>
 
-                      <td>
-                        <span className="shipment-amount">
-                          {Number(
-                              shipmentPart.amount
-                          ).toLocaleString(
-                              'en-US',
-                              {
-                                minimumFractionDigits: 2,
-                                maximumFractionDigits: 2,
-                              }
-                          )}
-                        </span>
-                      </td>
-
-                      <td>
-                        <span className="table-currency">
-                          {shipmentPart.purchase_currency || '-'}
-                        </span>
-                      </td>
-
-                      <td>
-                        <span className="shipment-date">
-                          {shipmentPart.shipment_date || '-'}
-                        </span>
-                      </td>
-
-                      <td>
-                        <span className="shipment-date">
-                          {shipmentPart.received_date || '-'}
-                        </span>
-                      </td>
-
-                      <td>
-                        <span
-                            className="shipment-notes"
-                            title={shipmentPart.notes || ''}
-                        >
-                          {shipmentPart.notes || '-'}
-                        </span>
-                      </td>
-
-                      {canEditShipmentPart && (
-                          <td>
-                            <button
-                                type="button"
-                                className="secondary-button"
-                                onClick={() =>
-                                    openEditModal(shipmentPart)
-                                }
-                            >
-                              Edit
-                            </button>
-                          </td>
+                  <td>
+                    <span className="shipment-amount">
+                      {Number(
+                        shipmentPart.amount
+                      ).toLocaleString(
+                        'en-US',
+                        {
+                          minimumFractionDigits: 2,
+                          maximumFractionDigits: 2,
+                        }
                       )}
-                    </tr>
-                ))
-            )}
-            </tbody>
-           </table>
-        </div>
+                    </span>
+                  </td>
 
-  {isModalOpen && (
-    <ShipmentPartFormModal
-      isOpen={isModalOpen}
-      mode={modalMode}
-      shipmentPart={selectedShipmentPart}
-      currencyPurchases={currencyPurchases}
-      onClose={closeModal}
-      onSubmit={handleSubmit}
-    />
-  )}
+                  <td>
+                    <span className="table-currency">
+                      {shipmentPart.purchase_currency || '-'}
+                    </span>
+                  </td>
+
+                  <td>
+                    <span className="shipment-date">
+                      {shipmentPart.shipment_date || '-'}
+                    </span>
+                  </td>
+
+                  <td>
+                    <span className="shipment-date">
+                      {shipmentPart.received_date || '-'}
+                    </span>
+                  </td>
+
+                  <td>
+                    <span
+                      className="shipment-notes"
+                      title={shipmentPart.notes || ''}
+                    >
+                      {shipmentPart.notes || '-'}
+                    </span>
+                  </td>
+
+                  {canEditShipmentPart && (
+                    <td>
+                      <button
+                        type="button"
+                        className="secondary-button"
+                        onClick={() =>
+                          openEditModal(shipmentPart)
+                        }
+                      >
+                        {t('common.edit')}
+                      </button>
+                    </td>
+                  )}
+                </tr>
+              ))
+            )}
+          </tbody>
+        </table>
       </div>
+
+
+      {isModalOpen && (
+        <ShipmentPartFormModal
+          isOpen={isModalOpen}
+          mode={modalMode}
+          shipmentPart={selectedShipmentPart}
+          currencyPurchases={currencyPurchases}
+          onClose={closeModal}
+          onSubmit={handleSubmit}
+        />
+      )}
+    </div>
   )
 }
 
