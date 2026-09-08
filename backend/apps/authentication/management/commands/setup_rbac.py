@@ -38,6 +38,7 @@ ROLE_PERMISSIONS = {
         "trade_orders.add_shipmentpart",
         "trade_orders.change_shipmentpart",
         "workflows.review_approvalrequest",
+        "trade_orders.void_currencypurchase",
     ),
 
     "TRADE_SUPERVISOR": (

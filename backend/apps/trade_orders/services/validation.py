@@ -9,13 +9,14 @@ from apps.trade_orders.models import (
 )
 
 
-def get_total_purchased_amount(
-    registration_order: RegistrationOrder,
-) -> Decimal:
+def get_total_purchased_amount(registration_order):
     return sum(
         (
             purchase.amount
-            for purchase in registration_order.currency_purchases.all()
+            for purchase
+            in registration_order.currency_purchases.filter(
+                is_void=False
+            )
         ),
         Decimal("0"),
     )
@@ -46,7 +47,10 @@ def validate_purchase_amount(
         registration_order
     )
 
-    if current_purchase is not None:
+    if (
+            current_purchase is not None
+            and not current_purchase.is_void
+    ):
         total_purchased -= current_purchase.amount
 
     if total_purchased + purchase_amount > registration_order.registered_amount:
@@ -73,6 +77,12 @@ def validate_shipment_part_amount(
     shipment_amount: Decimal,
     current_shipment: ShipmentPart | None = None,
 ) -> None:
+    if currency_purchase.is_void:
+        raise ValidationError(
+            "Shipment cannot be registered for a voided "
+            "currency purchase."
+        )
+
     if shipment_amount <= 0:
         raise ValidationError(
             "Shipment part amount must be greater than zero."

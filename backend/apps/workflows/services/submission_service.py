@@ -4,8 +4,12 @@ from decimal import Decimal, InvalidOperation
 from django.core.exceptions import ValidationError
 from django.db import transaction
 
-from apps.trade_orders.models import RegistrationOrder
+from apps.trade_orders.models import (
+    CurrencyPurchase,
+    RegistrationOrder,
+)
 from apps.trade_orders.services.validation import (
+    get_total_shipment_amount,
     validate_purchase_amount,
 )
 from apps.workflows.models import ApprovalRequest
@@ -44,6 +48,23 @@ def _normalize_purchase_date(value) -> str:
     return value.isoformat()
 
 
+def _validate_maker(
+    *,
+    maker,
+    permission: str,
+) -> None:
+    if not maker or not maker.pk:
+        raise ValidationError(
+            "A valid maker is required."
+        )
+
+    if not maker.has_perm(permission):
+        raise ValidationError(
+            "You do not have permission to submit "
+            "this approval request."
+        )
+
+
 @transaction.atomic
 def submit_currency_purchase_create(
     *,
@@ -55,18 +76,10 @@ def submit_currency_purchase_create(
     reason: str = "",
 ) -> ApprovalRequest:
 
-    if not maker or not maker.pk:
-        raise ValidationError(
-            "A valid maker is required."
-        )
-
-    if not maker.has_perm(
-        "trade_orders.add_currencypurchase"
-    ):
-        raise ValidationError(
-            "You do not have permission to submit "
-            "a currency purchase request."
-        )
+    _validate_maker(
+        maker=maker,
+        permission="trade_orders.add_currencypurchase",
+    )
 
     locked_order = (
         RegistrationOrder.objects
@@ -106,5 +119,203 @@ def submit_currency_purchase_create(
             "purchase_date": normalized_purchase_date,
         },
         reason=reason.strip(),
+        maker=maker,
+    )
+
+
+@transaction.atomic
+def submit_currency_purchase_correction(
+    *,
+    maker,
+    purchase: CurrencyPurchase,
+    amount: Decimal,
+    purchase_date: date,
+    reason: str,
+) -> ApprovalRequest:
+
+    _validate_maker(
+        maker=maker,
+        permission="trade_orders.change_currencypurchase",
+    )
+
+    reason = reason.strip()
+
+    if not reason:
+        raise ValidationError(
+            "A correction reason is required."
+        )
+
+    purchase_reference = (
+        CurrencyPurchase.objects
+        .only("registration_order_id")
+        .get(pk=purchase.pk)
+    )
+
+    locked_order = (
+        RegistrationOrder.objects
+        .select_for_update()
+        .get(
+            pk=purchase_reference.registration_order_id
+        )
+    )
+
+    locked_purchase = (
+        CurrencyPurchase.objects
+        .select_for_update()
+        .get(pk=purchase.pk)
+    )
+
+    if (
+        locked_purchase.registration_order_id
+        != locked_order.pk
+    ):
+        raise ValidationError(
+            "Currency purchase registration order changed "
+            "during the correction operation."
+        )
+
+    normalized_amount = _normalize_decimal(
+        amount
+    )
+
+    total_shipped = get_total_shipment_amount(
+        locked_purchase
+    )
+
+    if normalized_amount < total_shipped:
+        raise ValidationError(
+            "Currency purchase amount cannot be lower "
+            "than the total shipment amount."
+        )
+
+    validate_purchase_amount(
+        registration_order=locked_order,
+        purchase_amount=normalized_amount,
+        purchase_currency=locked_order.currency,
+        current_purchase=locked_purchase,
+    )
+
+    normalized_purchase_date = (
+        _normalize_purchase_date(purchase_date)
+    )
+
+    if (
+        normalized_amount == locked_purchase.amount
+        and purchase_date == locked_purchase.purchase_date
+    ):
+        raise ValidationError(
+            "The correction does not contain any changes."
+        )
+
+    return ApprovalRequest.objects.create(
+        operation=ApprovalRequest.Operation.CORRECT,
+        target_type=CURRENCY_PURCHASE_TARGET,
+        target_id=locked_purchase.pk,
+        payload={
+            "version": locked_purchase.updated_at.isoformat(),
+            "before": {
+                "amount": format(
+                    locked_purchase.amount,
+                    "f",
+                ),
+                "currency": locked_purchase.currency,
+                "purchase_date": (
+                    locked_purchase.purchase_date.isoformat()
+                ),
+            },
+            "proposed": {
+                "amount": format(
+                    normalized_amount,
+                    "f",
+                ),
+                "currency": locked_purchase.currency,
+                "purchase_date": normalized_purchase_date,
+            },
+        },
+        reason=reason,
+        maker=maker,
+    )
+
+@transaction.atomic
+def submit_currency_purchase_void(
+    *,
+    maker,
+    purchase: CurrencyPurchase,
+    reason: str,
+) -> ApprovalRequest:
+
+    _validate_maker(
+        maker=maker,
+        permission="trade_orders.void_currencypurchase",
+    )
+
+    reason = reason.strip()
+
+    if not reason:
+        raise ValidationError(
+            "A void reason is required."
+        )
+
+    purchase_reference = (
+        CurrencyPurchase.objects
+        .only("registration_order_id")
+        .get(pk=purchase.pk)
+    )
+
+    locked_order = (
+        RegistrationOrder.objects
+        .select_for_update()
+        .get(
+            pk=purchase_reference.registration_order_id
+        )
+    )
+
+    locked_purchase = (
+        CurrencyPurchase.objects
+        .select_for_update()
+        .get(pk=purchase.pk)
+    )
+
+    if (
+        locked_purchase.registration_order_id
+        != locked_order.pk
+    ):
+        raise ValidationError(
+            "Currency purchase registration order changed "
+            "during the void operation."
+        )
+
+    if locked_purchase.is_void:
+        raise ValidationError(
+            "Currency purchase is already void."
+        )
+
+    if locked_purchase.shipment_parts.exists():
+        raise ValidationError(
+            "Currency purchase with shipment parts "
+            "cannot be voided."
+        )
+
+    return ApprovalRequest.objects.create(
+        operation=ApprovalRequest.Operation.VOID,
+        target_type=CURRENCY_PURCHASE_TARGET,
+        target_id=locked_purchase.pk,
+        payload={
+            "version": locked_purchase.updated_at.isoformat(),
+            "before": {
+                "amount": format(
+                    locked_purchase.amount,
+                    "f",
+                ),
+                "currency": locked_purchase.currency,
+                "purchase_date": (
+                    locked_purchase.purchase_date.isoformat()
+                ),
+                "registration_order_id": str(
+                    locked_purchase.registration_order_id
+                ),
+            },
+        },
+        reason=reason,
         maker=maker,
     )

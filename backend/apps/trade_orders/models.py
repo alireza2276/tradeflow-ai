@@ -4,6 +4,7 @@ from django.db import models
 
 from apps.companies.models import Company
 
+from django.conf import settings
 
 class RegistrationOrder(models.Model):
     id = models.UUIDField(
@@ -128,9 +129,62 @@ class CurrencyPurchase(models.Model):
         auto_now=True,
     )
 
+    is_void = models.BooleanField(
+        default=False,
+        db_index=True,
+    )
+
+    voided_at = models.DateTimeField(
+        null=True,
+        blank=True,
+    )
+
+    voided_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.PROTECT,
+        null=True,
+        blank=True,
+        related_name="voided_currency_purchases",
+    )
+
+    void_reason = models.TextField(
+        blank=True,
+    )
+
     class Meta:
         db_table = "currency_purchases"
         ordering = ["purchase_date"]
+        constraints = [
+            models.CheckConstraint(
+                condition=(
+                        models.Q(
+                            is_void=False,
+                            voided_at__isnull=True,
+                            voided_by__isnull=True,
+                            void_reason="",
+                        )
+                        |
+                        (
+                                models.Q(
+                                    is_void=True,
+                                    voided_at__isnull=False,
+                                    voided_by__isnull=False,
+                                )
+                                & ~models.Q(void_reason="")
+                        )
+                ),
+                name="currency_purchase_void_state_consistent",
+            ),
+        ]
+
+        permissions = [
+            (
+                "void_currencypurchase",
+                "Can submit currency purchase void request",
+            ),
+        ]
+
+
 
     def __str__(self):
         return (

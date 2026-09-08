@@ -1,7 +1,7 @@
 from threading import Event, Thread
 import uuid
 from rest_framework.test import APIClient
-
+from django.utils import timezone
 from django.db import close_old_connections, transaction
 from django.test import TransactionTestCase
 from rest_framework import status
@@ -56,6 +56,7 @@ from apps.trade_orders.services.dashboard_service import (
 )
 
 from apps.trade_orders.services.validation import (
+    get_total_purchased_amount,
     get_total_shipment_amount,
 )
 
@@ -206,6 +207,80 @@ class PurchaseServiceTests(TestCase):
         self.assertEqual(
             purchase.deadline,
             date(2027, 2, 22),
+        )
+
+    def test_void_purchase_is_excluded_from_total_purchased_amount(self):
+        user = get_user_model().objects.create_user(
+            username="void-total-test-user",
+            password="StrongTestPassword123!",
+        )
+
+        active_purchase = CurrencyPurchase.objects.create(
+            registration_order=self.order,
+            amount=Decimal("50000.0000"),
+            currency="USD",
+            purchase_date=date(2026, 9, 1),
+            deadline=date(2027, 3, 1),
+        )
+
+        CurrencyPurchase.objects.create(
+            registration_order=self.order,
+            amount=Decimal("20000.0000"),
+            currency="USD",
+            purchase_date=date(2026, 9, 2),
+            deadline=date(2027, 3, 2),
+            is_void=True,
+            voided_at=timezone.now(),
+            voided_by=user,
+            void_reason="Incorrect purchase.",
+        )
+
+        total = get_total_purchased_amount(
+            self.order
+        )
+
+        self.assertEqual(
+            total,
+            active_purchase.amount,
+        )
+
+    def test_void_purchase_cannot_be_updated(self):
+        user = get_user_model().objects.create_user(
+            username="void-update-test-user",
+            password="StrongTestPassword123!",
+        )
+
+        purchase = CurrencyPurchase.objects.create(
+            registration_order=self.order,
+            amount=Decimal("40000.0000"),
+            currency="USD",
+            purchase_date=date(2026, 9, 1),
+            deadline=date(2027, 3, 1),
+            is_void=True,
+            voided_at=timezone.now(),
+            voided_by=user,
+            void_reason="Incorrect purchase.",
+        )
+
+        with self.assertRaises(ValidationError):
+            update_currency_purchase(
+                purchase=purchase,
+                amount=Decimal("50000.0000"),
+                purchase_date=date(2026, 9, 2),
+            )
+
+        purchase.refresh_from_db()
+
+        self.assertEqual(
+            purchase.amount,
+            Decimal("40000.0000"),
+        )
+        self.assertEqual(
+            purchase.purchase_date,
+            date(2026, 9, 1),
+        )
+        self.assertTrue(
+            purchase.is_void,
         )
 
 
@@ -359,6 +434,85 @@ class ShipmentServiceTests(TestCase):
         self.assertEqual(
             balance["remaining_amount"],
             Decimal("0"),
+        )
+
+    def test_shipment_cannot_be_created_for_void_purchase(self):
+        user = get_user_model().objects.create_user(
+            username="void-shipment-test-user",
+            password="StrongTestPassword123!",
+        )
+
+        self.purchase.is_void = True
+        self.purchase.voided_at = timezone.now()
+        self.purchase.voided_by = user
+        self.purchase.void_reason = "Incorrect purchase."
+
+        self.purchase.save(
+            update_fields=(
+                "is_void",
+                "voided_at",
+                "voided_by",
+                "void_reason",
+                "updated_at",
+            )
+        )
+
+        with self.assertRaises(ValidationError):
+            create_shipment_part(
+                currency_purchase=self.purchase,
+                amount=Decimal("10000.0000"),
+            )
+
+        self.assertFalse(
+            ShipmentPart.objects.filter(
+                currency_purchase=self.purchase,
+            ).exists()
+        )
+
+    def test_shipment_cannot_be_updated_for_void_purchase(self):
+        user = get_user_model().objects.create_user(
+            username="void-shipment-update-test-user",
+            password="StrongTestPassword123!",
+        )
+
+        shipment = create_shipment_part(
+            currency_purchase=self.purchase,
+            amount=Decimal("10000.0000"),
+            shipment_date=date(2026, 9, 1),
+        )
+
+        self.purchase.is_void = True
+        self.purchase.voided_at = timezone.now()
+        self.purchase.voided_by = user
+        self.purchase.void_reason = "Forced inconsistent state for test."
+
+        self.purchase.save(
+            update_fields=(
+                "is_void",
+                "voided_at",
+                "voided_by",
+                "void_reason",
+                "updated_at",
+            )
+        )
+
+        with self.assertRaises(ValidationError):
+            update_shipment_part(
+                shipment=shipment,
+                amount=Decimal("15000.0000"),
+                shipment_date=date(2026, 9, 2),
+            )
+
+        shipment.refresh_from_db()
+
+        self.assertEqual(
+            shipment.amount,
+            Decimal("10000.0000"),
+        )
+
+        self.assertEqual(
+            shipment.shipment_date,
+            date(2026, 9, 1),
         )
 
 

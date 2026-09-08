@@ -92,6 +92,11 @@ def update_currency_purchase(
             "during the update operation."
         )
 
+    if locked_purchase.is_void:
+        raise ValidationError(
+            "Voided currency purchase cannot be corrected."
+        )
+
     total_shipped = get_total_shipment_amount(
         locked_purchase
     )

@@ -25,6 +25,12 @@ def create_shipment_part(
         .get(pk=currency_purchase.pk)
     )
 
+    if locked_purchase.is_void:
+        raise ValidationError(
+            "Shipment cannot be registered for a voided "
+            "currency purchase."
+        )
+
     if amount <= Decimal("0"):
         raise ValidationError(
             "Shipment part amount must be greater than zero."
@@ -56,6 +62,7 @@ def create_shipment_part(
         reference_number=reference_number.strip(),
         notes=notes,
     )
+
 
 @transaction.atomic
 def update_shipment_part(
@@ -94,9 +101,15 @@ def update_shipment_part(
             "during the update operation."
         )
 
+    if locked_purchase.is_void:
+        raise ValidationError(
+            "Shipment cannot be updated for a voided "
+            "currency purchase."
+        )
+
     if (
-            hasattr(locked_shipment, "invoice")
-            and amount != locked_shipment.amount
+        hasattr(locked_shipment, "invoice")
+        and amount != locked_shipment.amount
     ):
         raise ValidationError(
             "Shipment part amount cannot be changed "
