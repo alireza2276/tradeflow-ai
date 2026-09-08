@@ -47,6 +47,7 @@ INSTALLED_APPS = [
     'rest_framework',
     'corsheaders',
     'django_filters',
+    'apps.workflows',
     'apps.authentication.apps.AuthenticationConfig',]
 
 MIDDLEWARE = [

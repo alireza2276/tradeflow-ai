@@ -2,7 +2,6 @@ from decimal import Decimal
 
 from django.core.exceptions import ValidationError
 
-from apps.documents.models import Invoice
 from apps.trade_orders.models import (
     CurrencyPurchase,
     RegistrationOrder,
