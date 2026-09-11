@@ -5,6 +5,18 @@ from django.db import IntegrityError, transaction
 from django.test import TestCase
 from django.utils import timezone
 
+from datetime import date
+from decimal import Decimal
+
+from apps.companies.models import Company
+from apps.trade_orders.models import (
+    CurrencyPurchase,
+    RegistrationOrder,
+)
+from apps.workflows.services.submission_service import (
+    submit_currency_purchase_create,
+)
+
 from apps.workflows.models import ApprovalRequest
 from apps.workflows.services.approval_service import (
     approve_request,
@@ -412,4 +424,403 @@ class ApprovalServiceTests(TestCase):
         )
         self.assertIsNone(
             self.approval_request.reviewed_at,
+        )
+
+from rest_framework import status
+from rest_framework.test import APIClient
+
+
+class ApprovalRequestAPITests(TestCase):
+    def setUp(self):
+        review_permission = Permission.objects.get(
+            content_type__app_label="workflows",
+            codename="review_approvalrequest",
+        )
+
+        add_purchase_permission = Permission.objects.get(
+            content_type__app_label="trade_orders",
+            codename="add_currencypurchase",
+        )
+
+        self.maker = User.objects.create_user(
+            username="workflow-api-maker",
+            password="StrongTestPassword123!",
+        )
+        self.maker.user_permissions.add(
+            add_purchase_permission,
+        )
+
+        self.checker = User.objects.create_user(
+            username="workflow-api-checker",
+            password="StrongTestPassword123!",
+        )
+        self.checker.user_permissions.add(
+            review_permission,
+        )
+
+        self.client = APIClient()
+
+        self.company = Company.objects.create(
+            name="Workflow API Company",
+            national_id="WF-API-001",
+            company_type=Company.CompanyType.COMMERCIAL,
+        )
+
+        self.order = RegistrationOrder.objects.create(
+            company=self.company,
+            order_number="WF-ORDER-001",
+            registered_amount=Decimal("100000.0000"),
+            currency="USD",
+            is_active=True,
+        )
+
+    def test_supervisor_can_list_pending_approval_requests(self):
+        ApprovalRequest.objects.create(
+            operation=ApprovalRequest.Operation.CREATE,
+            target_type="currency_purchase",
+            payload={
+                "registration_order_id": (
+                    "00000000-0000-0000-0000-000000000001"
+                ),
+                "amount": "1000.0000",
+                "currency": "USD",
+                "purchase_date": "2026-09-11",
+            },
+            maker=self.maker,
+        )
+
+        self.client.force_authenticate(
+            user=self.checker,
+        )
+
+        response = self.client.get(
+            "/api/workflows/approval-requests/",
+        )
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_200_OK,
+        )
+
+        self.assertEqual(
+            len(response.data),
+            1,
+        )
+
+        self.assertEqual(
+            response.data[0]["status"],
+            ApprovalRequest.Status.PENDING,
+        )
+
+    def test_user_without_review_permission_cannot_list_requests(self):
+        self.client.force_authenticate(
+            user=self.maker,
+        )
+
+        response = self.client.get(
+            "/api/workflows/approval-requests/",
+        )
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_403_FORBIDDEN,
+        )
+
+    def test_checker_can_approve_request_through_api(self):
+        approval_request = submit_currency_purchase_create(
+            maker=self.maker,
+            registration_order=self.order,
+            amount=Decimal("25000.0000"),
+            currency="USD",
+            purchase_date=date(2026, 9, 11),
+            reason="Purchase request.",
+        )
+
+        self.client.force_authenticate(
+            user=self.checker,
+        )
+
+        response = self.client.post(
+            (
+                f"/api/workflows/approval-requests/"
+                f"{approval_request.pk}/approve/"
+            ),
+            {},
+            format="json",
+        )
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_200_OK,
+        )
+
+        approval_request.refresh_from_db()
+
+        self.assertEqual(
+            approval_request.status,
+            ApprovalRequest.Status.APPROVED,
+        )
+
+        self.assertEqual(
+            approval_request.checker,
+            self.checker,
+        )
+
+        self.assertEqual(
+            CurrencyPurchase.objects.count(),
+            1,
+        )
+
+    def test_checker_can_reject_request_through_api(self):
+        approval_request = submit_currency_purchase_create(
+            maker=self.maker,
+            registration_order=self.order,
+            amount=Decimal("25000.0000"),
+            currency="USD",
+            purchase_date=date(2026, 9, 11),
+            reason="Purchase request.",
+        )
+
+        self.client.force_authenticate(
+            user=self.checker,
+        )
+
+        response = self.client.post(
+            (
+                f"/api/workflows/approval-requests/"
+                f"{approval_request.pk}/reject/"
+            ),
+            {
+                "reason": "Incorrect financial information.",
+            },
+            format="json",
+        )
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_200_OK,
+        )
+
+        approval_request.refresh_from_db()
+
+        self.assertEqual(
+            approval_request.status,
+            ApprovalRequest.Status.REJECTED,
+        )
+
+        self.assertEqual(
+            approval_request.checker,
+            self.checker,
+        )
+
+        self.assertEqual(
+            approval_request.review_comment,
+            "Incorrect financial information.",
+        )
+
+        self.assertEqual(
+            CurrencyPurchase.objects.count(),
+            0,
+        )
+
+    def test_reject_requires_reason_through_api(self):
+        approval_request = submit_currency_purchase_create(
+            maker=self.maker,
+            registration_order=self.order,
+            amount=Decimal("25000.0000"),
+            currency="USD",
+            purchase_date=date(2026, 9, 11),
+        )
+
+        self.client.force_authenticate(
+            user=self.checker,
+        )
+
+        response = self.client.post(
+            (
+                f"/api/workflows/approval-requests/"
+                f"{approval_request.pk}/reject/"
+            ),
+            {},
+            format="json",
+        )
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_400_BAD_REQUEST,
+        )
+
+        approval_request.refresh_from_db()
+
+        self.assertEqual(
+            approval_request.status,
+            ApprovalRequest.Status.PENDING,
+        )
+
+    def test_maker_cannot_approve_own_request_through_api(self):
+        review_permission = Permission.objects.get(
+            content_type__app_label="workflows",
+            codename="review_approvalrequest",
+        )
+
+        self.maker.user_permissions.add(
+            review_permission,
+        )
+
+        approval_request = submit_currency_purchase_create(
+            maker=self.maker,
+            registration_order=self.order,
+            amount=Decimal("25000.0000"),
+            currency="USD",
+            purchase_date=date(2026, 9, 11),
+        )
+
+        self.client.force_authenticate(
+            user=self.maker,
+        )
+
+        response = self.client.post(
+            (
+                f"/api/workflows/approval-requests/"
+                f"{approval_request.pk}/approve/"
+            ),
+            {},
+            format="json",
+        )
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_400_BAD_REQUEST,
+        )
+
+        approval_request.refresh_from_db()
+
+        self.assertEqual(
+            approval_request.status,
+            ApprovalRequest.Status.PENDING,
+        )
+
+        self.assertIsNone(
+            approval_request.checker,
+        )
+
+        self.assertEqual(
+            CurrencyPurchase.objects.count(),
+            0,
+        )
+
+    def test_direct_create_approval_request_is_not_allowed(self):
+        self.client.force_authenticate(
+            user=self.checker,
+        )
+
+        response = self.client.post(
+            "/api/workflows/approval-requests/",
+            {
+                "operation": "CREATE",
+                "target_type": "currency_purchase",
+                "payload": {},
+                "status": "APPROVED",
+            },
+            format="json",
+        )
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_405_METHOD_NOT_ALLOWED,
+        )
+
+    def test_direct_patch_approval_request_is_not_allowed(self):
+        approval_request = ApprovalRequest.objects.create(
+            operation=ApprovalRequest.Operation.CREATE,
+            target_type="currency_purchase",
+            payload={
+                "registration_order_id": str(self.order.pk),
+                "amount": "1000.0000",
+                "currency": "USD",
+                "purchase_date": "2026-09-11",
+            },
+            maker=self.maker,
+        )
+
+        self.client.force_authenticate(
+            user=self.checker,
+        )
+
+        response = self.client.patch(
+            (
+                f"/api/workflows/approval-requests/"
+                f"{approval_request.pk}/"
+            ),
+            {
+                "status": "APPROVED",
+            },
+            format="json",
+        )
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_405_METHOD_NOT_ALLOWED,
+        )
+
+    def test_direct_put_approval_request_is_not_allowed(self):
+        approval_request = ApprovalRequest.objects.create(
+            operation=ApprovalRequest.Operation.CREATE,
+            target_type="currency_purchase",
+            payload={
+                "registration_order_id": str(self.order.pk),
+                "amount": "1000.0000",
+                "currency": "USD",
+                "purchase_date": "2026-09-11",
+            },
+            maker=self.maker,
+        )
+
+        self.client.force_authenticate(
+            user=self.checker,
+        )
+
+        response = self.client.put(
+            (
+                f"/api/workflows/approval-requests/"
+                f"{approval_request.pk}/"
+            ),
+            {
+                "status": "APPROVED",
+            },
+            format="json",
+        )
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_405_METHOD_NOT_ALLOWED,
+        )
+
+    def test_direct_delete_approval_request_is_not_allowed(self):
+        approval_request = ApprovalRequest.objects.create(
+            operation=ApprovalRequest.Operation.CREATE,
+            target_type="currency_purchase",
+            payload={
+                "registration_order_id": str(self.order.pk),
+                "amount": "1000.0000",
+                "currency": "USD",
+                "purchase_date": "2026-09-11",
+            },
+            maker=self.maker,
+        )
+
+        self.client.force_authenticate(
+            user=self.checker,
+        )
+
+        response = self.client.delete(
+            (
+                f"/api/workflows/approval-requests/"
+                f"{approval_request.pk}/"
+            )
+        )
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_405_METHOD_NOT_ALLOWED,
         )

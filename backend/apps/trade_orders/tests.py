@@ -1,6 +1,8 @@
 from threading import Event, Thread
 import uuid
 from rest_framework.test import APIClient
+from apps.workflows.models import ApprovalRequest
+from django.urls import reverse
 from django.utils import timezone
 from django.db import close_old_connections, transaction
 from django.test import TransactionTestCase
@@ -1696,6 +1698,43 @@ class CurrencyPurchaseAPITests(AuthenticatedAPITestCase):
             currency="USD",
         )
 
+        review_permission = Permission.objects.get(
+            content_type__app_label="workflows",
+            codename="review_approvalrequest",
+        )
+
+        self.checker = get_user_model().objects.create_user(
+            username="currency-purchase-checker",
+            password="StrongTestPass123!",
+        )
+
+        self.checker.user_permissions.add(
+            review_permission,
+        )
+
+        self.checker_client = APIClient()
+        self.checker_client.force_authenticate(
+            user=self.checker,
+        )
+
+    def approve_pending_request(
+            self,
+            approval_request,
+    ):
+        response = self.checker_client.post(
+            (
+                f"/api/workflows/approval-requests/"
+                f"{approval_request.pk}/approve/"
+            ),
+            {},
+            format="json",
+        )
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_200_OK,
+        )
+
     def test_currency_purchase_can_be_created(self):
         payload = {
             "registration_order": str(self.order.id),
@@ -1712,17 +1751,39 @@ class CurrencyPurchaseAPITests(AuthenticatedAPITestCase):
 
         self.assertEqual(
             response.status_code,
-            status.HTTP_201_CREATED,
+            status.HTTP_202_ACCEPTED,
         )
 
         self.assertEqual(
-            response.data["amount"],
-            "40000.0000",
+            CurrencyPurchase.objects.count(),
+            0,
+        )
+
+        approval_request = ApprovalRequest.objects.get(
+            operation=ApprovalRequest.Operation.CREATE,
         )
 
         self.assertEqual(
-            response.data["deadline"],
-            "2027-02-22",
+            approval_request.status,
+            ApprovalRequest.Status.PENDING,
+        )
+
+        self.approve_pending_request(
+            approval_request
+        )
+
+        purchase = CurrencyPurchase.objects.get(
+            registration_order=self.order,
+        )
+
+        self.assertEqual(
+            purchase.amount,
+            Decimal("40000"),
+        )
+
+        self.assertEqual(
+            purchase.deadline,
+            date(2027, 2, 22),
         )
 
     def test_currency_purchase_cannot_be_created_for_inactive_order(self):
@@ -1754,72 +1815,112 @@ class CurrencyPurchaseAPITests(AuthenticatedAPITestCase):
         )
 
     def test_multiple_purchases_up_to_order_amount_are_allowed(self):
-        first_payload = {
-            "registration_order": str(self.order.id),
-            "amount": "40000",
-            "currency": "USD",
-            "purchase_date": "2026-08-22",
-        }
-
-        second_payload = {
-            "registration_order": str(self.order.id),
-            "amount": "60000",
-            "currency": "USD",
-            "purchase_date": "2026-08-23",
-        }
-
         first_response = self.client.post(
             self.url,
-            first_payload,
+            {
+                "registration_order": str(self.order.id),
+                "amount": "40000",
+                "currency": "USD",
+                "purchase_date": "2026-08-22",
+            },
             format="json",
         )
 
         second_response = self.client.post(
             self.url,
-            second_payload,
+            {
+                "registration_order": str(self.order.id),
+                "amount": "60000",
+                "currency": "USD",
+                "purchase_date": "2026-08-23",
+            },
             format="json",
         )
 
         self.assertEqual(
             first_response.status_code,
-            status.HTTP_201_CREATED,
+            status.HTTP_202_ACCEPTED,
         )
 
         self.assertEqual(
             second_response.status_code,
-            status.HTTP_201_CREATED,
+            status.HTTP_202_ACCEPTED,
+        )
+
+        approval_requests = list(
+            ApprovalRequest.objects.filter(
+                operation=ApprovalRequest.Operation.CREATE,
+                status=ApprovalRequest.Status.PENDING,
+            ).order_by("created_at")
+        )
+
+        self.assertEqual(
+            len(approval_requests),
+            2,
+        )
+
+        self.assertEqual(
+            CurrencyPurchase.objects.count(),
+            0,
+        )
+
+        for approval_request in approval_requests:
+            self.approve_pending_request(
+                approval_request
+            )
+
+        self.assertEqual(
+            CurrencyPurchase.objects.count(),
+            2,
+        )
+
+        total = sum(
+            (
+                purchase.amount
+                for purchase
+                in CurrencyPurchase.objects.all()
+            ),
+            Decimal("0"),
+        )
+
+        self.assertEqual(
+            total,
+            Decimal("100000"),
         )
 
     def test_total_purchases_cannot_exceed_order_amount(self):
-        first_payload = {
-            "registration_order": str(self.order.id),
-            "amount": "100000",
-            "currency": "USD",
-            "purchase_date": "2026-08-22",
-        }
-
-        self.client.post(
-            self.url,
-            first_payload,
-            format="json",
+        CurrencyPurchase.objects.create(
+            registration_order=self.order,
+            amount=Decimal("100000"),
+            currency="USD",
+            purchase_date=date(2026, 8, 22),
+            deadline=date(2027, 2, 22),
         )
-
-        second_payload = {
-            "registration_order": str(self.order.id),
-            "amount": "1",
-            "currency": "USD",
-            "purchase_date": "2026-08-23",
-        }
 
         response = self.client.post(
             self.url,
-            second_payload,
+            {
+                "registration_order": str(self.order.id),
+                "amount": "1",
+                "currency": "USD",
+                "purchase_date": "2026-08-23",
+            },
             format="json",
         )
 
         self.assertEqual(
             response.status_code,
             status.HTTP_400_BAD_REQUEST,
+        )
+
+        self.assertEqual(
+            ApprovalRequest.objects.count(),
+            0,
+        )
+
+        self.assertEqual(
+            CurrencyPurchase.objects.count(),
+            1,
         )
 
     def test_zero_purchase_amount_is_rejected(self):
@@ -1842,22 +1943,35 @@ class CurrencyPurchaseAPITests(AuthenticatedAPITestCase):
         )
 
     def test_commercial_deadline_is_six_months(self):
-        payload = {
-            "registration_order": str(self.order.id),
-            "amount": "40000",
-            "currency": "USD",
-            "purchase_date": "2026-08-22",
-        }
-
         response = self.client.post(
             self.url,
-            payload,
+            {
+                "registration_order": str(self.order.id),
+                "amount": "40000",
+                "currency": "USD",
+                "purchase_date": "2026-08-22",
+            },
             format="json",
         )
 
         self.assertEqual(
-            response.data["deadline"],
-            "2027-02-22",
+            response.status_code,
+            status.HTTP_202_ACCEPTED,
+        )
+
+        approval_request = ApprovalRequest.objects.get()
+
+        self.approve_pending_request(
+            approval_request
+        )
+
+        purchase = CurrencyPurchase.objects.get(
+            registration_order=self.order,
+        )
+
+        self.assertEqual(
+            purchase.deadline,
+            date(2027, 2, 22),
         )
 
     def test_production_deadline_is_nine_months(self):
@@ -1874,46 +1988,73 @@ class CurrencyPurchaseAPITests(AuthenticatedAPITestCase):
             currency="USD",
         )
 
-        payload = {
-            "registration_order": str(production_order.id),
-            "amount": "40000",
-            "currency": "USD",
-            "purchase_date": "2026-08-22",
-        }
-
         response = self.client.post(
             self.url,
-            payload,
+            {
+                "registration_order": str(
+                    production_order.id
+                ),
+                "amount": "40000",
+                "currency": "USD",
+                "purchase_date": "2026-08-22",
+            },
             format="json",
         )
 
         self.assertEqual(
             response.status_code,
-            status.HTTP_201_CREATED,
+            status.HTTP_202_ACCEPTED,
+        )
+
+        approval_request = ApprovalRequest.objects.get()
+
+        self.approve_pending_request(
+            approval_request
+        )
+
+        purchase = CurrencyPurchase.objects.get(
+            registration_order=production_order,
         )
 
         self.assertEqual(
-            response.data["deadline"],
-            "2027-05-22",
+            purchase.deadline,
+            date(2027, 5, 22),
         )
 
     def test_response_contains_dual_dates(self):
-        payload = {
-            "registration_order": str(self.order.id),
-            "amount": "40000",
-            "currency": "USD",
-            "purchase_date": "2026-08-22",
-        }
-
         response = self.client.post(
             self.url,
-            payload,
+            {
+                "registration_order": str(self.order.id),
+                "amount": "40000",
+                "currency": "USD",
+                "purchase_date": "2026-08-22",
+            },
             format="json",
         )
 
         self.assertEqual(
             response.status_code,
-            status.HTTP_201_CREATED,
+            status.HTTP_202_ACCEPTED,
+        )
+
+        approval_request = ApprovalRequest.objects.get()
+
+        self.approve_pending_request(
+            approval_request
+        )
+
+        purchase = CurrencyPurchase.objects.get(
+            registration_order=self.order,
+        )
+
+        response = self.client.get(
+            f"{self.url}{purchase.pk}/"
+        )
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_200_OK,
         )
 
         self.assertEqual(
@@ -1960,19 +2101,39 @@ class CurrencyPurchaseAPITests(AuthenticatedAPITestCase):
             deadline=date(2027, 2, 22),
         )
 
-        url = f"{self.url}{purchase.id}/"
-
         response = self.client.patch(
-            url,
+            f"{self.url}{purchase.id}/",
             {
                 "amount": "50000",
+                "reason": "Correct purchase amount.",
             },
             format="json",
         )
 
         self.assertEqual(
             response.status_code,
-            status.HTTP_200_OK,
+            status.HTTP_202_ACCEPTED,
+        )
+
+        purchase.refresh_from_db()
+
+        self.assertEqual(
+            purchase.amount,
+            Decimal("40000"),
+        )
+
+        approval_request = ApprovalRequest.objects.get(
+            operation=ApprovalRequest.Operation.CORRECT,
+            target_id=purchase.pk,
+        )
+
+        self.assertEqual(
+            approval_request.status,
+            ApprovalRequest.Status.PENDING,
+        )
+
+        self.approve_pending_request(
+            approval_request
         )
 
         purchase.refresh_from_db()
@@ -2097,19 +2258,34 @@ class CurrencyPurchaseAPITests(AuthenticatedAPITestCase):
             deadline=date(2027, 2, 22),
         )
 
-        url = f"{self.url}{purchase.id}/"
-
         response = self.client.patch(
-            url,
+            f"{self.url}{purchase.id}/",
             {
                 "purchase_date": "2026-09-10",
+                "reason": "Correct purchase date.",
             },
             format="json",
         )
 
         self.assertEqual(
             response.status_code,
-            status.HTTP_200_OK,
+            status.HTTP_202_ACCEPTED,
+        )
+
+        purchase.refresh_from_db()
+
+        self.assertEqual(
+            purchase.purchase_date,
+            date(2026, 8, 22),
+        )
+
+        approval_request = ApprovalRequest.objects.get(
+            operation=ApprovalRequest.Operation.CORRECT,
+            target_id=purchase.pk,
+        )
+
+        self.approve_pending_request(
+            approval_request
         )
 
         purchase.refresh_from_db()
@@ -4020,4 +4196,203 @@ class PaymentInstrumentConcurrencyTests(TransactionTestCase):
                 )
             ).count(),
             1,
+        )
+
+class CurrencyPurchaseMakerCheckerAPITests(TestCase):
+    def setUp(self):
+        self.client = APIClient()
+
+        self.user = get_user_model().objects.create_user(
+            username="api-purchase-maker",
+            password="StrongTestPassword123!",
+        )
+
+        add_permission = Permission.objects.get(
+            content_type__app_label="trade_orders",
+            codename="add_currencypurchase",
+        )
+
+        self.user.user_permissions.add(
+            add_permission,
+        )
+
+        self.client.force_authenticate(
+            user=self.user,
+        )
+
+        self.company = Company.objects.create(
+            name="API Test Company",
+            national_id="API-VOID-001",
+            company_type=Company.CompanyType.COMMERCIAL,
+        )
+
+        self.order = RegistrationOrder.objects.create(
+            company=self.company,
+            order_number="API-ORDER-001",
+            registered_amount=Decimal("100000.0000"),
+            currency="USD",
+            is_active=True,
+        )
+
+    def test_post_submits_approval_request_without_creating_purchase(self):
+        response = self.client.post(
+            "/api/trade/currency-purchases/",
+            {
+                "registration_order": str(self.order.pk),
+                "amount": "25000.0000",
+                "currency": "USD",
+                "purchase_date": "2026-09-11",
+            },
+            format="json",
+        )
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_202_ACCEPTED,
+        )
+
+        self.assertEqual(
+            CurrencyPurchase.objects.count(),
+            0,
+        )
+
+        self.assertEqual(
+            ApprovalRequest.objects.count(),
+            1,
+        )
+
+        approval_request = ApprovalRequest.objects.get()
+
+        self.assertEqual(
+            approval_request.status,
+            ApprovalRequest.Status.PENDING,
+        )
+
+        self.assertEqual(
+            approval_request.operation,
+            ApprovalRequest.Operation.CREATE,
+        )
+
+        self.assertEqual(
+            approval_request.maker,
+            self.user,
+        )
+
+    def test_patch_submits_correction_without_modifying_purchase(self):
+        change_permission = Permission.objects.get(
+            content_type__app_label="trade_orders",
+            codename="change_currencypurchase",
+        )
+        self.user.user_permissions.add(
+            change_permission,
+        )
+
+        purchase = CurrencyPurchase.objects.create(
+            registration_order=self.order,
+            amount=Decimal("40000.0000"),
+            currency="USD",
+            purchase_date=date(2026, 9, 1),
+            deadline=date(2027, 3, 1),
+        )
+
+        response = self.client.patch(
+            f"/api/trade/currency-purchases/{purchase.pk}/",
+            {
+                "amount": "50000.0000",
+                "purchase_date": "2026-09-05",
+                "reason": "Correct purchase data.",
+            },
+            format="json",
+        )
+
+        purchase.refresh_from_db()
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_202_ACCEPTED,
+        )
+
+        self.assertEqual(
+            purchase.amount,
+            Decimal("40000.0000"),
+        )
+
+        self.assertEqual(
+            purchase.purchase_date,
+            date(2026, 9, 1),
+        )
+
+        approval_request = ApprovalRequest.objects.get(
+            operation=ApprovalRequest.Operation.CORRECT,
+            target_id=purchase.pk,
+        )
+
+        self.assertEqual(
+            approval_request.status,
+            ApprovalRequest.Status.PENDING,
+        )
+
+        self.assertEqual(
+            approval_request.reason,
+            "Correct purchase data.",
+        )
+
+    def test_void_endpoint_submits_request_without_voiding_purchase(self):
+        void_permission = Permission.objects.get(
+            content_type__app_label="trade_orders",
+            codename="void_currencypurchase",
+        )
+
+        self.user.user_permissions.add(
+            void_permission,
+        )
+
+        purchase = CurrencyPurchase.objects.create(
+            registration_order=self.order,
+            amount=Decimal("40000.0000"),
+            currency="USD",
+            purchase_date=date(2026, 9, 1),
+            deadline=date(2027, 3, 1),
+        )
+
+        response = self.client.post(
+            (
+                f"/api/trade/currency-purchases/"
+                f"{purchase.pk}/void/"
+            ),
+            {
+                "reason": "Purchase entered incorrectly.",
+            },
+            format="json",
+        )
+
+        purchase.refresh_from_db()
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_202_ACCEPTED,
+        )
+
+        self.assertFalse(
+            purchase.is_void,
+        )
+
+        approval_request = ApprovalRequest.objects.get(
+            operation=ApprovalRequest.Operation.VOID,
+            target_id=purchase.pk,
+        )
+
+        self.assertEqual(
+            approval_request.status,
+            ApprovalRequest.Status.PENDING,
+        )
+
+        self.assertEqual(
+            approval_request.maker,
+            self.user,
+        )
+
+        self.assertEqual(
+            approval_request.reason,
+            "Purchase entered incorrectly.",
         )

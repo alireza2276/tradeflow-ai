@@ -4,8 +4,12 @@ from django.shortcuts import get_object_or_404
 from django.core.exceptions import ValidationError as DjangoValidationError
 from rest_framework.exceptions import ValidationError as DRFValidationError
 from django.db import transaction
-from apps.trade_orders.models import RegistrationOrder
-from apps.trade_orders.serializers import RegistrationOrderSerializer
+
+from apps.workflows.services.submission_service import (
+    submit_currency_purchase_correction,
+    submit_currency_purchase_create,
+    submit_currency_purchase_void,
+)
 
 from rest_framework import status, viewsets
 from rest_framework.response import Response
@@ -414,6 +418,56 @@ class CurrencyPurchaseViewSet(viewsets.ModelViewSet):
             status=status.HTTP_405_METHOD_NOT_ALLOWED,
         )
 
+    @action(
+        detail=True,
+        methods=["post"],
+        url_path="void",
+    )
+    def submit_void(self, request, *args, **kwargs):
+        purchase = self.get_object()
+
+        if not request.user.has_perm(
+                "trade_orders.void_currencypurchase"
+        ):
+            return Response(
+                {
+                    "detail": (
+                        "You do not have permission to submit "
+                        "a currency purchase void request."
+                    )
+                },
+                status=status.HTTP_403_FORBIDDEN,
+            )
+
+        try:
+            approval_request = (
+                submit_currency_purchase_void(
+                    maker=request.user,
+                    purchase=purchase,
+                    reason=request.data.get(
+                        "reason",
+                        "",
+                    ),
+                )
+            )
+        except DjangoValidationError as exc:
+            raise DRFValidationError(
+                {"detail": exc.messages}
+            )
+
+        return Response(
+            {
+                "id": str(approval_request.id),
+                "status": approval_request.status,
+                "operation": approval_request.operation,
+                "target_type": approval_request.target_type,
+                "target_id": str(
+                    approval_request.target_id
+                ),
+            },
+            status=status.HTTP_202_ACCEPTED,
+        )
+
     def create(self, request, *args, **kwargs):
         serializer = self.get_serializer(
             data=request.data,
@@ -426,24 +480,32 @@ class CurrencyPurchaseViewSet(viewsets.ModelViewSet):
         data = serializer.validated_data
 
         try:
-            purchase = create_currency_purchase(
-                registration_order=data["registration_order"],
-                amount=data["amount"],
-                currency=data["currency"],
-                purchase_date=data["purchase_date"],
+            approval_request = (
+                submit_currency_purchase_create(
+                    maker=request.user,
+                    registration_order=data["registration_order"],
+                    amount=data["amount"],
+                    currency=data["currency"],
+                    purchase_date=data["purchase_date"],
+                    reason=request.data.get(
+                        "reason",
+                        "",
+                    ),
+                )
             )
         except DjangoValidationError as exc:
             raise DRFValidationError(
                 {"detail": exc.messages}
             )
 
-        output_serializer = self.get_serializer(
-            purchase,
-        )
-
         return Response(
-            output_serializer.data,
-            status=status.HTTP_201_CREATED,
+            {
+                "id": str(approval_request.id),
+                "status": approval_request.status,
+                "operation": approval_request.operation,
+                "target_type": approval_request.target_type,
+            },
+            status=status.HTTP_202_ACCEPTED,
         )
 
     def update(self, request, *args, **kwargs):
@@ -503,7 +565,10 @@ class CurrencyPurchaseViewSet(viewsets.ModelViewSet):
             purchase.registration_order,
         )
 
-        if registration_order.pk != purchase.registration_order_id:
+        if (
+                registration_order.pk
+                != purchase.registration_order_id
+        ):
             raise DRFValidationError(
                 {
                     "registration_order": (
@@ -514,29 +579,40 @@ class CurrencyPurchaseViewSet(viewsets.ModelViewSet):
             )
 
         try:
-            updated_purchase = update_currency_purchase(
-                purchase=purchase,
-                amount=data.get(
-                    "amount",
-                    purchase.amount,
-                ),
-                purchase_date=data.get(
-                    "purchase_date",
-                    purchase.purchase_date,
-                ),
+            approval_request = (
+                submit_currency_purchase_correction(
+                    maker=request.user,
+                    purchase=purchase,
+                    amount=data.get(
+                        "amount",
+                        purchase.amount,
+                    ),
+                    purchase_date=data.get(
+                        "purchase_date",
+                        purchase.purchase_date,
+                    ),
+                    reason=request.data.get(
+                        "reason",
+                        "",
+                    ),
+                )
             )
         except DjangoValidationError as exc:
             raise DRFValidationError(
                 {"detail": exc.messages}
             )
 
-        output_serializer = self.get_serializer(
-            updated_purchase,
-        )
-
         return Response(
-            output_serializer.data,
-            status=status.HTTP_200_OK,
+            {
+                "id": str(approval_request.id),
+                "status": approval_request.status,
+                "operation": approval_request.operation,
+                "target_type": approval_request.target_type,
+                "target_id": str(
+                    approval_request.target_id
+                ),
+            },
+            status=status.HTTP_202_ACCEPTED,
         )
 
 class ShipmentPartViewSet(viewsets.ModelViewSet):

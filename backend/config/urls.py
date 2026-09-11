@@ -46,4 +46,9 @@ urlpatterns = [
         "api/notifications/",
         include("apps.notifications.urls"),
     ),
+
+    path(
+        "api/workflows/",
+        include("apps.workflows.urls"),
+    ),
 ]
