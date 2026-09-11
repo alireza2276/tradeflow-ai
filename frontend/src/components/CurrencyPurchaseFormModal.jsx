@@ -26,6 +26,7 @@ function CurrencyPurchaseFormModal({
     amount: '',
     currency: '',
     purchase_date: '',
+    reason: '',
   })
 
   const [loadingOrders, setLoadingOrders] = useState(false)
@@ -63,6 +64,7 @@ function CurrencyPurchaseFormModal({
         currency: purchase.currency || '',
         purchase_date:
           purchase.purchase_date || '',
+        reason: '',
       })
     } else {
       setFormData({
@@ -70,6 +72,7 @@ function CurrencyPurchaseFormModal({
         amount: '',
         currency: '',
         purchase_date: '',
+        reason: '',
       })
     }
 
@@ -161,6 +164,18 @@ function CurrencyPurchaseFormModal({
       return
     }
 
+    if (
+      isEditMode &&
+      !formData.reason.trim()
+    ) {
+      setError(
+        t(
+          'currencyPurchaseForm.correctionReasonError'
+        )
+      )
+      return
+    }
+
     setSubmitting(true)
     setError('')
 
@@ -170,6 +185,7 @@ function CurrencyPurchaseFormModal({
           amount: formData.amount,
           purchase_date:
             formData.purchase_date,
+          reason: formData.reason.trim(),
         })
       } else {
         await onSubmit({
@@ -344,6 +360,30 @@ function CurrencyPurchaseFormModal({
               required
             />
           </div>
+
+
+          {isEditMode && (
+            <div className="form-group">
+              <label htmlFor="purchase-correction-reason">
+                {t(
+                  'currencyPurchaseForm.correctionReason'
+                )}
+              </label>
+
+              <textarea
+                id="purchase-correction-reason"
+                name="reason"
+                value={formData.reason}
+                onChange={handleChange}
+                placeholder={t(
+                  'currencyPurchaseForm.correctionReasonPlaceholder'
+                )}
+                disabled={submitting}
+                rows="3"
+                required
+              />
+            </div>
+          )}
 
 
           {error && (

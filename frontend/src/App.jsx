@@ -5,6 +5,8 @@ import {
   useState,
 } from 'react'
 
+import ApprovalRequests from './pages/ApprovalRequests'
+
 import {
   BrowserRouter,
   Navigate,
@@ -242,6 +244,23 @@ function App() {
                         }
                       />
                   </Route>
+
+
+                  <Route
+                      element={
+                        <PermissionRoute
+                          user={user}
+                          permission="workflows.review_approvalrequest"
+                        />
+                      }
+                    >
+                      <Route
+                        path="/approvals"
+                        element={
+                          <ApprovalRequests />
+                        }
+                      />
+                    </Route>
 
                 </Routes>
               </DashboardLayout>

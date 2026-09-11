@@ -434,6 +434,7 @@ class RBACSetupTests(TestCase):
                 "trade_orders.view_shipmentpart",
                 "trade_orders.add_shipmentpart",
                 "trade_orders.change_shipmentpart",
+                "trade_orders.void_currencypurchase",
             },
             "TRADE_SUPERVISOR": {
                 "companies.view_company",
@@ -455,6 +456,7 @@ class RBACSetupTests(TestCase):
                 "trade_orders.view_shipmentpart",
                 "trade_orders.add_shipmentpart",
                 "trade_orders.change_shipmentpart",
+                "workflows.review_approvalrequest",
             },
             "SECURITY_ADMIN": set(),
         }
@@ -599,7 +601,7 @@ class RBACAPITests(TestCase):
 
         self.assertEqual(
             response.status_code,
-            201,
+            202,
         )
 
     def test_trade_supervisor_can_create_company(self):

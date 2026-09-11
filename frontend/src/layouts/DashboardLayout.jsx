@@ -243,6 +243,22 @@ function DashboardLayout({
             </NavLink>
           )}
 
+          {hasPermission(
+            user,
+            'workflows.review_approvalrequest'
+          ) && (
+            <NavLink
+              to="/approvals"
+              className={({ isActive }) =>
+                isActive
+                  ? 'sidebar-link active'
+                  : 'sidebar-link'
+              }
+            >
+              {t('navigation.approvals')}
+            </NavLink>
+          )}
+
           <button
             type="button"
             className="sidebar-link logout-button"

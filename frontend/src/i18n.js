@@ -32,6 +32,7 @@ const resources = {
         shipmentParts: 'اسناد حمل',
         invoices: 'صورتحساب‌ها',
         notifications: 'اعلان‌ها',
+        approvals: 'درخواست‌های تأیید',
       },
 
       dashboard: {
@@ -308,6 +309,30 @@ const resources = {
 
         loadError:
           'بارگذاری خریدهای ارز انجام نشد.',
+
+        requestVoid:
+          'درخواست ابطال',
+
+        voidTitle:
+          'درخواست ابطال خرید ارز',
+
+        voidDescription:
+          'برای ارسال درخواست ابطال، دلیل ابطال را وارد کنید.',
+
+        voidReason:
+          'دلیل ابطال',
+
+        voidReasonRequired:
+          'وارد کردن دلیل ابطال الزامی است.',
+
+        voidError:
+          'ارسال درخواست ابطال ناموفق بود.',
+
+        voidSubmitting:
+          'در حال ارسال درخواست...',
+
+        submitVoid:
+          'ارسال درخواست ابطال',
       },
 
       currencyPurchaseForm: {
@@ -315,13 +340,13 @@ const resources = {
           'افزودن خرید ارز',
 
         editTitle:
-          'ویرایش خرید ارز',
+          'درخواست اصلاح خرید ارز',
 
         addDescription:
-          'ثبت یک خرید ارز جدید',
+          'ثبت درخواست خرید ارز جدید',
 
         editDescription:
-          'مبلغ یا تاریخ خرید ارز را ویرایش کنید.',
+          'مبلغ یا تاریخ خرید ارز را اصلاح و برای تأیید ارسال کنید.',
 
         registrationOrder:
           'ثبت سفارش',
@@ -344,17 +369,26 @@ const resources = {
         purchaseDate:
           'تاریخ خرید',
 
+        correctionReason:
+          'دلیل اصلاح',
+
+        correctionReasonPlaceholder:
+          'دلیل اصلاح خرید ارز را وارد کنید',
+
+        correctionReasonError:
+          'وارد کردن دلیل اصلاح الزامی است.',
+
         saveChanges:
-          'ذخیره تغییرات',
+          'ارسال درخواست اصلاح',
 
         createPurchase:
-          'ایجاد خرید ارز',
+          'ارسال درخواست خرید ارز',
 
         saving:
-          'در حال ذخیره...',
+          'در حال ارسال درخواست اصلاح...',
 
         creating:
-          'در حال ایجاد...',
+          'در حال ارسال درخواست...',
 
         selectOrderError:
           'لطفاً یک ثبت سفارش انتخاب کنید.',
@@ -766,6 +800,111 @@ const resources = {
       logoutFailed:
         'خروج از سامانه انجام نشد.',
 
+      approvals: {
+        title:
+          'درخواست‌های تأیید',
+
+        subtitle:
+          'درخواست‌های در انتظار بررسی و تأیید را بررسی کنید.',
+
+        loading:
+          'در حال بارگذاری درخواست‌های تأیید...',
+
+        empty:
+          'درخواست تأییدی در انتظار بررسی وجود ندارد.',
+
+        loadError:
+          'بارگذاری درخواست‌های تأیید انجام نشد.',
+
+        maker:
+          'ثبت‌کننده درخواست',
+
+        createdAt:
+          'زمان ثبت',
+
+        reason:
+          'دلیل درخواست',
+
+        approve:
+          'تأیید درخواست',
+
+        approveVoid:
+          'تأیید ابطال',
+
+        reject:
+          'رد درخواست',
+
+        confirmApprove:
+          'آیا از تأیید این درخواست مطمئن هستید؟',
+
+        confirmVoidApprove:
+          'آیا از تأیید ابطال این خرید ارز مطمئن هستید؟',
+
+        rejectReasonPrompt:
+          'دلیل رد درخواست را وارد کنید:',
+
+        rejectReasonRequired:
+          'وارد کردن دلیل رد الزامی است.',
+
+        approveError:
+          'تأیید درخواست انجام نشد.',
+
+        rejectError:
+          'رد درخواست انجام نشد.',
+
+        voidNoticeTitle:
+          'این درخواست برای ابطال خرید ارز است',
+
+        voidNoticeDescription:
+          'در صورت تأیید، این خرید ارز باطل خواهد شد و دیگر به‌عنوان خرید فعال در محاسبات مالی در نظر گرفته نمی‌شود.',
+
+        operations: {
+          create:
+            'درخواست ایجاد خرید ارز',
+
+          correct:
+            'درخواست اصلاح خرید ارز',
+
+          void:
+            'درخواست ابطال خرید ارز',
+        },
+
+        targets: {
+          currencyPurchase:
+            'خرید ارز',
+        },
+
+        status: {
+          pending:
+            'در انتظار تأیید',
+        },
+
+        fields: {
+          field:
+            'فیلد',
+
+          current:
+            'مقدار فعلی',
+
+          proposed:
+            'مقدار پیشنهادی',
+
+          amount:
+            'مبلغ خرید',
+
+          currency:
+            'ارز',
+
+          purchaseDate:
+            'تاریخ خرید',
+
+          registrationOrder:
+            'شناسه ثبت سفارش',
+
+          voided: 'باطل‌شده',
+        },
+      },
+
     },
   },
 
@@ -798,6 +937,7 @@ const resources = {
         shipmentParts: 'Shipment Parts',
         invoices: 'Invoices',
         notifications: 'Notifications',
+        approvals: 'Approval Requests',
       },
 
       dashboard: {
@@ -1074,6 +1214,32 @@ const resources = {
 
         loadError:
           'Failed to load currency purchases.',
+
+        requestVoid:
+          'Request Void',
+
+        voidTitle:
+          'Request Currency Purchase Void',
+
+        voidDescription:
+          'Enter the reason for submitting this void request.',
+
+        voidReason:
+          'Void Reason',
+
+        voidReasonRequired:
+          'A void reason is required.',
+
+        voidError:
+          'Failed to submit void request.',
+
+        voidSubmitting:
+          'Submitting request...',
+
+        submitVoid:
+          'Submit Void Request',
+
+        voided: 'Voided',
       },
 
       currencyPurchaseForm: {
@@ -1081,13 +1247,13 @@ const resources = {
           'Add Currency Purchase',
 
         editTitle:
-          'Edit Currency Purchase',
+          'Request Currency Purchase Correction',
 
         addDescription:
-          'Record a new currency purchase.',
+          'Submit a new currency purchase request.',
 
         editDescription:
-          'Update purchase amount or purchase date.',
+          'Correct the amount or purchase date and submit it for approval.',
 
         registrationOrder:
           'Registration Order',
@@ -1110,17 +1276,26 @@ const resources = {
         purchaseDate:
           'Purchase Date',
 
+        correctionReason:
+          'Correction Reason',
+
+        correctionReasonPlaceholder:
+          'Enter the reason for this correction',
+
+        correctionReasonError:
+          'A correction reason is required.',
+
         saveChanges:
-          'Save Changes',
+          'Submit Correction Request',
 
         createPurchase:
-          'Create Purchase',
+          'Submit Purchase Request',
 
         saving:
-          'Saving...',
+          'Submitting correction...',
 
         creating:
-          'Creating...',
+          'Submitting request...',
 
         selectOrderError:
           'Please select a registration order.',
@@ -1531,6 +1706,28 @@ const resources = {
 
       logoutFailed:
         'Logout failed.',
+
+      approvals: {
+        title: 'Approval Requests',
+        subtitle:
+          'Review pending Maker-Checker requests.',
+        loading:
+          'Loading approval requests...',
+        empty:
+          'There are no pending approval requests.',
+        reason:
+          'Reason',
+        approve:
+          'Approve',
+        reject:
+          'Reject',
+        confirmApprove:
+          'Approve this request?',
+        rejectReasonPrompt:
+          'Enter rejection reason:',
+        rejectReasonRequired:
+          'A rejection reason is required.',
+      },
 
     },
   },

@@ -16,6 +16,7 @@ import {
   createCurrencyPurchase,
   getCurrencyPurchases,
   updateCurrencyPurchase,
+  voidCurrencyPurchase,
 } from '../services/api'
 
 
@@ -51,8 +52,14 @@ function CurrencyPurchases({
   const [purchases, setPurchases] = useState([])
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState('')
+
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [selectedPurchase, setSelectedPurchase] = useState(null)
+
+  const [voidPurchase, setVoidPurchase] = useState(null)
+  const [voidReason, setVoidReason] = useState('')
+  const [voidSubmitting, setVoidSubmitting] = useState(false)
+  const [voidError, setVoidError] = useState('')
 
 
   async function loadPurchases() {
@@ -60,6 +67,7 @@ function CurrencyPurchases({
       setError('')
 
       const data = await getCurrencyPurchases()
+
       setPurchases(data)
     } catch (loadError) {
       setError(
@@ -102,11 +110,77 @@ function CurrencyPurchases({
         purchaseData
       )
     } else {
-      await createCurrencyPurchase(purchaseData)
+      await createCurrencyPurchase(
+        purchaseData
+      )
     }
 
     handleCloseModal()
+
     await loadPurchases()
+  }
+
+
+  function handleOpenVoid(purchase) {
+    setVoidPurchase(purchase)
+    setVoidReason('')
+    setVoidError('')
+  }
+
+
+  function handleCloseVoid() {
+    if (voidSubmitting) {
+      return
+    }
+
+    setVoidPurchase(null)
+    setVoidReason('')
+    setVoidError('')
+  }
+
+
+  async function handleSubmitVoid(event) {
+    event.preventDefault()
+
+    const trimmedReason =
+      voidReason.trim()
+
+    if (!trimmedReason) {
+      setVoidError(
+        t(
+          'currencyPurchases.voidReasonRequired'
+        )
+      )
+
+      return
+    }
+
+    if (!voidPurchase) {
+      return
+    }
+
+    setVoidSubmitting(true)
+    setVoidError('')
+
+    try {
+      await voidCurrencyPurchase(
+        voidPurchase.id,
+        trimmedReason
+      )
+
+      setVoidPurchase(null)
+      setVoidReason('')
+      setVoidError('')
+
+      await loadPurchases()
+    } catch (err) {
+      setVoidError(
+        err.message ||
+        t('currencyPurchases.voidError')
+      )
+    } finally {
+      setVoidSubmitting(false)
+    }
   }
 
 
@@ -133,6 +207,15 @@ function CurrencyPurchases({
     'trade_orders.change_currencypurchase'
   )
 
+  const canVoidPurchase = hasPermission(
+    user,
+    'trade_orders.void_currencypurchase'
+  )
+
+  const hasPurchaseActions =
+    canEditPurchase ||
+    canVoidPurchase
+
 
   return (
     <div className="purchases-page">
@@ -156,7 +239,9 @@ function CurrencyPurchases({
             className="primary-button"
             onClick={handleAddPurchase}
           >
-            {t('currencyPurchases.addPurchase')}
+            {t(
+              'currencyPurchases.addPurchase'
+            )}
           </button>
         )}
       </div>
@@ -171,7 +256,9 @@ function CurrencyPurchases({
               </th>
 
               <th>
-                {t('currencyPurchases.orderNumber')}
+                {t(
+                  'currencyPurchases.orderNumber'
+                )}
               </th>
 
               <th>
@@ -183,86 +270,130 @@ function CurrencyPurchases({
               </th>
 
               <th>
-                {t('currencyPurchases.purchaseDate')}
+                {t(
+                  'currencyPurchases.purchaseDate'
+                )}
               </th>
 
               <th>
-                {t('currencyPurchases.deadline')}
+                {t(
+                  'currencyPurchases.deadline'
+                )}
               </th>
 
-              {canEditPurchase && (
+              {hasPurchaseActions && (
                 <th>
-                  {t('currencyPurchases.actions')}
+                  {t(
+                    'currencyPurchases.actions'
+                  )}
                 </th>
               )}
             </tr>
           </thead>
 
+
           <tbody>
-            {purchases.map((purchase) => (
-              <tr key={purchase.id}>
-                <td>
-                  {purchase.company_name}
-                </td>
-
-                <td>
-                  {purchase.order_number}
-                </td>
-
-                <td>
-                  <span className="purchase-amount">
-                    {formatAmount(purchase.amount)}
-                  </span>
-                </td>
-
-                <td>
-                  <span className="table-currency">
-                    {purchase.currency}
-                  </span>
-                </td>
-
-                <td>
-                  <span className="purchase-date">
-                    {purchase.purchase_date_dual}
-                  </span>
-                </td>
-
-                <td>
-                  <span className="purchase-date">
-                    {purchase.deadline_dual}
-                  </span>
-                </td>
-
-                {canEditPurchase && (
+            {purchases.map(
+              (purchase) => (
+                <tr key={purchase.id}>
                   <td>
-                    <div className="table-actions">
-                      <button
-                        type="button"
-                        className="table-action-button"
-                        onClick={() =>
-                          handleEditPurchase(purchase)
-                        }
-                      >
-                        {t('common.edit')}
-                      </button>
-                    </div>
+                    {purchase.company_name}
                   </td>
-                )}
-              </tr>
-            ))}
+
+                  <td>
+                    {purchase.order_number}
+                  </td>
+
+                  <td>
+                    <span className="purchase-amount">
+                      {formatAmount(
+                        purchase.amount
+                      )}
+                    </span>
+                  </td>
+
+                  <td>
+                    <span className="table-currency">
+                      {purchase.currency}
+                    </span>
+                  </td>
+
+                  <td>
+                    <span className="purchase-date">
+                      {
+                        purchase
+                          .purchase_date_dual
+                      }
+                    </span>
+                  </td>
+
+                  <td>
+                    <span className="purchase-date">
+                      {
+                        purchase
+                          .deadline_dual
+                      }
+                    </span>
+                  </td>
+
+                  {hasPurchaseActions && (
+                    <td>
+                      <div className="table-actions">
+                        {canEditPurchase && !purchase.is_void && (
+                          <button
+                            type="button"
+                            className="table-action-button"
+                            onClick={() =>
+                              handleEditPurchase(purchase)
+                            }
+                          >
+                            {t('common.edit')}
+                          </button>
+                        )}
+
+                        {canVoidPurchase && !purchase.is_void && (
+                          <button
+                            type="button"
+                            className={
+                              'table-action-button ' +
+                              'table-action-button--danger'
+                            }
+                            onClick={() =>
+                              handleOpenVoid(purchase)
+                            }
+                          >
+                            {t(
+                              'currencyPurchases.requestVoid'
+                            )}
+                          </button>
+                        )}
+
+                        {purchase.is_void && (
+                          <span className="purchase-void-badge">
+                            {t('currencyPurchases.voided')}
+                          </span>
+                        )}
+                      </div>
+                    </td>
+                  )}
+                </tr>
+              )
+            )}
 
 
             {purchases.length === 0 && (
               <tr>
                 <td
                   colSpan={
-                    canEditPurchase
+                    hasPurchaseActions
                       ? 7
                       : 6
                   }
                 >
                   <div className="empty-state">
-                    {t('currencyPurchases.empty')}
+                    {t(
+                      'currencyPurchases.empty'
+                    )}
                   </div>
                 </td>
               </tr>
@@ -278,6 +409,101 @@ function CurrencyPurchases({
         onClose={handleCloseModal}
         onSubmit={handleSubmit}
       />
+
+
+      {voidPurchase && (
+        <div className="modal-backdrop">
+          <div className="company-modal">
+            <div className="modal-header">
+              <div>
+                <h2>
+                  {t(
+                    'currencyPurchases.voidTitle'
+                  )}
+                </h2>
+
+                <p>
+                  {t(
+                    'currencyPurchases.voidDescription'
+                  )}
+                </p>
+              </div>
+
+              <button
+                type="button"
+                className="modal-close-button"
+                onClick={handleCloseVoid}
+                disabled={voidSubmitting}
+                aria-label={t('common.close')}
+              >
+                ×
+              </button>
+            </div>
+
+
+            <form
+              onSubmit={handleSubmitVoid}
+              noValidate
+            >
+              <div className="form-group">
+                <label htmlFor="void-reason">
+                  {t(
+                    'currencyPurchases.voidReason'
+                  )}
+                </label>
+
+                <textarea
+                  id="void-reason"
+                  value={voidReason}
+                  onChange={(event) =>
+                    setVoidReason(
+                      event.target.value
+                    )
+                  }
+                  rows="4"
+                  disabled={voidSubmitting}
+                  required
+                />
+              </div>
+
+
+              {voidError && (
+                <div className="form-error">
+                  {voidError}
+                </div>
+              )}
+
+
+              <div className="modal-actions">
+                <button
+                  type="button"
+                  className="secondary-button"
+                  onClick={handleCloseVoid}
+                  disabled={voidSubmitting}
+                >
+                  {t('common.cancel')}
+                </button>
+
+                <button
+                  type="submit"
+                  className="primary-button"
+                  disabled={voidSubmitting}
+                >
+                  {
+                    voidSubmitting
+                      ? t(
+                          'currencyPurchases.voidSubmitting'
+                        )
+                      : t(
+                          'currencyPurchases.submitVoid'
+                        )
+                  }
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

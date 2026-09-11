@@ -775,3 +775,106 @@ export async function getNotificationLogs() {
 
   return response.json()
 }
+
+export async function getApprovalRequests() {
+  const response = await apiFetch(
+    '/workflows/approval-requests/'
+  )
+
+  if (!response.ok) {
+    const errorMessage = await parseErrorResponse(
+      response,
+      'Failed to load approval requests.'
+    )
+
+    throw new Error(errorMessage)
+  }
+
+  return response.json()
+}
+
+
+export async function approveApprovalRequest(
+  approvalRequestId
+) {
+  const response = await apiFetch(
+    `/workflows/approval-requests/${approvalRequestId}/approve/`,
+    {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({}),
+    }
+  )
+
+  if (!response.ok) {
+    const errorMessage = await parseErrorResponse(
+      response,
+      'Failed to approve request.'
+    )
+
+    throw new Error(errorMessage)
+  }
+
+  return response.json()
+}
+
+
+export async function rejectApprovalRequest(
+  approvalRequestId,
+  reason
+) {
+  const response = await apiFetch(
+    `/workflows/approval-requests/${approvalRequestId}/reject/`,
+    {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        reason,
+      }),
+    }
+  )
+
+  if (!response.ok) {
+    const errorMessage = await parseErrorResponse(
+      response,
+      'Failed to reject request.'
+    )
+
+    throw new Error(errorMessage)
+  }
+
+  return response.json()
+}
+
+export async function voidCurrencyPurchase(
+  purchaseId,
+  reason
+) {
+  const response = await apiFetch(
+    `/trade/currency-purchases/${purchaseId}/void/`,
+    {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        reason,
+      }),
+    }
+  )
+
+  if (!response.ok) {
+    const errorMessage = await parseErrorResponse(
+      response,
+      'Failed to submit void request.'
+    )
+
+    throw new Error(errorMessage)
+  }
+
+  return response.json()
+}

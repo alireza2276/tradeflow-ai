@@ -34,11 +34,10 @@ ROLE_PERMISSIONS = {
         "trade_orders.view_currencypurchase",
         "trade_orders.add_currencypurchase",
         "trade_orders.change_currencypurchase",
+        "trade_orders.void_currencypurchase",
         "trade_orders.view_shipmentpart",
         "trade_orders.add_shipmentpart",
         "trade_orders.change_shipmentpart",
-        "workflows.review_approvalrequest",
-        "trade_orders.void_currencypurchase",
     ),
 
     "TRADE_SUPERVISOR": (
@@ -61,6 +60,7 @@ ROLE_PERMISSIONS = {
         "trade_orders.view_shipmentpart",
         "trade_orders.add_shipmentpart",
         "trade_orders.change_shipmentpart",
+        "workflows.review_approvalrequest",
     ),
 
     "SECURITY_ADMIN": (),
