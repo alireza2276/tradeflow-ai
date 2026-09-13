@@ -2,6 +2,7 @@ from threading import Event, Thread
 import uuid
 from rest_framework.test import APIClient
 from apps.workflows.models import ApprovalRequest
+from apps.workflows.services.approval_service import approve_request
 from django.urls import reverse
 from django.utils import timezone
 from django.db import close_old_connections, transaction
@@ -2425,6 +2426,15 @@ class ShipmentPartAPITests(AuthenticatedAPITestCase):
         )
         self.url = "/api/trade/shipment-parts/"
 
+        self.checker = get_user_model().objects.create_user(
+            username="shipment-part-checker",
+            password="StrongTestPass123!",
+        )
+        review_permission = Permission.objects.get(
+            codename="review_approvalrequest",
+        )
+        self.checker.user_permissions.add(review_permission)
+
         self.company = Company.objects.create(
             name="Shipment API Company",
             national_id="9900112233",
@@ -2445,92 +2455,65 @@ class ShipmentPartAPITests(AuthenticatedAPITestCase):
             purchase_date=date(2026, 8, 22),
         )
 
-    def test_shipment_part_can_be_created(self):
-        payload = {
-            "currency_purchase": str(self.purchase.id),
-            "amount": "20000",
-            "shipment_date": "2026-09-01",
-            "received_date": "2026-09-10",
-            "reference_number": "SHIP-REF-001",
-            "notes": "First shipment part",
-        }
+    def approve_api_request(self, response):
+        approval_request = ApprovalRequest.objects.get(
+            pk=response.data["id"],
+        )
+        approved_request = approve_request(
+            approval_request=approval_request,
+            checker=self.checker,
+        )
+        return approved_request
 
+    def test_shipment_part_can_be_created(self):
         response = self.client.post(
             self.url,
-            payload,
+            {
+                "currency_purchase": str(self.purchase.id),
+                "amount": "20000",
+                "shipment_date": "2026-09-01",
+                "received_date": "2026-09-10",
+                "reference_number": "SHIP-REF-001",
+                "notes": "First shipment part",
+            },
             format="json",
         )
 
-        self.assertEqual(
-            response.status_code,
-            status.HTTP_201_CREATED,
-        )
+        self.assertEqual(response.status_code, status.HTTP_202_ACCEPTED)
+        self.assertEqual(ShipmentPart.objects.count(), 0)
 
-        self.assertEqual(
-            response.data["amount"],
-            "20000.0000",
-        )
-
-        self.assertEqual(
-            response.data["reference_number"],
-            "SHIP-REF-001",
-        )
-
-        self.assertEqual(
-            response.data["order_number"],
-            "SHIP-API-001",
-        )
-
-        self.assertEqual(
-            response.data["company_name"],
-            "Shipment API Company",
-        )
-
-        self.assertEqual(
-            response.data["purchase_currency"],
-            "USD",
-        )
+        approved_request = self.approve_api_request(response)
+        shipment = ShipmentPart.objects.get(pk=approved_request.target_id)
+        self.assertEqual(shipment.amount, Decimal("20000"))
+        self.assertEqual(shipment.reference_number, "SHIP-REF-001")
 
     def test_multiple_shipment_parts_up_to_purchase_amount_are_allowed(self):
-        first_payload = {
-            "currency_purchase": str(self.purchase.id),
-            "amount": "20000",
-        }
-
-        second_payload = {
-            "currency_purchase": str(self.purchase.id),
-            "amount": "20000",
-        }
-
         first_response = self.client.post(
             self.url,
-            first_payload,
+            {
+                "currency_purchase": str(self.purchase.id),
+                "amount": "20000",
+            },
             format="json",
         )
+        self.assertEqual(first_response.status_code, status.HTTP_202_ACCEPTED)
+        self.approve_api_request(first_response)
 
         second_response = self.client.post(
             self.url,
-            second_payload,
+            {
+                "currency_purchase": str(self.purchase.id),
+                "amount": "20000",
+            },
             format="json",
         )
+        self.assertEqual(second_response.status_code, status.HTTP_202_ACCEPTED)
+        self.approve_api_request(second_response)
 
-        self.assertEqual(
-            first_response.status_code,
-            status.HTTP_201_CREATED,
-        )
-
-        self.assertEqual(
-            second_response.status_code,
-            status.HTTP_201_CREATED,
-        )
-
-        self.assertEqual(
-            self.purchase.shipment_parts.count(),
-            2,
-        )
+        self.assertEqual(self.purchase.shipment_parts.count(), 2)
 
     def test_shipment_parts_cannot_exceed_purchase_amount(self):
-        self.client.post(
+        first_response = self.client.post(
             self.url,
             {
                 "currency_purchase": str(self.purchase.id),
@@ -2538,6 +2521,8 @@ class ShipmentPartAPITests(AuthenticatedAPITestCase):
             },
             format="json",
         )
+        self.assertEqual(first_response.status_code, status.HTTP_202_ACCEPTED)
+        self.approve_api_request(first_response)
 
         response = self.client.post(
             self.url,
@@ -2547,11 +2532,7 @@ class ShipmentPartAPITests(AuthenticatedAPITestCase):
             },
             format="json",
         )
-
-        self.assertEqual(
-            response.status_code,
-            status.HTTP_400_BAD_REQUEST,
-        )
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
 
     def test_zero_shipment_amount_is_rejected(self):
         response = self.client.post(
@@ -2596,35 +2577,13 @@ class ShipmentPartAPITests(AuthenticatedAPITestCase):
             },
             format="json",
         )
-
-        self.assertEqual(
-            response.status_code,
-            status.HTTP_201_CREATED,
-        )
-
-        shipment = ShipmentPart.objects.get(
-            currency_purchase=self.purchase,
-        )
-
-        self.assertEqual(
-            shipment.reference_number,
-            "SHIP-DETAIL-001",
-        )
-
-        self.assertEqual(
-            shipment.shipment_date,
-            date(2026, 9, 1),
-        )
-
-        self.assertEqual(
-            shipment.received_date,
-            date(2026, 9, 10),
-        )
-
-        self.assertEqual(
-            shipment.notes,
-            "Documents received.",
-        )
+        self.assertEqual(response.status_code, status.HTTP_202_ACCEPTED)
+        approved_request = self.approve_api_request(response)
+        shipment = ShipmentPart.objects.get(pk=approved_request.target_id)
+        self.assertEqual(shipment.reference_number, "SHIP-DETAIL-001")
+        self.assertEqual(shipment.shipment_date, date(2026, 9, 1))
+        self.assertEqual(shipment.received_date, date(2026, 9, 10))
+        self.assertEqual(shipment.notes, "Documents received.")
 
     def test_shipment_part_currency_purchase_cannot_be_changed(self):
         shipment = ShipmentPart.objects.create(
@@ -2753,31 +2712,17 @@ class ShipmentPartAPITests(AuthenticatedAPITestCase):
             {
                 "notes": "Updated after invoice",
                 "reference_number": "SHIP-INVOICED-002-EDIT",
+                "reason": "Correct non-financial shipment details",
             },
             format="json",
         )
 
-        self.assertEqual(
-            response.status_code,
-            status.HTTP_200_OK,
-        )
-
+        self.assertEqual(response.status_code, status.HTTP_202_ACCEPTED)
+        self.approve_api_request(response)
         shipment.refresh_from_db()
-
-        self.assertEqual(
-            shipment.amount,
-            Decimal("20000"),
-        )
-
-        self.assertEqual(
-            shipment.notes,
-            "Updated after invoice",
-        )
-
-        self.assertEqual(
-            shipment.reference_number,
-            "SHIP-INVOICED-002-EDIT",
-        )
+        self.assertEqual(shipment.amount, Decimal("20000"))
+        self.assertEqual(shipment.notes, "Updated after invoice")
+        self.assertEqual(shipment.reference_number, "SHIP-INVOICED-002-EDIT")
 
     def test_shipment_part_cannot_be_deleted_directly(self):
         shipment = ShipmentPart.objects.create(

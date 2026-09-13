@@ -13,6 +13,7 @@ import {
   getCurrencyPurchases,
   getShipmentParts,
   updateShipmentPart,
+  voidShipmentPart,
 } from '../services/api'
 
 import {
@@ -47,6 +48,11 @@ function ShipmentParts({
     'trade_orders.change_shipmentpart'
   )
 
+  const canVoidShipment = hasPermission(
+    user,
+    'trade_orders.void_shipmentpart'
+  )
+
 
   async function loadData() {
     const shipmentData = await getShipmentParts()
@@ -57,7 +63,9 @@ function ShipmentParts({
       const purchaseData =
         await getCurrencyPurchases()
 
-      setCurrencyPurchases(purchaseData)
+      setCurrencyPurchases(
+        purchaseData.filter((purchase) => !purchase.is_void)
+      )
     } else {
       setCurrencyPurchases([])
     }
@@ -86,7 +94,9 @@ function ShipmentParts({
             return
           }
 
-          setCurrencyPurchases(purchaseData)
+          setCurrencyPurchases(
+        purchaseData.filter((purchase) => !purchase.is_void)
+      )
         } else {
           setCurrencyPurchases([])
         }
@@ -146,6 +156,37 @@ function ShipmentParts({
     await loadData()
   }
 
+
+  async function handleVoidShipment(shipmentPart) {
+    const reason = window.prompt(
+      t('shipmentParts.voidReasonPrompt')
+    )
+
+    if (reason === null) {
+      return
+    }
+
+    const trimmedReason = reason.trim()
+
+    if (!trimmedReason) {
+      setError(t('shipmentParts.voidReasonRequired'))
+      return
+    }
+
+    try {
+      setError('')
+      await voidShipmentPart(
+        shipmentPart.id,
+        trimmedReason
+      )
+      await loadData()
+    } catch (voidError) {
+      setError(
+        voidError.message ||
+        t('shipmentParts.voidError')
+      )
+    }
+  }
 
   if (loading) {
     return (
@@ -224,7 +265,7 @@ function ShipmentParts({
                 {t('shipmentParts.notes')}
               </th>
 
-              {canEditShipmentPart && (
+              {(canEditShipmentPart || canVoidShipment) && (
                 <th>
                   {t('shipmentParts.actions')}
                 </th>
@@ -237,7 +278,7 @@ function ShipmentParts({
               <tr>
                 <td
                   colSpan={
-                    canEditShipmentPart
+                    (canEditShipmentPart || canVoidShipment)
                       ? 9
                       : 8
                   }
@@ -304,17 +345,39 @@ function ShipmentParts({
                     </span>
                   </td>
 
-                  {canEditShipmentPart && (
+                  {(canEditShipmentPart || canVoidShipment) && (
                     <td>
-                      <button
-                        type="button"
-                        className="secondary-button"
-                        onClick={() =>
-                          openEditModal(shipmentPart)
-                        }
-                      >
-                        {t('common.edit')}
-                      </button>
+                      <div className="table-actions">
+                        {canEditShipmentPart && !shipmentPart.is_void && (
+                          <button
+                            type="button"
+                            className="secondary-button"
+                            onClick={() =>
+                              openEditModal(shipmentPart)
+                            }
+                          >
+                            {t('common.edit')}
+                          </button>
+                        )}
+
+                        {canVoidShipment && !shipmentPart.is_void && (
+                          <button
+                            type="button"
+                            className="table-action-button table-action-button--danger"
+                            onClick={() =>
+                              handleVoidShipment(shipmentPart)
+                            }
+                          >
+                            {t('shipmentParts.requestVoid')}
+                          </button>
+                        )}
+
+                        {shipmentPart.is_void && (
+                          <span className="purchase-void-badge">
+                            {t('shipmentParts.voided')}
+                          </span>
+                        )}
+                      </div>
                     </td>
                   )}
                 </tr>

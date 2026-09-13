@@ -12,7 +12,9 @@ def get_purchase_balance(
     documented_amount = sum(
         (
             part.amount
-            for part in purchase.shipment_parts.all()
+            for part in purchase.shipment_parts.filter(
+                is_void=False
+            )
         ),
         Decimal("0"),
     )

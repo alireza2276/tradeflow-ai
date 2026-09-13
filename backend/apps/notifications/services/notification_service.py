@@ -16,6 +16,9 @@ def should_send_notification(
     purchase,
     today=None,
 ):
+    if purchase.is_void:
+        return False
+
     balance = get_purchase_balance(
         purchase=purchase,
     )
@@ -44,6 +47,9 @@ def send_notification(
     purchase,
     today=None,
 ):
+    if purchase.is_void:
+        return False
+
     balance = get_purchase_balance(
         purchase=purchase,
     )

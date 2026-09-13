@@ -7,6 +7,7 @@ from apps.trade_orders.models import CurrencyPurchase
 def process_deadline_notifications(*, today=None):
     purchases = CurrencyPurchase.objects.filter(
         registration_order__is_active=True,
+        is_void=False,
     )
 
     processed_count = 0

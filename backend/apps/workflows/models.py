@@ -43,10 +43,6 @@ class ApprovalRequest(models.Model):
         blank=True,
     )
 
-    reason = models.TextField(
-        blank=True,
-    )
-
     review_comment = models.TextField(
         blank=True,
     )

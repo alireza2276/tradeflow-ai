@@ -7,17 +7,24 @@ from django.db import transaction
 from django.utils import timezone
 from django.utils.dateparse import parse_datetime
 
-from apps.trade_orders.models import (
-    CurrencyPurchase,
-    RegistrationOrder,
-)
 from apps.trade_orders.services.purchase_service import (
     create_currency_purchase,
     update_currency_purchase,
 )
+from apps.trade_orders.services.shipment_service import (
+    create_shipment_part,
+    update_shipment_part,
+)
 from apps.workflows.models import ApprovalRequest
 from apps.workflows.services.submission_service import (
     CURRENCY_PURCHASE_TARGET,
+    SHIPMENT_PART_TARGET,
+)
+
+from apps.trade_orders.models import (
+    CurrencyPurchase,
+    RegistrationOrder,
+    ShipmentPart,
 )
 
 
@@ -548,41 +555,50 @@ def _apply_request(
     approval_request: ApprovalRequest,
     checker,
 ):
-    if (
-        approval_request.target_type
-        != CURRENCY_PURCHASE_TARGET
-    ):
+    if approval_request.target_type == CURRENCY_PURCHASE_TARGET:
+        if approval_request.operation == ApprovalRequest.Operation.CREATE:
+            return _apply_currency_purchase_create(
+                approval_request=approval_request,
+            )
+
+        if approval_request.operation == ApprovalRequest.Operation.CORRECT:
+            return _apply_currency_purchase_correction(
+                approval_request=approval_request,
+            )
+
+        if approval_request.operation == ApprovalRequest.Operation.VOID:
+            return _apply_currency_purchase_void(
+                approval_request=approval_request,
+                checker=checker,
+            )
+
         raise ValidationError(
-            "Unsupported approval request target type."
+            "Unsupported currency purchase approval operation."
         )
 
-    if (
-        approval_request.operation
-        == ApprovalRequest.Operation.CREATE
-    ):
-        return _apply_currency_purchase_create(
-            approval_request=approval_request,
-        )
+    if approval_request.target_type == SHIPMENT_PART_TARGET:
+        if approval_request.operation == ApprovalRequest.Operation.CREATE:
+            return _apply_shipment_part_create(
+                approval_request=approval_request,
+            )
 
-    if (
-        approval_request.operation
-        == ApprovalRequest.Operation.CORRECT
-    ):
-        return _apply_currency_purchase_correction(
-            approval_request=approval_request,
-        )
+        if approval_request.operation == ApprovalRequest.Operation.CORRECT:
+            return _apply_shipment_part_correction(
+                approval_request=approval_request,
+            )
 
-    if (
-            approval_request.operation
-            == ApprovalRequest.Operation.VOID
-    ):
-        return _apply_currency_purchase_void(
-            approval_request=approval_request,
-            checker=checker,
+        if approval_request.operation == ApprovalRequest.Operation.VOID:
+            return _apply_shipment_part_void(
+                approval_request=approval_request,
+                checker=checker,
+            )
+
+        raise ValidationError(
+            "Unsupported shipment part approval operation."
         )
 
     raise ValidationError(
-        "Unsupported approval request operation."
+        "Unsupported approval request target type."
     )
 
 
@@ -677,3 +693,256 @@ def reject_request(
     )
 
     return locked_request
+
+def _parse_optional_date(value, *, field_name: str):
+    if value is None:
+        return None
+    return _parse_date(value, field_name=field_name)
+
+
+def _parse_shipment_snapshot(snapshot, *, field_name: str) -> dict:
+    _validate_exact_keys(
+        snapshot,
+        expected_keys={
+            "currency_purchase_id",
+            "amount",
+            "shipment_date",
+            "received_date",
+            "reference_number",
+            "notes",
+        },
+        field_name=field_name,
+    )
+
+    reference_number = snapshot["reference_number"]
+    notes = snapshot["notes"]
+
+    if not isinstance(reference_number, str) or not isinstance(notes, str):
+        raise ValidationError(f"Invalid {field_name}.")
+
+    return {
+        "currency_purchase_id": _parse_uuid(
+            snapshot["currency_purchase_id"],
+            field_name=f"{field_name} currency purchase ID",
+        ),
+        "amount": _parse_decimal(
+            snapshot["amount"],
+            field_name=f"{field_name} shipment amount",
+        ),
+        "shipment_date": _parse_optional_date(
+            snapshot["shipment_date"],
+            field_name=f"{field_name} shipment date",
+        ),
+        "received_date": _parse_optional_date(
+            snapshot["received_date"],
+            field_name=f"{field_name} received date",
+        ),
+        "reference_number": reference_number,
+        "notes": notes,
+    }
+
+
+def _shipment_matches_snapshot(shipment: ShipmentPart, snapshot: dict) -> bool:
+    return (
+        shipment.currency_purchase_id == snapshot["currency_purchase_id"]
+        and shipment.amount == snapshot["amount"]
+        and shipment.shipment_date == snapshot["shipment_date"]
+        and shipment.received_date == snapshot["received_date"]
+        and shipment.reference_number == snapshot["reference_number"]
+        and shipment.notes == snapshot["notes"]
+    )
+
+
+def _apply_shipment_part_create(
+    *,
+    approval_request: ApprovalRequest,
+) -> ShipmentPart:
+    if approval_request.target_id is not None:
+        raise ValidationError(
+            "Create shipment approval request must not already reference a target object."
+        )
+
+    payload = approval_request.payload
+    _validate_exact_keys(
+        payload,
+        expected_keys={
+            "currency_purchase_id",
+            "amount",
+            "shipment_date",
+            "received_date",
+            "reference_number",
+            "notes",
+        },
+        field_name="shipment approval request payload",
+    )
+
+    snapshot = _parse_shipment_snapshot(
+        payload,
+        field_name="shipment create payload",
+    )
+
+    try:
+        purchase = (
+            CurrencyPurchase.objects
+            .select_for_update()
+            .get(pk=snapshot["currency_purchase_id"])
+        )
+    except CurrencyPurchase.DoesNotExist:
+        raise ValidationError(
+            "Currency purchase does not exist."
+        )
+
+    return create_shipment_part(
+        currency_purchase=purchase,
+        amount=snapshot["amount"],
+        shipment_date=snapshot["shipment_date"],
+        received_date=snapshot["received_date"],
+        reference_number=snapshot["reference_number"],
+        notes=snapshot["notes"],
+    )
+
+
+def _apply_shipment_part_correction(
+    *,
+    approval_request: ApprovalRequest,
+) -> ShipmentPart:
+    if approval_request.target_id is None:
+        raise ValidationError(
+            "Correction request must reference an existing shipment part."
+        )
+
+    payload = approval_request.payload
+    _validate_exact_keys(
+        payload,
+        expected_keys={"version", "before", "proposed"},
+        field_name="shipment correction payload",
+    )
+
+    expected_version = _parse_version(payload["version"])
+    before = _parse_shipment_snapshot(
+        payload["before"],
+        field_name="before shipment snapshot",
+    )
+    proposed = _parse_shipment_snapshot(
+        payload["proposed"],
+        field_name="proposed shipment correction",
+    )
+
+    try:
+        locked_shipment = (
+            ShipmentPart.objects
+            .select_for_update()
+            .select_related("currency_purchase")
+            .get(pk=approval_request.target_id)
+        )
+    except ShipmentPart.DoesNotExist:
+        raise ValidationError(
+            "Shipment part does not exist."
+        )
+
+    if locked_shipment.updated_at != expected_version:
+        raise ValidationError(
+            "The shipment part has changed since this correction request was submitted."
+        )
+
+    if not _shipment_matches_snapshot(locked_shipment, before):
+        raise ValidationError(
+            "The shipment part no longer matches the original correction snapshot."
+        )
+
+    if proposed["currency_purchase_id"] != locked_shipment.currency_purchase_id:
+        raise ValidationError(
+            "Currency purchase cannot be changed through a shipment correction."
+        )
+
+    return update_shipment_part(
+        shipment=locked_shipment,
+        amount=proposed["amount"],
+        shipment_date=proposed["shipment_date"],
+        received_date=proposed["received_date"],
+        reference_number=proposed["reference_number"],
+        notes=proposed["notes"],
+    )
+
+
+def _apply_shipment_part_void(
+    *,
+    approval_request: ApprovalRequest,
+    checker,
+) -> ShipmentPart:
+    if approval_request.target_id is None:
+        raise ValidationError(
+            "Void request must reference an existing shipment part."
+        )
+
+    payload = approval_request.payload
+    _validate_exact_keys(
+        payload,
+        expected_keys={"version", "before"},
+        field_name="shipment void payload",
+    )
+
+    expected_version = _parse_version(payload["version"])
+    before = _parse_shipment_snapshot(
+        payload["before"],
+        field_name="before shipment snapshot",
+    )
+
+    try:
+        locked_shipment = (
+            ShipmentPart.objects
+            .select_for_update()
+            .select_related("currency_purchase")
+            .get(pk=approval_request.target_id)
+        )
+    except ShipmentPart.DoesNotExist:
+        raise ValidationError(
+            "Shipment part does not exist."
+        )
+
+    if locked_shipment.updated_at != expected_version:
+        raise ValidationError(
+            "The shipment part has changed since this void request was submitted."
+        )
+
+    if not _shipment_matches_snapshot(locked_shipment, before):
+        raise ValidationError(
+            "The shipment part no longer matches the original void snapshot."
+        )
+
+    if locked_shipment.is_void:
+        raise ValidationError(
+            "Shipment part is already void."
+        )
+
+    if locked_shipment.currency_purchase.is_void:
+        raise ValidationError(
+            "Shipment belongs to a voided currency purchase."
+        )
+
+    if hasattr(locked_shipment, "invoice"):
+        raise ValidationError(
+            "Shipment part with an invoice cannot be voided."
+        )
+
+    void_reason = approval_request.reason.strip()
+    if not void_reason:
+        raise ValidationError(
+            "A void reason is required."
+        )
+
+    locked_shipment.is_void = True
+    locked_shipment.voided_at = timezone.now()
+    locked_shipment.voided_by = checker
+    locked_shipment.void_reason = void_reason
+    locked_shipment.save(
+        update_fields=(
+            "is_void",
+            "voided_at",
+            "voided_by",
+            "void_reason",
+            "updated_at",
+        )
+    )
+
+    return locked_shipment

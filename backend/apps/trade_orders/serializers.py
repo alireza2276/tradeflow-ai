@@ -74,14 +74,20 @@ class RegistrationOrderSerializer(serializers.ModelSerializer):
             instance.currency,
         )
 
-        total_purchased = (
-            instance.currency_purchases.aggregate(
+        active_total_purchased = (
+            instance.currency_purchases.filter(
+                is_void=False,
+            ).aggregate(
                 total=Sum("amount")
             )["total"]
             or Decimal("0")
         )
 
-        if registered_amount < total_purchased:
+        has_purchase_history = (
+            instance.currency_purchases.exists()
+        )
+
+        if registered_amount < active_total_purchased:
             raise serializers.ValidationError(
                 {
                     "registered_amount": (
@@ -92,7 +98,7 @@ class RegistrationOrderSerializer(serializers.ModelSerializer):
             )
 
         if (
-            total_purchased > Decimal("0")
+            has_purchase_history
             and currency != instance.currency
         ):
             raise serializers.ValidationError(
@@ -168,6 +174,10 @@ class CurrencyPurchaseSerializer(serializers.ModelSerializer):
             "purchase_date_dual",
             "deadline",
             "deadline_dual",
+            "is_void",
+            "voided_at",
+            "voided_by",
+            "void_reason",
             "created_at",
             "updated_at",
         )
@@ -179,6 +189,10 @@ class CurrencyPurchaseSerializer(serializers.ModelSerializer):
             "deadline",
             "purchase_date_dual",
             "deadline_dual",
+            "is_void",
+            "voided_at",
+            "voided_by",
+            "void_reason",
             "created_at",
             "updated_at",
         )
@@ -223,6 +237,10 @@ class ShipmentPartSerializer(serializers.ModelSerializer):
             "received_date",
             "reference_number",
             "notes",
+            "is_void",
+            "voided_at",
+            "voided_by",
+            "void_reason",
             "created_at",
             "updated_at",
         )

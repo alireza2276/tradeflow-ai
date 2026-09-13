@@ -434,6 +434,7 @@ class RBACSetupTests(TestCase):
                 "trade_orders.view_shipmentpart",
                 "trade_orders.add_shipmentpart",
                 "trade_orders.change_shipmentpart",
+                "trade_orders.void_shipmentpart",
                 "trade_orders.void_currencypurchase",
             },
             "TRADE_SUPERVISOR": {

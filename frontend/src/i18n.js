@@ -446,59 +446,59 @@ const resources = {
 
         loadError:
           'بارگذاری اطلاعات اسناد حمل انجام نشد.',
+
+        requestVoid:
+          'درخواست ابطال',
+
+        voided:
+          'باطل‌شده',
+
+        voidTitle:
+          'درخواست ابطال سند حمل',
+
+        voidDescription:
+          'برای ارسال درخواست ابطال سند حمل، دلیل را وارد کنید.',
+
+        voidReason:
+          'دلیل ابطال',
+
+        voidReasonRequired:
+          'وارد کردن دلیل ابطال الزامی است.',
+
+        voidError:
+          'ارسال درخواست ابطال سند حمل انجام نشد.',
+
+        voidSubmitting:
+          'در حال ارسال درخواست...',
+
+        submitVoid:
+          'ارسال درخواست ابطال',
+        voidReasonPrompt: 'دلیل ابطال سند حمل را وارد کنید:',
+
       },
 
       shipmentPartForm: {
-        addTitle:
-          'افزودن سند حمل',
-
-        editTitle:
-          'ویرایش سند حمل',
-
-        addDescription:
-          'ثبت تخصیص جدید سند حمل برای یک خرید ارز',
-
-        editDescription:
-          'اطلاعات تخصیص سند حمل را ویرایش کنید.',
-
-        currencyPurchase:
-          'خرید ارز',
-
-        selectCurrencyPurchase:
-          'انتخاب خرید ارز',
-
-        amount:
-          'مبلغ',
-
-        shipmentDate:
-          'تاریخ حمل',
-
-        receivedDate:
-          'تاریخ دریافت',
-
-        referenceNumber:
-          'شماره مرجع',
-
-        notes:
-          'یادداشت',
-
-        saveChanges:
-          'ذخیره تغییرات',
-
-        addShipmentPart:
-          'افزودن سند حمل',
-
-        saving:
-          'در حال ذخیره...',
-
-        selectPurchaseError:
-          'لطفاً یک خرید ارز انتخاب کنید.',
-
-        invalidAmountError:
-          'مبلغ سند حمل باید بیشتر از صفر باشد.',
-
-        saveError:
-          'ذخیره سند حمل انجام نشد.',
+        addTitle: 'افزودن سند حمل',
+        editTitle: 'درخواست اصلاح سند حمل',
+        addDescription: 'ثبت درخواست سند حمل جدید برای یک خرید ارز',
+        editDescription: 'اطلاعات سند حمل را اصلاح و برای تأیید ارسال کنید.',
+        currencyPurchase: 'خرید ارز',
+        selectCurrencyPurchase: 'انتخاب خرید ارز',
+        amount: 'مبلغ',
+        shipmentDate: 'تاریخ حمل',
+        receivedDate: 'تاریخ دریافت',
+        referenceNumber: 'شماره مرجع',
+        notes: 'یادداشت',
+        correctionReason: 'دلیل اصلاح',
+        correctionReasonPlaceholder: 'دلیل اصلاح سند حمل را وارد کنید',
+        correctionReasonError: 'وارد کردن دلیل اصلاح الزامی است.',
+        submitCorrection: 'ارسال درخواست اصلاح',
+        submittingCorrection: 'در حال ارسال درخواست اصلاح...',
+        submitCreate: 'ارسال درخواست ایجاد',
+        submittingCreate: 'در حال ارسال درخواست...',
+        selectPurchaseError: 'لطفاً یک خرید ارز انتخاب کنید.',
+        invalidAmountError: 'مبلغ سند حمل باید بیشتر از صفر باشد.',
+        saveError: 'ارسال درخواست سند حمل انجام نشد.',
       },
 
       invoices: {
@@ -856,22 +856,27 @@ const resources = {
           'این درخواست برای ابطال خرید ارز است',
 
         voidNoticeDescription:
-          'در صورت تأیید، این خرید ارز باطل خواهد شد و دیگر به‌عنوان خرید فعال در محاسبات مالی در نظر گرفته نمی‌شود.',
+          'در صورت تأیید، این خرید ارز باطل خواهد شد و دیگر در محاسبات فعال مالی در نظر گرفته نمی‌شود.',
+        shipmentVoidNoticeTitle: 'این درخواست برای ابطال سند حمل است',
+        shipmentVoidNoticeDescription: 'در صورت تأیید، این سند حمل باطل شده و از محاسبات مبلغ مستندشده خارج می‌شود.',
 
         operations: {
           create:
-            'درخواست ایجاد خرید ارز',
+            'درخواست ایجاد',
 
           correct:
-            'درخواست اصلاح خرید ارز',
+            'درخواست اصلاح',
 
           void:
-            'درخواست ابطال خرید ارز',
+            'درخواست ابطال',
         },
 
         targets: {
           currencyPurchase:
             'خرید ارز',
+
+          shipmentPart:
+            'سند حمل',
         },
 
         status: {
@@ -902,6 +907,11 @@ const resources = {
             'شناسه ثبت سفارش',
 
           voided: 'باطل‌شده',
+          currencyPurchase: 'شناسه خرید ارز',
+          shipmentDate: 'تاریخ حمل',
+          receivedDate: 'تاریخ دریافت',
+          referenceNumber: 'شماره مرجع',
+          notes: 'یادداشت',
         },
       },
 
@@ -1353,59 +1363,59 @@ const resources = {
 
         loadError:
           'Failed to load shipment data.',
+
+        requestVoid:
+          'Request Void',
+
+        voided:
+          'Voided',
+
+        voidTitle:
+          'Request Shipment Void',
+
+        voidDescription:
+          'Enter the reason for submitting this shipment void request.',
+
+        voidReason:
+          'Void Reason',
+
+        voidReasonRequired:
+          'A void reason is required.',
+
+        voidError:
+          'Failed to submit shipment void request.',
+
+        voidSubmitting:
+          'Submitting request...',
+
+        submitVoid:
+          'Submit Void Request',
+        voidReasonPrompt: 'Enter the reason for voiding this shipping document:',
+
       },
 
       shipmentPartForm: {
-        addTitle:
-          'Add Shipment Part',
-
-        editTitle:
-          'Edit Shipment Part',
-
-        addDescription:
-          'Create a shipment allocation for a currency purchase.',
-
-        editDescription:
-          'Update the shipment allocation details.',
-
-        currencyPurchase:
-          'Currency Purchase',
-
-        selectCurrencyPurchase:
-          'Select currency purchase',
-
-        amount:
-          'Amount',
-
-        shipmentDate:
-          'Shipment Date',
-
-        receivedDate:
-          'Received Date',
-
-        referenceNumber:
-          'Reference Number',
-
-        notes:
-          'Notes',
-
-        saveChanges:
-          'Save Changes',
-
-        addShipmentPart:
-          'Add Shipment Part',
-
-        saving:
-          'Saving...',
-
-        selectPurchaseError:
-          'Please select a currency purchase.',
-
-        invalidAmountError:
-          'Shipment amount must be greater than zero.',
-
-        saveError:
-          'Failed to save shipment part.',
+        addTitle: 'Add Shipping Document',
+        editTitle: 'Request Shipping Document Correction',
+        addDescription: 'Submit a new shipping document request for a currency purchase.',
+        editDescription: 'Correct shipping document information and submit it for approval.',
+        currencyPurchase: 'Currency Purchase',
+        selectCurrencyPurchase: 'Select currency purchase',
+        amount: 'Amount',
+        shipmentDate: 'Shipment Date',
+        receivedDate: 'Received Date',
+        referenceNumber: 'Reference Number',
+        notes: 'Notes',
+        correctionReason: 'Correction Reason',
+        correctionReasonPlaceholder: 'Enter the reason for this correction',
+        correctionReasonError: 'A correction reason is required.',
+        submitCorrection: 'Submit Correction Request',
+        submittingCorrection: 'Submitting correction...',
+        submitCreate: 'Submit Create Request',
+        submittingCreate: 'Submitting request...',
+        selectPurchaseError: 'Please select a currency purchase.',
+        invalidAmountError: 'Shipment amount must be greater than zero.',
+        saveError: 'Failed to submit shipping document request.',
       },
 
       invoices: {
@@ -1709,24 +1719,53 @@ const resources = {
 
       approvals: {
         title: 'Approval Requests',
-        subtitle:
-          'Review pending Maker-Checker requests.',
-        loading:
-          'Loading approval requests...',
-        empty:
-          'There are no pending approval requests.',
-        reason:
-          'Reason',
-        approve:
-          'Approve',
-        reject:
-          'Reject',
-        confirmApprove:
-          'Approve this request?',
-        rejectReasonPrompt:
-          'Enter rejection reason:',
-        rejectReasonRequired:
-          'A rejection reason is required.',
+        subtitle: 'Review pending Maker-Checker requests.',
+        loading: 'Loading approval requests...',
+        empty: 'There are no pending approval requests.',
+        loadError: 'Failed to load approval requests.',
+        maker: 'Maker',
+        createdAt: 'Created At',
+        reason: 'Reason',
+        approve: 'Approve',
+        approveVoid: 'Approve Void',
+        reject: 'Reject',
+        confirmApprove: 'Approve this request?',
+        confirmVoidApprove: 'Approve this void request?',
+        rejectReasonPrompt: 'Enter rejection reason:',
+        rejectReasonRequired: 'A rejection reason is required.',
+        approveError: 'Failed to approve request.',
+        rejectError: 'Failed to reject request.',
+        voidNoticeTitle: 'This request will void a currency purchase',
+        voidNoticeDescription: 'If approved, the purchase will be excluded from active financial calculations.',
+        shipmentVoidNoticeTitle: 'This request will void a shipping document',
+        shipmentVoidNoticeDescription: 'If approved, the shipping document will be excluded from documented-amount calculations.',
+        operations: {
+          create: 'Create Request',
+          correct: 'Correction Request',
+          void: 'Void Request',
+        },
+        targets: {
+          currencyPurchase: 'Currency Purchase',
+          shipmentPart: 'Shipping Document',
+        },
+        status: {
+          pending: 'Pending Approval',
+        },
+        fields: {
+          field: 'Field',
+          current: 'Current Value',
+          proposed: 'Proposed Value',
+          amount: 'Amount',
+          currency: 'Currency',
+          purchaseDate: 'Purchase Date',
+          registrationOrder: 'Registration Order ID',
+          currencyPurchase: 'Currency Purchase ID',
+          shipmentDate: 'Shipment Date',
+          receivedDate: 'Received Date',
+          referenceNumber: 'Reference Number',
+          notes: 'Notes',
+          voided: 'Voided',
+        },
       },
 
     },

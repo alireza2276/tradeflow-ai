@@ -19,8 +19,19 @@ def create_invoice(
     locked_shipment_part = (
         ShipmentPart.objects
         .select_for_update()
+        .select_related("currency_purchase")
         .get(pk=shipment_part.pk)
     )
+
+    if locked_shipment_part.is_void:
+        raise ValidationError(
+            "Invoice cannot be created for a voided shipment part."
+        )
+
+    if locked_shipment_part.currency_purchase.is_void:
+        raise ValidationError(
+            "Invoice cannot be created for a shipment linked to a voided currency purchase."
+        )
 
     if fob_amount < Decimal("0"):
         raise ValidationError(
@@ -66,6 +77,7 @@ def update_invoice(
     locked_shipment_part = (
         ShipmentPart.objects
         .select_for_update()
+        .select_related("currency_purchase")
         .get(
             pk=invoice.shipment_part_id
         )
@@ -78,6 +90,16 @@ def update_invoice(
             pk=invoice.pk
         )
     )
+
+    if locked_shipment_part.is_void:
+        raise ValidationError(
+            "Invoice cannot be updated for a voided shipment part."
+        )
+
+    if locked_shipment_part.currency_purchase.is_void:
+        raise ValidationError(
+            "Invoice cannot be updated for a shipment linked to a voided currency purchase."
+        )
 
     if fob_amount is None:
         fob_amount = locked_invoice.fob_amount

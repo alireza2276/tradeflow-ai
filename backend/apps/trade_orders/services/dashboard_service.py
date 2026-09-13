@@ -24,6 +24,7 @@ def get_dashboard_summary():
         CurrencyPurchase.objects
         .filter(
             registration_order__is_active=True,
+            is_void=False,
         )
         .select_related(
             "registration_order",

@@ -237,6 +237,28 @@ class ShipmentPart(models.Model):
         auto_now=True,
     )
 
+    is_void = models.BooleanField(
+        default=False,
+        db_index=True,
+    )
+
+    voided_at = models.DateTimeField(
+        null=True,
+        blank=True,
+    )
+
+    voided_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.PROTECT,
+        null=True,
+        blank=True,
+        related_name="voided_shipment_parts",
+    )
+
+    void_reason = models.TextField(
+        blank=True,
+    )
+
     class Meta:
         db_table = "shipment_parts"
         ordering = ["-received_date", "-created_at"]
@@ -244,6 +266,36 @@ class ShipmentPart(models.Model):
             models.Index(
                 fields=["currency_purchase", "received_date"],
                 name="idx_shipment_purchase_received",
+            ),
+        ]
+
+        constraints = [
+            models.CheckConstraint(
+                condition=(
+                        models.Q(
+                            is_void=False,
+                            voided_at__isnull=True,
+                            voided_by__isnull=True,
+                            void_reason="",
+                        )
+                        |
+                        (
+                                models.Q(
+                                    is_void=True,
+                                    voided_at__isnull=False,
+                                    voided_by__isnull=False,
+                                )
+                                & ~models.Q(void_reason="")
+                        )
+                ),
+                name="shipment_part_void_state_consistent",
+            ),
+        ]
+
+        permissions = [
+            (
+                "void_shipmentpart",
+                "Can submit shipment part void request",
             ),
         ]
 

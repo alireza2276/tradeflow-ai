@@ -1,8 +1,22 @@
 import {
+  useEffect,
   useState,
 } from 'react'
 
 import { useTranslation } from 'react-i18next'
+
+
+function getEmptyFormData() {
+  return {
+    currency_purchase: '',
+    amount: '',
+    shipment_date: '',
+    received_date: '',
+    reference_number: '',
+    notes: '',
+    reason: '',
+  }
+}
 
 
 function ShipmentPartFormModal({
@@ -15,12 +29,30 @@ function ShipmentPartFormModal({
 }) {
   const { t } = useTranslation()
 
-  const [formData, setFormData] = useState(() => {
+  const [formData, setFormData] = useState(
+    getEmptyFormData()
+  )
+
+  const [isSubmitting, setIsSubmitting] =
+    useState(false)
+
+  const [submitError, setSubmitError] =
+    useState('')
+
+  const isEditMode =
+    mode === 'edit'
+
+
+  useEffect(() => {
+    if (!isOpen) {
+      return
+    }
+
     if (
-      mode === 'edit' &&
+      isEditMode &&
       shipmentPart
     ) {
-      return {
+      setFormData({
         currency_purchase:
           shipmentPart.currency_purchase || '',
         amount:
@@ -33,25 +65,21 @@ function ShipmentPartFormModal({
           shipmentPart.reference_number || '',
         notes:
           shipmentPart.notes || '',
-      }
+        reason: '',
+      })
+    } else {
+      setFormData(
+        getEmptyFormData()
+      )
     }
 
-    return {
-      currency_purchase: '',
-      amount: '',
-      shipment_date: '',
-      received_date: '',
-      reference_number: '',
-      notes: '',
-    }
-  })
-
-
-  const [isSubmitting, setIsSubmitting] =
-    useState(false)
-
-  const [submitError, setSubmitError] =
-    useState('')
+    setSubmitError('')
+    setIsSubmitting(false)
+  }, [
+    isOpen,
+    isEditMode,
+    shipmentPart,
+  ])
 
 
   function handleChange(event) {
@@ -60,10 +88,16 @@ function ShipmentPartFormModal({
       value,
     } = event.target
 
-    setFormData((currentFormData) => ({
-      ...currentFormData,
-      [name]: value,
-    }))
+    setFormData(
+      (currentFormData) => ({
+        ...currentFormData,
+        [name]: value,
+      })
+    )
+
+    if (submitError) {
+      setSubmitError('')
+    }
   }
 
 
@@ -75,44 +109,69 @@ function ShipmentPartFormModal({
     }
 
     if (
-      mode === 'create' &&
+      !isEditMode &&
       !formData.currency_purchase
     ) {
       setSubmitError(
-        t('shipmentPartForm.selectPurchaseError')
+        t(
+          'shipmentPartForm.selectPurchaseError'
+        )
       )
       return
     }
 
-    const amount = Number(formData.amount)
+    const amount =
+      Number(formData.amount)
 
     if (
       !Number.isFinite(amount) ||
       amount <= 0
     ) {
       setSubmitError(
-        t('shipmentPartForm.invalidAmountError')
+        t(
+          'shipmentPartForm.invalidAmountError'
+        )
       )
       return
     }
 
-    try {
-      setIsSubmitting(true)
-      setSubmitError('')
+    if (
+      isEditMode &&
+      !formData.reason.trim()
+    ) {
+      setSubmitError(
+        t(
+          'shipmentPartForm.correctionReasonError'
+        )
+      )
+      return
+    }
 
+    setIsSubmitting(true)
+    setSubmitError('')
+
+    try {
       const payload = {
-        amount: formData.amount,
+        amount:
+          formData.amount,
+
         shipment_date:
           formData.shipment_date || null,
+
         received_date:
           formData.received_date || null,
+
         reference_number:
           formData.reference_number.trim(),
+
         notes:
           formData.notes.trim(),
       }
 
-      if (mode === 'create') {
+      if (isEditMode) {
+        payload.reason =
+          formData.reason.trim()
+      } else {
         payload.currency_purchase =
           formData.currency_purchase
       }
@@ -121,7 +180,9 @@ function ShipmentPartFormModal({
     } catch (error) {
       setSubmitError(
         error.message ||
-        t('shipmentPartForm.saveError')
+        t(
+          'shipmentPartForm.saveError'
+        )
       )
     } finally {
       setIsSubmitting(false)
@@ -134,10 +195,6 @@ function ShipmentPartFormModal({
   }
 
 
-  const isEditMode =
-    mode === 'edit'
-
-
   return (
     <div className="modal-backdrop">
       <div className="modal-card">
@@ -146,8 +203,12 @@ function ShipmentPartFormModal({
             <h2>
               {
                 isEditMode
-                  ? t('shipmentPartForm.editTitle')
-                  : t('shipmentPartForm.addTitle')
+                  ? t(
+                      'shipmentPartForm.editTitle'
+                    )
+                  : t(
+                      'shipmentPartForm.addTitle'
+                    )
               }
             </h2>
 
@@ -191,13 +252,15 @@ function ShipmentPartFormModal({
             <select
               id="currency_purchase"
               name="currency_purchase"
-              value={formData.currency_purchase}
+              value={
+                formData.currency_purchase
+              }
               onChange={handleChange}
               disabled={
                 isEditMode ||
                 isSubmitting
               }
-              required
+              required={!isEditMode}
             >
               <option value="">
                 {t(
@@ -227,7 +290,9 @@ function ShipmentPartFormModal({
 
           <div className="form-group">
             <label htmlFor="amount">
-              {t('shipmentPartForm.amount')}
+              {t(
+                'shipmentPartForm.amount'
+              )}
             </label>
 
             <input
@@ -256,7 +321,9 @@ function ShipmentPartFormModal({
                 id="shipment_date"
                 name="shipment_date"
                 type="date"
-                value={formData.shipment_date}
+                value={
+                  formData.shipment_date
+                }
                 onChange={handleChange}
                 disabled={isSubmitting}
               />
@@ -273,7 +340,9 @@ function ShipmentPartFormModal({
                 id="received_date"
                 name="received_date"
                 type="date"
-                value={formData.received_date}
+                value={
+                  formData.received_date
+                }
                 onChange={handleChange}
                 disabled={isSubmitting}
               />
@@ -292,7 +361,9 @@ function ShipmentPartFormModal({
               id="reference_number"
               name="reference_number"
               type="text"
-              value={formData.reference_number}
+              value={
+                formData.reference_number
+              }
               onChange={handleChange}
               disabled={isSubmitting}
             />
@@ -301,7 +372,9 @@ function ShipmentPartFormModal({
 
           <div className="form-group">
             <label htmlFor="notes">
-              {t('shipmentPartForm.notes')}
+              {t(
+                'shipmentPartForm.notes'
+              )}
             </label>
 
             <textarea
@@ -313,6 +386,30 @@ function ShipmentPartFormModal({
               disabled={isSubmitting}
             />
           </div>
+
+
+          {isEditMode && (
+            <div className="form-group">
+              <label htmlFor="shipment-correction-reason">
+                {t(
+                  'shipmentPartForm.correctionReason'
+                )}
+              </label>
+
+              <textarea
+                id="shipment-correction-reason"
+                name="reason"
+                rows="3"
+                value={formData.reason}
+                onChange={handleChange}
+                placeholder={t(
+                  'shipmentPartForm.correctionReasonPlaceholder'
+                )}
+                disabled={isSubmitting}
+                required
+              />
+            </div>
+          )}
 
 
           {submitError && (
@@ -339,14 +436,22 @@ function ShipmentPartFormModal({
             >
               {
                 isSubmitting
-                  ? t('shipmentPartForm.saving')
+                  ? (
+                      isEditMode
+                        ? t(
+                            'shipmentPartForm.submittingCorrection'
+                          )
+                        : t(
+                            'shipmentPartForm.submittingCreate'
+                          )
+                    )
                   : (
                       isEditMode
                         ? t(
-                            'shipmentPartForm.saveChanges'
+                            'shipmentPartForm.submitCorrection'
                           )
                         : t(
-                            'shipmentPartForm.addShipmentPart'
+                            'shipmentPartForm.submitCreate'
                           )
                     )
               }

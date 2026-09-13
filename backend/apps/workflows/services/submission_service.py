@@ -4,16 +4,24 @@ from decimal import Decimal, InvalidOperation
 from django.core.exceptions import ValidationError
 from django.db import transaction
 
-from apps.trade_orders.models import (
-    CurrencyPurchase,
-    RegistrationOrder,
-)
 from apps.trade_orders.services.validation import (
     get_total_shipment_amount,
     validate_purchase_amount,
 )
 from apps.workflows.models import ApprovalRequest
 
+SHIPMENT_PART_TARGET = "shipment_part"
+
+from apps.trade_orders.models import (
+    CurrencyPurchase,
+    RegistrationOrder,
+    ShipmentPart,
+)
+
+from apps.trade_orders.services.validation import (
+    validate_purchase_amount,
+    validate_shipment_part_amount,
+)
 
 CURRENCY_PURCHASE_TARGET = "currency_purchase"
 
@@ -315,6 +323,263 @@ def submit_currency_purchase_void(
                     locked_purchase.registration_order_id
                 ),
             },
+        },
+        reason=reason,
+        maker=maker,
+    )
+
+def _shipment_snapshot(
+    shipment: ShipmentPart,
+) -> dict:
+    return {
+        "currency_purchase_id": str(
+            shipment.currency_purchase_id
+        ),
+        "amount": format(
+            shipment.amount,
+            "f",
+        ),
+        "shipment_date": (
+            shipment.shipment_date.isoformat()
+            if shipment.shipment_date
+            else None
+        ),
+        "received_date": (
+            shipment.received_date.isoformat()
+            if shipment.received_date
+            else None
+        ),
+        "reference_number":
+            shipment.reference_number,
+        "notes":
+            shipment.notes,
+    }
+
+@transaction.atomic
+def submit_shipment_part_create(
+    *,
+    maker,
+    currency_purchase: CurrencyPurchase,
+    amount: Decimal,
+    shipment_date=None,
+    received_date=None,
+    reference_number="",
+    notes="",
+    reason: str = "",
+) -> ApprovalRequest:
+    if not maker or not maker.pk:
+        raise ValidationError(
+            "A valid maker is required."
+        )
+
+    if not maker.has_perm(
+        "trade_orders.add_shipmentpart"
+    ):
+        raise ValidationError(
+            "You do not have permission to submit "
+            "a shipment part request."
+        )
+
+    locked_purchase = (
+        CurrencyPurchase.objects
+        .select_for_update()
+        .get(pk=currency_purchase.pk)
+    )
+
+    if locked_purchase.is_void:
+        raise ValidationError(
+            "Shipment cannot be registered for a voided "
+            "currency purchase."
+        )
+
+    validate_shipment_part_amount(
+        currency_purchase=locked_purchase,
+        shipment_amount=amount,
+    )
+
+    return ApprovalRequest.objects.create(
+        operation=ApprovalRequest.Operation.CREATE,
+        target_type=SHIPMENT_PART_TARGET,
+        target_id=None,
+        payload={
+            "currency_purchase_id": str(
+                locked_purchase.pk
+            ),
+            "amount": format(amount, "f"),
+            "shipment_date": (
+                shipment_date.isoformat()
+                if shipment_date
+                else None
+            ),
+            "received_date": (
+                received_date.isoformat()
+                if received_date
+                else None
+            ),
+            "reference_number":
+                reference_number.strip(),
+            "notes": notes,
+        },
+        reason=reason.strip(),
+        maker=maker,
+    )
+
+@transaction.atomic
+def submit_shipment_part_correction(
+    *,
+    maker,
+    shipment: ShipmentPart,
+    amount: Decimal,
+    shipment_date=None,
+    received_date=None,
+    reference_number="",
+    notes="",
+    reason: str,
+) -> ApprovalRequest:
+    if not maker or not maker.pk:
+        raise ValidationError(
+            "A valid maker is required."
+        )
+
+    if not maker.has_perm(
+        "trade_orders.change_shipmentpart"
+    ):
+        raise ValidationError(
+            "You do not have permission to submit "
+            "a shipment correction request."
+        )
+
+    reason = reason.strip()
+
+    if not reason:
+        raise ValidationError(
+            "A correction reason is required."
+        )
+
+    locked_shipment = (
+        ShipmentPart.objects
+        .select_for_update()
+        .select_related("currency_purchase")
+        .get(pk=shipment.pk)
+    )
+
+    if locked_shipment.is_void:
+        raise ValidationError(
+            "Voided shipment part cannot be corrected."
+        )
+
+    if locked_shipment.currency_purchase.is_void:
+        raise ValidationError(
+            "Shipment cannot be corrected for a voided "
+            "currency purchase."
+        )
+
+    validate_shipment_part_amount(
+        currency_purchase=locked_shipment.currency_purchase,
+        shipment_amount=amount,
+        current_shipment=locked_shipment,
+    )
+
+    if (
+        hasattr(locked_shipment, "invoice")
+        and amount != locked_shipment.amount
+    ):
+        raise ValidationError(
+            "Shipment part amount cannot be changed "
+            "after an invoice has been issued."
+        )
+
+    return ApprovalRequest.objects.create(
+        operation=ApprovalRequest.Operation.CORRECT,
+        target_type=SHIPMENT_PART_TARGET,
+        target_id=locked_shipment.pk,
+        payload={
+            "version":
+                locked_shipment.updated_at.isoformat(),
+            "before":
+                _shipment_snapshot(locked_shipment),
+            "proposed": {
+                "currency_purchase_id": str(
+                    locked_shipment.currency_purchase_id
+                ),
+                "amount": format(amount, "f"),
+                "shipment_date": (
+                    shipment_date.isoformat()
+                    if shipment_date
+                    else None
+                ),
+                "received_date": (
+                    received_date.isoformat()
+                    if received_date
+                    else None
+                ),
+                "reference_number":
+                    reference_number.strip(),
+                "notes": notes,
+            },
+        },
+        reason=reason,
+        maker=maker,
+    )
+
+@transaction.atomic
+def submit_shipment_part_void(
+    *,
+    maker,
+    shipment: ShipmentPart,
+    reason: str,
+) -> ApprovalRequest:
+    if not maker or not maker.pk:
+        raise ValidationError(
+            "A valid maker is required."
+        )
+
+    if not maker.has_perm(
+        "trade_orders.void_shipmentpart"
+    ):
+        raise ValidationError(
+            "You do not have permission to submit "
+            "a shipment void request."
+        )
+
+    reason = reason.strip()
+
+    if not reason:
+        raise ValidationError(
+            "A void reason is required."
+        )
+
+    locked_shipment = (
+        ShipmentPart.objects
+        .select_for_update()
+        .select_related("currency_purchase")
+        .get(pk=shipment.pk)
+    )
+
+    if locked_shipment.is_void:
+        raise ValidationError(
+            "Shipment part is already void."
+        )
+
+    if locked_shipment.currency_purchase.is_void:
+        raise ValidationError(
+            "Shipment belongs to a voided currency purchase."
+        )
+
+    if hasattr(locked_shipment, "invoice"):
+        raise ValidationError(
+            "Shipment part with an invoice cannot be voided."
+        )
+
+    return ApprovalRequest.objects.create(
+        operation=ApprovalRequest.Operation.VOID,
+        target_type=SHIPMENT_PART_TARGET,
+        target_id=locked_shipment.pk,
+        payload={
+            "version":
+                locked_shipment.updated_at.isoformat(),
+            "before":
+                _shipment_snapshot(locked_shipment),
         },
         reason=reason,
         maker=maker,

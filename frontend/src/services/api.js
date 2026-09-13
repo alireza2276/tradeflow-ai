@@ -1,4 +1,7 @@
-const API_BASE_URL = 'http://localhost:8000/api'
+const API_BASE_URL = (
+  import.meta.env.VITE_API_BASE_URL ||
+  'http://localhost:8000/api'
+).replace(/\/$/, '')
 
 function getCookie(name) {
   const cookies = document.cookie
@@ -871,6 +874,35 @@ export async function voidCurrencyPurchase(
     const errorMessage = await parseErrorResponse(
       response,
       'Failed to submit void request.'
+    )
+
+    throw new Error(errorMessage)
+  }
+
+  return response.json()
+}
+
+export async function voidShipmentPart(
+  shipmentId,
+  reason
+) {
+  const response = await apiFetch(
+    `/trade/shipment-parts/${shipmentId}/void/`,
+    {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        reason,
+      }),
+    }
+  )
+
+  if (!response.ok) {
+    const errorMessage = await parseErrorResponse(
+      response,
+      'Failed to submit shipment void request.'
     )
 
     throw new Error(errorMessage)

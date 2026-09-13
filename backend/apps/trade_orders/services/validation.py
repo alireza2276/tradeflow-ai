@@ -66,7 +66,10 @@ def get_total_shipment_amount(
     return sum(
         (
             shipment.amount
-            for shipment in currency_purchase.shipment_parts.all()
+            for shipment
+            in currency_purchase.shipment_parts.filter(
+                is_void=False
+            )
         ),
         Decimal("0"),
     )
@@ -92,7 +95,10 @@ def validate_shipment_part_amount(
         currency_purchase
     )
 
-    if current_shipment is not None:
+    if (
+            current_shipment is not None
+            and not current_shipment.is_void
+    ):
         total_shipment -= current_shipment.amount
 
     if total_shipment + shipment_amount > currency_purchase.amount:

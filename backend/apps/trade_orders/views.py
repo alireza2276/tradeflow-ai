@@ -5,12 +5,6 @@ from django.core.exceptions import ValidationError as DjangoValidationError
 from rest_framework.exceptions import ValidationError as DRFValidationError
 from django.db import transaction
 
-from apps.workflows.services.submission_service import (
-    submit_currency_purchase_correction,
-    submit_currency_purchase_create,
-    submit_currency_purchase_void,
-)
-
 from rest_framework import status, viewsets
 from rest_framework.response import Response
 from django.db.models.deletion import ProtectedError
@@ -30,16 +24,6 @@ from apps.trade_orders.serializers import (
     ShipmentPartSerializer,
 )
 
-from apps.trade_orders.services.shipment_service import (
-    create_shipment_part,
-    update_shipment_part,
-)
-
-from apps.trade_orders.services.purchase_service import (
-    create_currency_purchase,
-    update_currency_purchase,
-)
-
 from apps.trade_orders.services.payment_instrument_service import (
     create_payment_instrument,
     update_payment_instrument,
@@ -52,6 +36,15 @@ from apps.trade_orders.services.dashboard_service import (
 from apps.authentication.permissions import (
     CanViewTradeDashboard,
     TradeFlowModelPermissions,
+)
+
+from apps.workflows.services.submission_service import (
+    submit_currency_purchase_correction,
+    submit_currency_purchase_create,
+    submit_currency_purchase_void,
+    submit_shipment_part_correction,
+    submit_shipment_part_create,
+    submit_shipment_part_void,
 )
 
 import csv
@@ -646,9 +639,100 @@ class ShipmentPartViewSet(viewsets.ModelViewSet):
         "created_at",
     )
 
-    def update(self, request, *args, **kwargs):
-        partial = kwargs.pop("partial", False)
+    def destroy(self, request, *args, **kwargs):
+        return Response(
+            {
+                "detail": (
+                    "Shipment parts cannot be deleted directly. "
+                    "Use the correction or void workflow instead."
+                )
+            },
+            status=status.HTTP_405_METHOD_NOT_ALLOWED,
+        )
 
+    def create(self, request, *args, **kwargs):
+        serializer = self.get_serializer(
+            data=request.data,
+        )
+
+        serializer.is_valid(
+            raise_exception=True,
+        )
+
+        data = serializer.validated_data
+
+        try:
+            approval_request = (
+                submit_shipment_part_create(
+                    maker=request.user,
+                    currency_purchase=data[
+                        "currency_purchase"
+                    ],
+                    amount=data["amount"],
+                    shipment_date=data.get(
+                        "shipment_date"
+                    ),
+                    received_date=data.get(
+                        "received_date"
+                    ),
+                    reference_number=data.get(
+                        "reference_number",
+                        "",
+                    ),
+                    notes=data.get(
+                        "notes",
+                        "",
+                    ),
+                    reason=request.data.get(
+                        "reason",
+                        "",
+                    ),
+                )
+            )
+        except DjangoValidationError as exc:
+            raise DRFValidationError(
+                {"detail": exc.messages}
+            )
+
+        return Response(
+            {
+                "id": str(approval_request.id),
+                "status": approval_request.status,
+                "operation": approval_request.operation,
+                "target_type":
+                    approval_request.target_type,
+            },
+            status=status.HTTP_202_ACCEPTED,
+        )
+
+    def update(self, request, *args, **kwargs):
+        return self._update_shipment(
+            request=request,
+            partial=False,
+            *args,
+            **kwargs,
+        )
+
+    def partial_update(
+            self,
+            request,
+            *args,
+            **kwargs,
+    ):
+        return self._update_shipment(
+            request=request,
+            partial=True,
+            *args,
+            **kwargs,
+        )
+
+    def _update_shipment(
+            self,
+            request,
+            partial,
+            *args,
+            **kwargs,
+    ):
         shipment = self.get_object()
 
         if (
@@ -678,89 +762,96 @@ class ShipmentPartViewSet(viewsets.ModelViewSet):
         data = serializer.validated_data
 
         try:
-            updated_shipment = update_shipment_part(
-                shipment=shipment,
-                amount=data.get(
-                    "amount",
-                    shipment.amount,
-                ),
-                shipment_date=data.get(
-                    "shipment_date",
-                    shipment.shipment_date,
-                ),
-                received_date=data.get(
-                    "received_date",
-                    shipment.received_date,
-                ),
-                reference_number=data.get(
-                    "reference_number",
-                    shipment.reference_number,
-                ),
-                notes=data.get(
-                    "notes",
-                    shipment.notes,
-                ),
+            approval_request = (
+                submit_shipment_part_correction(
+                    maker=request.user,
+                    shipment=shipment,
+                    amount=data.get(
+                        "amount",
+                        shipment.amount,
+                    ),
+                    shipment_date=data.get(
+                        "shipment_date",
+                        shipment.shipment_date,
+                    ),
+                    received_date=data.get(
+                        "received_date",
+                        shipment.received_date,
+                    ),
+                    reference_number=data.get(
+                        "reference_number",
+                        shipment.reference_number,
+                    ),
+                    notes=data.get(
+                        "notes",
+                        shipment.notes,
+                    ),
+                    reason=request.data.get(
+                        "reason",
+                        "",
+                    ),
+                )
             )
         except DjangoValidationError as exc:
             raise DRFValidationError(
                 {"detail": exc.messages}
             )
 
-        output_serializer = self.get_serializer(
-            updated_shipment,
-        )
-
-        return Response(
-            output_serializer.data,
-            status=status.HTTP_200_OK,
-        )
-
-    def destroy(self, request, *args, **kwargs):
         return Response(
             {
-                "detail": (
-                    "Shipment parts cannot be deleted directly. "
-                    "Use the correction or void workflow instead."
-                )
+                "id": str(approval_request.id),
+                "status": approval_request.status,
+                "operation": approval_request.operation,
+                "target_type":
+                    approval_request.target_type,
+                "target_id": str(
+                    approval_request.target_id
+                ),
             },
-            status=status.HTTP_405_METHOD_NOT_ALLOWED,
+            status=status.HTTP_202_ACCEPTED,
         )
 
-    def create(self, request, *args, **kwargs):
-        serializer = self.get_serializer(
-            data=request.data,
-        )
-
-        serializer.is_valid(
-            raise_exception=True,
-        )
-
-        data = serializer.validated_data
+    @action(
+        detail=True,
+        methods=["post"],
+        url_path="void",
+    )
+    def submit_void(
+            self,
+            request,
+            *args,
+            **kwargs,
+    ):
+        shipment = self.get_object()
 
         try:
-            shipment = create_shipment_part(
-                currency_purchase=data["currency_purchase"],
-                amount=data["amount"],
-                shipment_date=data.get("shipment_date"),
-                received_date=data.get("received_date"),
-                reference_number=data.get(
-                    "reference_number",
-                    "",
-                ),
-                notes=data.get("notes", ""),
+            approval_request = (
+                submit_shipment_part_void(
+                    maker=request.user,
+                    shipment=shipment,
+                    reason=request.data.get(
+                        "reason",
+                        "",
+                    ),
+                )
             )
         except DjangoValidationError as exc:
             raise DRFValidationError(
                 {"detail": exc.messages}
             )
 
-        output_serializer = self.get_serializer(
-            shipment,
-        )
-
         return Response(
-            output_serializer.data,
-            status=status.HTTP_201_CREATED,
+            {
+                "id": str(approval_request.id),
+                "status": approval_request.status,
+                "operation": approval_request.operation,
+                "target_type":
+                    approval_request.target_type,
+                "target_id": str(
+                    approval_request.target_id
+                ),
+            },
+            status=status.HTTP_202_ACCEPTED,
         )
 
 class DashboardSummaryAPIView(APIView):
