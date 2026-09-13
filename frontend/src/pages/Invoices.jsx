@@ -20,6 +20,31 @@ import {
 } from '../utils/permissions'
 
 
+function formatAmount(value) {
+  if (
+    value === null ||
+    value === undefined ||
+    value === ''
+  ) {
+    return '-'
+  }
+
+  const amount = Number(value)
+
+  if (!Number.isFinite(amount)) {
+    return value
+  }
+
+  return new Intl.NumberFormat(
+    'en-US',
+    {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    }
+  ).format(amount)
+}
+
+
 function Invoices({ user }) {
   const { t } = useTranslation()
 
@@ -236,6 +261,14 @@ function Invoices({ user }) {
                 </th>
 
                 <th>
+                  {t('invoices.documentPart')}
+                </th>
+
+                <th>
+                  {t('invoices.purchaseAmount')}
+                </th>
+
+                <th>
                   {t('invoices.fob')}
                 </th>
 
@@ -245,6 +278,10 @@ function Invoices({ user }) {
 
                 <th>
                   {t('invoices.total')}
+                </th>
+
+                <th>
+                  {t('invoices.remainingAmount')}
                 </th>
 
                 <th>
@@ -274,15 +311,33 @@ function Invoices({ user }) {
                     </td>
 
                     <td>
-                      {invoice.fob_amount}
+                      {t(
+                        'invoices.partValue',
+                        {
+                          count:
+                            invoice.document_part_number,
+                        }
+                      )}
                     </td>
 
                     <td>
-                      {invoice.freight_amount}
+                      {formatAmount(invoice.currency_purchase_amount)}
                     </td>
 
                     <td>
-                      {invoice.total_amount}
+                      {formatAmount(invoice.fob_amount)}
+                    </td>
+
+                    <td>
+                      {formatAmount(invoice.freight_amount)}
+                    </td>
+
+                    <td>
+                      {formatAmount(invoice.total_amount)}
+                    </td>
+
+                    <td>
+                      {formatAmount(invoice.remaining_amount)}
                     </td>
 
                     <td>

@@ -517,6 +517,15 @@ const resources = {
         order:
           'ثبت سفارش',
 
+        documentPart:
+          'ردیف سند',
+
+        partValue:
+          'پارت {{count}}',
+
+        purchaseAmount:
+          'مبلغ خرید ارز',
+
         fob:
           'مبلغ FOB',
 
@@ -525,6 +534,9 @@ const resources = {
 
         total:
           'مبلغ کل',
+
+        remainingAmount:
+          'مبلغ باقی‌مانده',
 
         currency:
           'ارز',
@@ -1434,6 +1446,15 @@ const resources = {
         order:
           'Order',
 
+        documentPart:
+          'Document Row',
+
+        partValue:
+          'Part {{count}}',
+
+        purchaseAmount:
+          'Currency Purchase Amount',
+
         fob:
           'FOB',
 
@@ -1442,6 +1463,9 @@ const resources = {
 
         total:
           'Total',
+
+        remainingAmount:
+          'Remaining Amount',
 
         currency:
           'Currency',

@@ -298,9 +298,11 @@ def submit_currency_purchase_void(
             "Currency purchase is already void."
         )
 
-    if locked_purchase.shipment_parts.exists():
+    if locked_purchase.shipment_parts.filter(
+            is_void=False
+    ).exists():
         raise ValidationError(
-            "Currency purchase with shipment parts "
+            "Currency purchase with active shipment parts "
             "cannot be voided."
         )
 

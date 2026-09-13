@@ -438,6 +438,93 @@ class InvoiceAPITests(APITestCase):
             ).exists()
         )
 
+    def test_invoice_list_returns_document_part_and_running_remaining_amount(self):
+        order = RegistrationOrder.objects.create(
+            company=self.company,
+            order_number="INV-API-REMAINING-001",
+            registered_amount=Decimal("100000"),
+            currency="EUR",
+        )
+
+        purchase = create_currency_purchase(
+            registration_order=order,
+            amount=Decimal("90000"),
+            currency="EUR",
+            purchase_date=date(2026, 8, 24),
+        )
+
+        first_shipment = create_shipment_part(
+            currency_purchase=purchase,
+            amount=Decimal("80000"),
+            shipment_date=date(2026, 9, 2),
+            received_date=date(2026, 9, 11),
+            reference_number="INV-REMAINING-SHIP-001",
+        )
+
+        second_shipment = create_shipment_part(
+            currency_purchase=purchase,
+            amount=Decimal("10000"),
+            shipment_date=date(2026, 9, 3),
+            received_date=date(2026, 9, 12),
+            reference_number="INV-REMAINING-SHIP-002",
+        )
+
+        first_invoice = Invoice.objects.create(
+            shipment_part=first_shipment,
+            fob_amount=Decimal("78000"),
+            freight_amount=Decimal("2000"),
+            submission_date=date(2026, 9, 15),
+        )
+
+        second_invoice = Invoice.objects.create(
+            shipment_part=second_shipment,
+            fob_amount=Decimal("10000"),
+            freight_amount=Decimal("0"),
+            submission_date=date(2026, 9, 16),
+        )
+
+        response = self.client.get(self.url)
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_200_OK,
+        )
+
+        invoices_by_id = {
+            item["id"]: item
+            for item in response.data
+        }
+
+        first_data = invoices_by_id[str(first_invoice.id)]
+        second_data = invoices_by_id[str(second_invoice.id)]
+
+        self.assertEqual(
+            first_data["currency_purchase_amount"],
+            "90000.0000",
+        )
+        self.assertEqual(
+            first_data["document_part_number"],
+            1,
+        )
+        self.assertEqual(
+            first_data["remaining_amount"],
+            "10000.0000",
+        )
+
+        self.assertEqual(
+            second_data["currency_purchase_amount"],
+            "90000.0000",
+        )
+        self.assertEqual(
+            second_data["document_part_number"],
+            2,
+        )
+        self.assertEqual(
+            second_data["remaining_amount"],
+            "0.0000",
+        )
+
+
 class InvoiceConcurrencyTests(TransactionTestCase):
     reset_sequences = True
 
