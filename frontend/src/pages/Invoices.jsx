@@ -265,7 +265,11 @@ function Invoices({ user }) {
                 </th>
 
                 <th>
-                  {t('invoices.purchaseAmount')}
+                  {t('invoices.purchaseTrancheAmount')}
+                </th>
+
+                <th>
+                  {t('invoices.totalPurchased')}
                 </th>
 
                 <th>
@@ -322,6 +326,10 @@ function Invoices({ user }) {
 
                     <td>
                       {formatAmount(invoice.currency_purchase_amount)}
+                    </td>
+
+                    <td>
+                      {formatAmount(invoice.order_total_purchased)}
                     </td>
 
                     <td>

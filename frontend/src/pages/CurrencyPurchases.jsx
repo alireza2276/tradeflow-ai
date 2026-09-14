@@ -262,7 +262,23 @@ function CurrencyPurchases({
               </th>
 
               <th>
-                {t('currencyPurchases.amount')}
+                {t('currencyPurchases.purchaseSequence')}
+              </th>
+
+              <th>
+                {t('currencyPurchases.registrationOrderAmount')}
+              </th>
+
+              <th>
+                {t('currencyPurchases.purchaseAmount')}
+              </th>
+
+              <th>
+                {t('currencyPurchases.totalPurchased')}
+              </th>
+
+              <th>
+                {t('currencyPurchases.remainingToPurchase')}
               </th>
 
               <th>
@@ -305,9 +321,42 @@ function CurrencyPurchases({
                   </td>
 
                   <td>
+                    {purchase.purchase_sequence
+                      ? t(
+                          'currencyPurchases.purchaseSequenceValue',
+                          { count: purchase.purchase_sequence }
+                        )
+                      : t('currencyPurchases.voided')}
+                  </td>
+
+                  <td>
+                    <span className="purchase-amount">
+                      {formatAmount(
+                        purchase.registration_order_amount
+                      )}
+                    </span>
+                  </td>
+
+                  <td>
                     <span className="purchase-amount">
                       {formatAmount(
                         purchase.amount
+                      )}
+                    </span>
+                  </td>
+
+                  <td>
+                    <span className="purchase-amount">
+                      {formatAmount(
+                        purchase.order_total_purchased
+                      )}
+                    </span>
+                  </td>
+
+                  <td>
+                    <span className="purchase-amount">
+                      {formatAmount(
+                        purchase.order_remaining_to_purchase
                       )}
                     </span>
                   </td>
@@ -386,8 +435,8 @@ function CurrencyPurchases({
                 <td
                   colSpan={
                     hasPurchaseActions
-                      ? 7
-                      : 6
+                      ? 11
+                      : 10
                   }
                 >
                   <div className="empty-state">

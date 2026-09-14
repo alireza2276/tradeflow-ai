@@ -327,6 +327,24 @@ const resources = {
         orderNumber:
           'شماره ثبت سفارش',
 
+        purchaseSequence:
+          'ردیف خرید',
+
+        purchaseSequenceValue:
+          'خرید {{count}}',
+
+        registrationOrderAmount:
+          'مبلغ ثبت سفارش',
+
+        purchaseAmount:
+          'مبلغ این خرید',
+
+        totalPurchased:
+          'کل خرید ارز',
+
+        remainingToPurchase:
+          'مانده خرید ارز',
+
         amount:
           'مبلغ',
 
@@ -567,6 +585,12 @@ const resources = {
         purchaseAmount:
           'مبلغ خرید ارز',
 
+        purchaseTrancheAmount:
+          'مبلغ این خرید ارز',
+
+        totalPurchased:
+          'کل خرید ارز',
+
         fob:
           'مبلغ FOB',
 
@@ -577,7 +601,7 @@ const resources = {
           'مبلغ کل',
 
         remainingAmount:
-          'مبلغ باقی‌مانده',
+          'مانده کل اسناد',
 
         currency:
           'ارز',
@@ -1295,6 +1319,24 @@ const resources = {
         orderNumber:
           'Order Number',
 
+        purchaseSequence:
+          'Purchase Row',
+
+        purchaseSequenceValue:
+          'Purchase {{count}}',
+
+        registrationOrderAmount:
+          'Registration Order Amount',
+
+        purchaseAmount:
+          'This Purchase',
+
+        totalPurchased:
+          'Total Currency Purchased',
+
+        remainingToPurchase:
+          'Remaining to Purchase',
+
         amount:
           'Amount',
 
@@ -1537,6 +1579,12 @@ const resources = {
         purchaseAmount:
           'Currency Purchase Amount',
 
+        purchaseTrancheAmount:
+          'This Currency Purchase',
+
+        totalPurchased:
+          'Total Currency Purchased',
+
         fob:
           'FOB',
 
@@ -1547,7 +1595,7 @@ const resources = {
           'Total',
 
         remainingAmount:
-          'Remaining Amount',
+          'Overall Documents Remaining',
 
         currency:
           'Currency',

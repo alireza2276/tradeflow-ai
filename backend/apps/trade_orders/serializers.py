@@ -159,6 +159,10 @@ class CurrencyPurchaseSerializer(serializers.ModelSerializer):
 
     purchase_date_dual = serializers.SerializerMethodField()
     deadline_dual = serializers.SerializerMethodField()
+    purchase_sequence = serializers.SerializerMethodField()
+    registration_order_amount = serializers.SerializerMethodField()
+    order_total_purchased = serializers.SerializerMethodField()
+    order_remaining_to_purchase = serializers.SerializerMethodField()
 
     class Meta:
         model = CurrencyPurchase
@@ -168,7 +172,11 @@ class CurrencyPurchaseSerializer(serializers.ModelSerializer):
             "registration_order",
             "order_number",
             "company_name",
+            "purchase_sequence",
             "amount",
+            "registration_order_amount",
+            "order_total_purchased",
+            "order_remaining_to_purchase",
             "currency",
             "purchase_date",
             "purchase_date_dual",
@@ -186,6 +194,10 @@ class CurrencyPurchaseSerializer(serializers.ModelSerializer):
             "id",
             "order_number",
             "company_name",
+            "purchase_sequence",
+            "registration_order_amount",
+            "order_total_purchased",
+            "order_remaining_to_purchase",
             "deadline",
             "purchase_date_dual",
             "deadline_dual",
@@ -197,6 +209,65 @@ class CurrencyPurchaseSerializer(serializers.ModelSerializer):
             "updated_at",
         )
 
+    def _get_order_purchase_summary(self, obj):
+        """Return active purchase totals without merging purchase records.
+
+        Each CurrencyPurchase remains an independent tranche with its own
+        purchase date and deadline. Only the display totals are aggregated at
+        registration-order level.
+        """
+        order = obj.registration_order
+        order_id = order.pk
+
+        if not hasattr(self, "_order_purchase_summary_cache"):
+            self._order_purchase_summary_cache = {}
+
+        if order_id not in self._order_purchase_summary_cache:
+            purchases = list(
+                order.currency_purchases
+                .filter(is_void=False)
+                .order_by("purchase_date", "created_at", "id")
+            )
+
+            total_purchased = sum(
+                (purchase.amount for purchase in purchases),
+                Decimal("0"),
+            )
+
+            sequence_by_id = {
+                purchase.pk: index
+                for index, purchase in enumerate(purchases, start=1)
+            }
+
+            self._order_purchase_summary_cache[order_id] = {
+                "total_purchased": total_purchased,
+                "remaining_to_purchase": max(
+                    order.registered_amount - total_purchased,
+                    Decimal("0"),
+                ),
+                "sequence_by_id": sequence_by_id,
+            }
+
+        return self._order_purchase_summary_cache[order_id]
+
+    def get_purchase_sequence(self, obj):
+        if obj.is_void:
+            return None
+
+        summary = self._get_order_purchase_summary(obj)
+        return summary["sequence_by_id"].get(obj.pk)
+
+    def get_registration_order_amount(self, obj):
+        return format(obj.registration_order.registered_amount, "f")
+
+    def get_order_total_purchased(self, obj):
+        summary = self._get_order_purchase_summary(obj)
+        return format(summary["total_purchased"], "f")
+
+    def get_order_remaining_to_purchase(self, obj):
+        summary = self._get_order_purchase_summary(obj)
+        return format(summary["remaining_to_purchase"], "f")
+
     def get_purchase_date_dual(self, obj):
         return format_dual_date(
             obj.purchase_date,
@@ -206,6 +277,7 @@ class CurrencyPurchaseSerializer(serializers.ModelSerializer):
         return format_dual_date(
             obj.deadline,
         )
+
 
 class ShipmentPartSerializer(serializers.ModelSerializer):
     order_number = serializers.CharField(

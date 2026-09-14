@@ -4,6 +4,7 @@ from rest_framework import serializers
 
 from apps.common.services.date_service import format_dual_date
 from apps.documents.models import Invoice
+from apps.trade_orders.models import CurrencyPurchase
 
 
 class InvoiceSerializer(serializers.ModelSerializer):
@@ -29,6 +30,8 @@ class InvoiceSerializer(serializers.ModelSerializer):
         read_only=True,
     )
 
+    registration_order_amount = serializers.SerializerMethodField()
+    order_total_purchased = serializers.SerializerMethodField()
     document_part_number = serializers.SerializerMethodField()
     remaining_amount = serializers.SerializerMethodField()
     submission_date_dual = serializers.SerializerMethodField()
@@ -43,6 +46,8 @@ class InvoiceSerializer(serializers.ModelSerializer):
             "company_name",
             "order_currency",
             "currency_purchase_amount",
+            "registration_order_amount",
+            "order_total_purchased",
             "document_part_number",
             "fob_amount",
             "freight_amount",
@@ -60,6 +65,8 @@ class InvoiceSerializer(serializers.ModelSerializer):
             "company_name",
             "order_currency",
             "currency_purchase_amount",
+            "registration_order_amount",
+            "order_total_purchased",
             "document_part_number",
             "total_amount",
             "remaining_amount",
@@ -68,24 +75,39 @@ class InvoiceSerializer(serializers.ModelSerializer):
             "updated_at",
         )
 
-    def _get_purchase_invoice_summary(self, obj):
-        """Return stable document-part and cumulative totals for one purchase.
+    def _get_order_invoice_summary(self, obj):
+        """Return order-level document position for the current invoice.
 
-        Invoices are numbered by the creation order of their linked shipment
-        parts. The cache avoids one query per serializer field/row while still
-        keeping these financial values server-authoritative.
+        Currency purchases remain separate tranches so each keeps its own
+        deadline. For display/reporting, however, document coverage is also
+        shown at registration-order level. Therefore a later purchase for the
+        same order immediately increases the remaining document amount while
+        leaving every purchase deadline untouched.
         """
-        purchase = obj.shipment_part.currency_purchase
-        purchase_id = purchase.pk
+        order = obj.shipment_part.currency_purchase.registration_order
+        order_id = order.pk
 
-        if not hasattr(self, "_purchase_summary_cache"):
-            self._purchase_summary_cache = {}
+        if not hasattr(self, "_order_invoice_summary_cache"):
+            self._order_invoice_summary_cache = {}
 
-        if purchase_id not in self._purchase_summary_cache:
+        if order_id not in self._order_invoice_summary_cache:
+            # Keep aggregation explicit here so Decimal behaviour is stable
+            # across supported database backends.
+            active_purchases = CurrencyPurchase.objects.filter(
+                registration_order_id=order_id,
+                is_void=False,
+            ).only("amount")
+            total_purchased = sum(
+                (purchase.amount for purchase in active_purchases),
+                Decimal("0"),
+            )
+
             invoices = (
                 Invoice.objects
                 .filter(
-                    shipment_part__currency_purchase_id=purchase_id,
+                    shipment_part__currency_purchase__registration_order_id=order_id,
+                    shipment_part__currency_purchase__is_void=False,
+                    shipment_part__is_void=False,
                 )
                 .select_related("shipment_part")
                 .order_by(
@@ -102,29 +124,49 @@ class InvoiceSerializer(serializers.ModelSerializer):
                 cumulative_total += invoice.total_amount
                 invoice_summary[invoice.pk] = {
                     "document_part_number": part_number,
-                    "remaining_amount": (
-                        purchase.amount - cumulative_total
+                    "remaining_amount": max(
+                        total_purchased - cumulative_total,
+                        Decimal("0"),
                     ),
                 }
 
-            self._purchase_summary_cache[purchase_id] = invoice_summary
+            self._order_invoice_summary_cache[order_id] = {
+                "registration_order_amount": order.registered_amount,
+                "total_purchased": total_purchased,
+                "invoice_summary": invoice_summary,
+            }
 
-        return self._purchase_summary_cache[purchase_id].get(
+        return self._order_invoice_summary_cache[order_id]
+
+    def _get_invoice_position(self, obj):
+        summary = self._get_order_invoice_summary(obj)
+        invoice_summary = summary["invoice_summary"]
+
+        return invoice_summary.get(
             obj.pk,
             {
                 "document_part_number": 1,
-                "remaining_amount": purchase.amount - obj.total_amount,
+                "remaining_amount": max(
+                    summary["total_purchased"] - obj.total_amount,
+                    Decimal("0"),
+                ),
             },
         )
 
+    def get_registration_order_amount(self, obj):
+        summary = self._get_order_invoice_summary(obj)
+        return format(summary["registration_order_amount"], "f")
+
+    def get_order_total_purchased(self, obj):
+        summary = self._get_order_invoice_summary(obj)
+        return format(summary["total_purchased"], "f")
+
     def get_document_part_number(self, obj):
-        summary = self._get_purchase_invoice_summary(obj)
-        return summary["document_part_number"]
+        return self._get_invoice_position(obj)["document_part_number"]
 
     def get_remaining_amount(self, obj):
-        summary = self._get_purchase_invoice_summary(obj)
         return format(
-            summary["remaining_amount"],
+            self._get_invoice_position(obj)["remaining_amount"],
             "f",
         )
 
