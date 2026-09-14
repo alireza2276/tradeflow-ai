@@ -36,6 +36,7 @@ import PaymentInstruments from './pages/PaymentInstruments'
 import Invoices from './pages/Invoices'
 
 import Notifications from './pages/Notifications'
+import AuditTrail from './pages/AuditTrail'
 
 
 function App() {
@@ -261,6 +262,20 @@ function App() {
                         }
                       />
                     </Route>
+
+                  <Route
+                    element={
+                      <PermissionRoute
+                        user={user}
+                        permission="audit.view_sensitive_audit"
+                      />
+                    }
+                  >
+                    <Route
+                      path="/audit-trail"
+                      element={<AuditTrail />}
+                    />
+                  </Route>
 
                 </Routes>
               </DashboardLayout>

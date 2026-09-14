@@ -51,4 +51,9 @@ urlpatterns = [
         "api/workflows/",
         include("apps.workflows.urls"),
     ),
+
+    path(
+        "api/audit/",
+        include("apps.audit.urls"),
+    ),
 ]

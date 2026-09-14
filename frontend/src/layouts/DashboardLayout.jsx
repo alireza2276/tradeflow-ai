@@ -259,6 +259,22 @@ function DashboardLayout({
             </NavLink>
           )}
 
+          {hasPermission(
+            user,
+            'audit.view_sensitive_audit'
+          ) && (
+            <NavLink
+              to="/audit-trail"
+              className={({ isActive }) =>
+                isActive
+                  ? 'sidebar-link active'
+                  : 'sidebar-link'
+              }
+            >
+              {t('navigation.auditTrail')}
+            </NavLink>
+          )}
+
           <button
             type="button"
             className="sidebar-link logout-button"

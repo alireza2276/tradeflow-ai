@@ -458,8 +458,11 @@ class RBACSetupTests(TestCase):
                 "trade_orders.add_shipmentpart",
                 "trade_orders.change_shipmentpart",
                 "workflows.review_approvalrequest",
+                "audit.view_sensitive_audit",
             },
-            "SECURITY_ADMIN": set(),
+            "SECURITY_ADMIN": {
+                "audit.view_sensitive_audit",
+            },
         }
 
         for role_name, expected in expected_permissions.items():
@@ -706,6 +709,25 @@ class RBACAPITests(TestCase):
         self.assertEqual(
             response.status_code,
             403,
+        )
+
+    def test_security_admin_can_access_audit_trail(self):
+        user = self.create_user_with_role(
+            "security-admin-audit-user",
+            "SECURITY_ADMIN",
+        )
+
+        self.client.force_authenticate(
+            user=user,
+        )
+
+        response = self.client.get(
+            "/api/audit/events/",
+        )
+
+        self.assertEqual(
+            response.status_code,
+            200,
         )
 
     def test_trade_viewer_can_access_dashboard(self):

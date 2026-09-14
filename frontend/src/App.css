@@ -2657,3 +2657,41 @@
   font-size: 12px;
   font-weight: 700;
 }
+
+/* Audit trail */
+.audit-page .table-wrapper {
+  overflow-x: auto;
+  background: var(--surface, #fff);
+  border-radius: 14px;
+}
+
+.audit-page table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.audit-page th,
+.audit-page td {
+  padding: 0.85rem 1rem;
+  text-align: start;
+  vertical-align: top;
+  border-bottom: 1px solid rgba(127, 127, 127, 0.18);
+}
+
+.audit-page pre {
+  margin: 0.5rem 0 0;
+  padding: 0.75rem;
+  overflow-x: auto;
+  border-radius: 10px;
+  background: rgba(127, 127, 127, 0.08);
+  direction: ltr;
+  text-align: left;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.audit-details-grid {
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+}

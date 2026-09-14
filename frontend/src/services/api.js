@@ -910,3 +910,20 @@ export async function voidShipmentPart(
 
   return response.json()
 }
+
+export async function getAuditEvents() {
+  const response = await apiFetch(
+    '/audit/events/'
+  )
+
+  if (!response.ok) {
+    const errorMessage = await parseErrorResponse(
+      response,
+      'Failed to load audit trail.'
+    )
+
+    throw new Error(errorMessage)
+  }
+
+  return response.json()
+}

@@ -62,10 +62,13 @@ ROLE_PERMISSIONS = {
         "trade_orders.add_shipmentpart",
         "trade_orders.change_shipmentpart",
         "workflows.review_approvalrequest",
+        "audit.view_sensitive_audit",
 
     ),
 
-    "SECURITY_ADMIN": (),
+    "SECURITY_ADMIN": (
+        "audit.view_sensitive_audit",
+    ),
 }
 
 
