@@ -17,9 +17,16 @@ def serialize_user(user):
         user.get_all_permissions()
     )
 
+    first_name = (user.first_name or "").strip()
+    last_name = (user.last_name or "").strip()
+    full_name = user.get_full_name().strip()
+
     return {
         "id": user.pk,
         "username": user.get_username(),
+        "first_name": first_name,
+        "last_name": last_name,
+        "full_name": full_name or user.get_username(),
         "is_staff": user.is_staff,
         "roles": roles,
         "permissions": permissions,

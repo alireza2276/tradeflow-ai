@@ -57,6 +57,30 @@ function DashboardLayout({
         : 'ltr'
   }
 
+  const displayName =
+    user?.full_name?.trim() ||
+    [user?.first_name, user?.last_name]
+      .filter(Boolean)
+      .join(' ')
+      .trim() ||
+    user?.username ||
+    t('userIdentity.unknownUser')
+
+  const roleNames = Array.isArray(user?.roles)
+    ? user.roles
+    : []
+
+  const displayRoles =
+    roleNames.length > 0
+      ? roleNames
+          .map((role) =>
+            t(`userIdentity.roles.${role}`, {
+              defaultValue: role,
+            })
+          )
+          .join(' • ')
+      : t('userIdentity.noRole')
+
   return (
     <div className="dashboard-layout">
       <aside className="sidebar">
@@ -69,6 +93,38 @@ function DashboardLayout({
             {t('common.tradeFinance')}
           </span>
         </div>
+
+        <section
+          className="signed-in-user"
+          aria-label={t('userIdentity.signedInAs')}
+        >
+          <div
+            className="signed-in-user-avatar"
+            aria-hidden="true"
+          >
+            {displayName.charAt(0).toLocaleUpperCase()}
+          </div>
+
+          <div className="signed-in-user-details">
+            <span className="signed-in-user-label">
+              {t('userIdentity.signedInAs')}
+            </span>
+
+            <strong
+              className="signed-in-user-name"
+              title={displayName}
+            >
+              {displayName}
+            </strong>
+
+            <span
+              className="signed-in-user-role"
+              title={displayRoles}
+            >
+              {displayRoles}
+            </span>
+          </div>
+        </section>
 
         <div className="language-switcher">
           <button

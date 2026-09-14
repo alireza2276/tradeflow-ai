@@ -347,6 +347,44 @@ class AuthenticationTests(TestCase):
             data["user"]["permissions"],
         )
 
+    def test_current_user_returns_full_identity(self):
+        self.user.first_name = "Alireza"
+        self.user.last_name = "Khatiri"
+        self.user.save(
+            update_fields=[
+                "first_name",
+                "last_name",
+            ]
+        )
+
+        self.client.force_login(self.user)
+
+        response = self.client.get(
+            "/api/auth/me/",
+        )
+
+        self.assertEqual(
+            response.status_code,
+            200,
+        )
+
+        payload = response.json()["user"]
+
+        self.assertEqual(
+            payload["first_name"],
+            "Alireza",
+        )
+        self.assertEqual(
+            payload["last_name"],
+            "Khatiri",
+        )
+        self.assertEqual(
+            payload["full_name"],
+            "Alireza Khatiri",
+        )
+
+
+
 class RBACSetupTests(TestCase):
 
     def test_setup_rbac_creates_expected_roles(self):

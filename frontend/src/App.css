@@ -26,6 +26,57 @@
   color: #9ca3af;
 }
 
+.signed-in-user {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 0 4px 18px;
+  padding: 12px;
+  border: 1px solid #374151;
+  border-radius: 12px;
+  background: #1f2937;
+}
+
+.signed-in-user-avatar {
+  display: grid;
+  width: 38px;
+  height: 38px;
+  flex: 0 0 38px;
+  place-items: center;
+  border-radius: 50%;
+  background: #374151;
+  color: #f9fafb;
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.signed-in-user-details {
+  min-width: 0;
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.signed-in-user-label,
+.signed-in-user-role {
+  overflow: hidden;
+  color: #9ca3af;
+  font-size: 11px;
+  line-height: 1.35;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.signed-in-user-name {
+  overflow: hidden;
+  color: #f9fafb;
+  font-size: 14px;
+  line-height: 1.4;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .sidebar-nav {
   display: flex;
   flex-direction: column;

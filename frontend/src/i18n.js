@@ -23,6 +23,18 @@ const resources = {
         close: 'بستن',
       },
 
+      userIdentity: {
+        signedInAs: 'کاربر واردشده',
+        unknownUser: 'کاربر',
+        noRole: 'بدون نقش',
+        roles: {
+          TRADE_OPERATOR: 'کارشناس',
+          TRADE_SUPERVISOR: 'تأییدکننده',
+          TRADE_VIEWER: 'مشاهده‌گر',
+          SECURITY_ADMIN: 'مدیر امنیت',
+        },
+      },
+
       navigation: {
         dashboard: 'داشبورد',
         companies: 'شرکت‌ها',
@@ -1013,6 +1025,18 @@ const resources = {
         persian: 'فارسی',
         english: 'English',
         close: 'Close',
+      },
+
+      userIdentity: {
+        signedInAs: 'Signed in as',
+        unknownUser: 'User',
+        noRole: 'No role',
+        roles: {
+          TRADE_OPERATOR: 'Trade Operator',
+          TRADE_SUPERVISOR: 'Trade Supervisor',
+          TRADE_VIEWER: 'Trade Viewer',
+          SECURITY_ADMIN: 'Security Administrator',
+        },
       },
 
       navigation: {
