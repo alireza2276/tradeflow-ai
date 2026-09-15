@@ -32,6 +32,33 @@ class RegistrationOrder(models.Model):
         max_length=3,
     )
 
+    activity_type = models.CharField(
+        max_length=20,
+        choices=Company.CompanyType.choices,
+        null=True,
+        blank=True,
+        help_text=(
+            "Snapshot of the activity type recorded on the registration "
+            "order. Regulatory deadlines must use this value rather than "
+            "the company's current master-data type."
+        ),
+    )
+
+    shipment_deadline_months = models.PositiveSmallIntegerField(
+        null=True,
+        blank=True,
+        help_text=(
+            "Maximum shipping-document deadline applicable to this "
+            "registration order under the current CBI rule/table."
+        ),
+    )
+
+    regulatory_rule_reference = models.CharField(
+        max_length=120,
+        blank=True,
+        help_text="CBI circular / Part One / table or clause reference.",
+    )
+
     is_active = models.BooleanField(
         default=True,
     )
@@ -117,9 +144,34 @@ class CurrencyPurchase(models.Model):
         max_length=3,
     )
 
-    purchase_date = models.DateField()
+    purchase_date = models.DateField(
+        help_text="Currency funding/purchase date.",
+    )
+
+    remittance_date = models.DateField(
+        null=True,
+        blank=True,
+        help_text=(
+            "Date the FX remittance was issued. For remittance imports, "
+            "the shipping-document deadline is measured from this date."
+        ),
+    )
+
+    original_deadline = models.DateField(
+        null=True,
+        blank=True,
+    )
 
     deadline = models.DateField()
+
+    deadline_extension_reference = models.CharField(
+        max_length=120,
+        blank=True,
+    )
+
+    deadline_extension_reason = models.TextField(
+        blank=True,
+    )
 
     created_at = models.DateTimeField(
         auto_now_add=True,

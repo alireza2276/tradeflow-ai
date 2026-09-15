@@ -81,6 +81,7 @@ def submit_currency_purchase_create(
     amount: Decimal,
     currency: str,
     purchase_date: date,
+    remittance_date: date | None = None,
     reason: str = "",
 ) -> ApprovalRequest:
 
@@ -107,8 +108,9 @@ def submit_currency_purchase_create(
         purchase_currency=currency,
     )
 
-    normalized_purchase_date = (
-        _normalize_purchase_date(purchase_date)
+    normalized_purchase_date = _normalize_purchase_date(purchase_date)
+    normalized_remittance_date = _normalize_purchase_date(
+        remittance_date or purchase_date
     )
 
     return ApprovalRequest.objects.create(
@@ -125,6 +127,7 @@ def submit_currency_purchase_create(
             ),
             "currency": locked_order.currency,
             "purchase_date": normalized_purchase_date,
+            "remittance_date": normalized_remittance_date,
         },
         reason=reason.strip(),
         maker=maker,
@@ -138,6 +141,7 @@ def submit_currency_purchase_correction(
     purchase: CurrencyPurchase,
     amount: Decimal,
     purchase_date: date,
+    remittance_date: date | None = None,
     reason: str,
 ) -> ApprovalRequest:
 
@@ -203,13 +207,22 @@ def submit_currency_purchase_correction(
         current_purchase=locked_purchase,
     )
 
-    normalized_purchase_date = (
-        _normalize_purchase_date(purchase_date)
+    normalized_purchase_date = _normalize_purchase_date(purchase_date)
+    effective_remittance_date = (
+        remittance_date
+        or locked_purchase.remittance_date
+        or purchase_date
+    )
+    normalized_remittance_date = _normalize_purchase_date(
+        effective_remittance_date
     )
 
     if (
         normalized_amount == locked_purchase.amount
         and purchase_date == locked_purchase.purchase_date
+        and effective_remittance_date == (
+            locked_purchase.remittance_date or locked_purchase.purchase_date
+        )
     ):
         raise ValidationError(
             "The correction does not contain any changes."
@@ -227,9 +240,11 @@ def submit_currency_purchase_correction(
                     "f",
                 ),
                 "currency": locked_purchase.currency,
-                "purchase_date": (
-                    locked_purchase.purchase_date.isoformat()
-                ),
+                "purchase_date": locked_purchase.purchase_date.isoformat(),
+                "remittance_date": (
+                    locked_purchase.remittance_date
+                    or locked_purchase.purchase_date
+                ).isoformat(),
             },
             "proposed": {
                 "amount": format(
@@ -238,6 +253,7 @@ def submit_currency_purchase_correction(
                 ),
                 "currency": locked_purchase.currency,
                 "purchase_date": normalized_purchase_date,
+                "remittance_date": normalized_remittance_date,
             },
         },
         reason=reason,

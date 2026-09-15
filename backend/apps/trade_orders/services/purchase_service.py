@@ -24,6 +24,7 @@ def create_currency_purchase(
     amount: Decimal,
     currency: str,
     purchase_date: date,
+    remittance_date: date | None = None,
 ) -> CurrencyPurchase:
     locked_order = (
         RegistrationOrder.objects
@@ -39,9 +40,14 @@ def create_currency_purchase(
     )
 
 
+    effective_remittance_date = remittance_date or purchase_date
     deadline = calculate_purchase_deadline(
-        purchase_date=purchase_date,
-        company_type=locked_order.company.company_type,
+        remittance_date=effective_remittance_date,
+        activity_type=(
+            locked_order.activity_type
+            or locked_order.company.company_type
+        ),
+        configured_months=locked_order.shipment_deadline_months,
     )
 
     return CurrencyPurchase.objects.create(
@@ -49,6 +55,8 @@ def create_currency_purchase(
         amount=amount,
         currency=locked_order.currency,
         purchase_date=purchase_date,
+        remittance_date=effective_remittance_date,
+        original_deadline=deadline,
         deadline=deadline,
     )
 
@@ -59,6 +67,7 @@ def update_currency_purchase(
     purchase: CurrencyPurchase,
     amount: Decimal,
     purchase_date: date,
+    remittance_date: date | None = None,
 ) -> CurrencyPurchase:
     purchase_reference = (
         CurrencyPurchase.objects
@@ -114,22 +123,39 @@ def update_currency_purchase(
         current_purchase=locked_purchase,
     )
 
+    effective_remittance_date = (
+        remittance_date
+        or locked_purchase.remittance_date
+        or purchase_date
+    )
     deadline = calculate_purchase_deadline(
-        purchase_date=purchase_date,
-        company_type=locked_order.company.company_type,
+        remittance_date=effective_remittance_date,
+        activity_type=(
+            locked_order.activity_type
+            or locked_order.company.company_type
+        ),
+        configured_months=locked_order.shipment_deadline_months,
     )
 
     locked_purchase.amount = amount
     locked_purchase.currency = locked_order.currency
     locked_purchase.purchase_date = purchase_date
+    locked_purchase.remittance_date = effective_remittance_date
+    locked_purchase.original_deadline = deadline
     locked_purchase.deadline = deadline
+    locked_purchase.deadline_extension_reference = ""
+    locked_purchase.deadline_extension_reason = ""
 
     locked_purchase.save(
         update_fields=(
             "amount",
             "currency",
             "purchase_date",
+            "remittance_date",
+            "original_deadline",
             "deadline",
+            "deadline_extension_reference",
+            "deadline_extension_reason",
             "updated_at",
         )
     )

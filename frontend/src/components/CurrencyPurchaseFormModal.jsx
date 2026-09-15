@@ -26,6 +26,7 @@ function CurrencyPurchaseFormModal({
     amount: '',
     currency: '',
     purchase_date: '',
+    remittance_date: '',
     reason: '',
   })
 
@@ -64,6 +65,8 @@ function CurrencyPurchaseFormModal({
         currency: purchase.currency || '',
         purchase_date:
           purchase.purchase_date || '',
+        remittance_date:
+          purchase.remittance_date || purchase.purchase_date || '',
         reason: '',
       })
     } else {
@@ -72,6 +75,7 @@ function CurrencyPurchaseFormModal({
         amount: '',
         currency: '',
         purchase_date: '',
+        remittance_date: '',
         reason: '',
       })
     }
@@ -155,6 +159,11 @@ function CurrencyPurchaseFormModal({
       return
     }
 
+    if (!formData.remittance_date) {
+      setError(t('currencyPurchaseForm.remittanceDateError'))
+      return
+    }
+
     if (!formData.currency) {
       setError(
         t(
@@ -185,6 +194,8 @@ function CurrencyPurchaseFormModal({
           amount: formData.amount,
           purchase_date:
             formData.purchase_date,
+          remittance_date:
+            formData.remittance_date,
           reason: formData.reason.trim(),
         })
       } else {
@@ -195,6 +206,8 @@ function CurrencyPurchaseFormModal({
           currency: formData.currency,
           purchase_date:
             formData.purchase_date,
+          remittance_date:
+            formData.remittance_date,
         })
       }
     } catch (err) {
@@ -361,6 +374,22 @@ function CurrencyPurchaseFormModal({
             />
           </div>
 
+
+          <div className="form-group">
+            <label htmlFor="remittance-date">
+              {t('currencyPurchaseForm.remittanceDate')}
+            </label>
+            <input
+              id="remittance-date"
+              name="remittance_date"
+              type="date"
+              value={formData.remittance_date}
+              onChange={handleChange}
+              disabled={submitting}
+              required
+            />
+            <small>{t('currencyPurchaseForm.remittanceDateHint')}</small>
+          </div>
 
           {isEditMode && (
             <div className="form-group">

@@ -284,6 +284,15 @@ const resources = {
       },
 
       registrationOrderForm: {
+        activityType: 'نوع فعالیت در ثبت سفارش',
+        selectActivityType: 'نوع فعالیت را انتخاب کنید',
+        commercial: 'غیرتولیدی / تجاری',
+        production: 'تولیدی',
+        shipmentDeadlineMonths: 'سقف مهلت ارائه اسناد حمل (ماه)',
+        deadlineRuleHint: 'این مقدار باید مطابق جدول/بند مقررات بانک مرکزی برای همین ثبت سفارش تعیین شود. ۶/۹ فقط مقدار پایه است و برای همه کالاها و منابع ارز قانون عمومی نیست.',
+        regulatoryRuleReference: 'مرجع مقرراتی',
+        regulatoryRulePlaceholder: 'مثال: بخش اول، قسمت د، بند ۲، جدول ۸',
+
         addTitle: 'افزودن ثبت سفارش',
         editTitle: 'ویرایش ثبت سفارش',
 
@@ -326,21 +335,6 @@ const resources = {
       },
 
       currencyPurchases: {
-        paymentInstrument: 'Payment Instrument No.',
-        advancedSearch: 'Advanced Search',
-        exportExcel: 'Export Excel',
-        nationalId: 'National ID',
-        amountMin: 'Minimum Purchase Amount',
-        amountMax: 'Maximum Purchase Amount',
-        purchaseDateFrom: 'Purchase Date From',
-        purchaseDateTo: 'Purchase Date To',
-        deadlineFrom: 'Deadline From',
-        deadlineTo: 'Deadline To',
-        status: 'Status',
-        allStatuses: 'All Statuses',
-        active: 'Active',
-        search: 'Search',
-        reset: 'Clear Filters',
         paymentInstrument: 'شماره ابزار پرداخت',
         advancedSearch: 'جستجوی پیشرفته',
         exportExcel: 'خروجی Excel',
@@ -437,6 +431,10 @@ const resources = {
       },
 
       currencyPurchaseForm: {
+        remittanceDate: 'تاریخ صدور حواله ارزی',
+        remittanceDateHint: 'مهلت ارائه اسناد حواله ارزی از تاریخ صدور حواله محاسبه می‌شود، نه صرفاً تاریخ تأمین/خرید ارز.',
+        remittanceDateError: 'تاریخ صدور حواله ارزی الزامی است.',
+
         addTitle:
           'افزودن خرید ارز',
 
@@ -603,26 +601,6 @@ const resources = {
       },
 
       invoices: {
-        unifiedTitle: 'Shipping Documents & Invoices',
-        unifiedDescription: 'Unified entry and tracking of shipping documents and invoices linked to currency purchases.',
-        paymentInstrument: 'Payment Instrument No.',
-        shipmentReference: 'Shipping Document Reference',
-        purchaseDate: 'Currency Purchase Date',
-        deadline: 'Deadline',
-        advancedSearch: 'Advanced Search',
-        exportExcel: 'Export Excel',
-        addShippingDocument: 'Add Shipping Document',
-        shipmentApprovalNotice: 'The shipping document request was submitted. After Checker approval, you can complete its invoice.',
-        awaitingInvoice: '{{count}} approved shipping document(s) are awaiting an invoice.',
-        nationalId: 'National ID',
-        purchaseDateFrom: 'Purchase Date From',
-        purchaseDateTo: 'Purchase Date To',
-        deadlineFrom: 'Deadline From',
-        deadlineTo: 'Deadline To',
-        submissionDateFrom: 'Submission Date From',
-        submissionDateTo: 'Submission Date To',
-        search: 'Search',
-        reset: 'Clear Filters',
         unifiedTitle: 'اسناد حمل و اینوویس',
         unifiedDescription: 'ثبت و پیگیری یکپارچه اسناد حمل و اینوویس‌های مرتبط با خرید ارز.',
         paymentInstrument: 'شماره ابزار پرداخت',
@@ -1370,6 +1348,15 @@ const resources = {
       },
 
       registrationOrderForm: {
+        activityType: 'Registration-order activity type',
+        selectActivityType: 'Select activity type',
+        commercial: 'Commercial / non-production',
+        production: 'Production',
+        shipmentDeadlineMonths: 'Shipping-document deadline cap (months)',
+        deadlineRuleHint: 'Set this from the applicable CBI table/clause for this registration order. The 6/9 values are only baseline defaults, not a universal rule for every goods/source category.',
+        regulatoryRuleReference: 'Regulatory rule reference',
+        regulatoryRulePlaceholder: 'e.g. Part One, section D, clause 2, Table 8',
+
         addTitle: 'Add Registration Order',
         editTitle: 'Edit Registration Order',
 
@@ -1495,6 +1482,10 @@ const resources = {
       },
 
       currencyPurchaseForm: {
+        remittanceDate: 'FX remittance issue date',
+        remittanceDateHint: 'For remittance imports, the shipping-document deadline is measured from the remittance issue date, not merely the FX funding/purchase date.',
+        remittanceDateError: 'FX remittance issue date is required.',
+
         addTitle:
           'Add Currency Purchase',
 

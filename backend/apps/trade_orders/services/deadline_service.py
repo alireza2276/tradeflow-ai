@@ -3,27 +3,55 @@ from datetime import date
 from dateutil.relativedelta import relativedelta
 
 
-COMMERCIAL_DEADLINE_MONTHS = 6
-PRODUCTION_DEADLINE_MONTHS = 9
+DEFAULT_COMMERCIAL_DEADLINE_MONTHS = 6
+DEFAULT_PRODUCTION_DEADLINE_MONTHS = 9
+
+
+def resolve_shipment_deadline_months(
+    *,
+    activity_type: str,
+    configured_months: int | None,
+) -> int:
+    """Resolve the deadline configured for the registration order.
+
+    CBI Part One rules can vary by goods/source/table. Therefore the
+    registration-order value wins. The 6/9 month values are only a
+    backward-compatible baseline for records not yet classified.
+    """
+    if configured_months is not None:
+        if configured_months <= 0:
+            raise ValueError("Shipment deadline months must be positive.")
+        return configured_months
+
+    if activity_type == "COMMERCIAL":
+        return DEFAULT_COMMERCIAL_DEADLINE_MONTHS
+    if activity_type == "PRODUCTION":
+        return DEFAULT_PRODUCTION_DEADLINE_MONTHS
+    raise ValueError(f"Unsupported activity type: {activity_type}")
 
 
 def calculate_purchase_deadline(
     *,
-    purchase_date: date,
-    company_type: str,
+    remittance_date: date | None = None,
+    activity_type: str | None = None,
+    configured_months: int | None = None,
+    # Backward-compatible aliases for existing tests/callers.
+    purchase_date: date | None = None,
+    company_type: str | None = None,
 ) -> date:
-    if company_type == "COMMERCIAL":
-        months = COMMERCIAL_DEADLINE_MONTHS
+    basis_date = remittance_date or purchase_date
+    resolved_activity_type = activity_type or company_type
 
-    elif company_type == "PRODUCTION":
-        months = PRODUCTION_DEADLINE_MONTHS
+    if basis_date is None:
+        raise ValueError("Remittance date is required.")
+    if not resolved_activity_type:
+        raise ValueError("Activity type is required.")
 
-    else:
-        raise ValueError(
-            f"Unsupported company type: {company_type}"
-        )
-
-    return purchase_date + relativedelta(months=months)
+    months = resolve_shipment_deadline_months(
+        activity_type=resolved_activity_type,
+        configured_months=configured_months,
+    )
+    return basis_date + relativedelta(months=months)
 
 from enum import Enum
 

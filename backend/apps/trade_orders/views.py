@@ -603,6 +603,7 @@ class CurrencyPurchaseViewSet(viewsets.ModelViewSet):
                     amount=data["amount"],
                     currency=data["currency"],
                     purchase_date=data["purchase_date"],
+                    remittance_date=data.get("remittance_date"),
                     reason=request.data.get(
                         "reason",
                         "",
@@ -706,6 +707,10 @@ class CurrencyPurchaseViewSet(viewsets.ModelViewSet):
                     purchase_date=data.get(
                         "purchase_date",
                         purchase.purchase_date,
+                    ),
+                    remittance_date=data.get(
+                        "remittance_date",
+                        purchase.remittance_date or purchase.purchase_date,
                     ),
                     reason=request.data.get(
                         "reason",

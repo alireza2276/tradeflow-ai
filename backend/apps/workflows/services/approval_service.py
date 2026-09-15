@@ -177,14 +177,17 @@ def _apply_currency_purchase_create(
 
     payload = approval_request.payload
 
+    create_expected_keys = {
+        "registration_order_id",
+        "amount",
+        "currency",
+        "purchase_date",
+    }
+    if "remittance_date" in payload:
+        create_expected_keys.add("remittance_date")
     _validate_exact_keys(
         payload,
-        expected_keys={
-            "registration_order_id",
-            "amount",
-            "currency",
-            "purchase_date",
-        },
+        expected_keys=create_expected_keys,
         field_name="approval request payload",
     )
 
@@ -218,6 +221,10 @@ def _apply_currency_purchase_create(
         payload["purchase_date"],
         field_name="purchase date",
     )
+    remittance_date = _parse_date(
+        payload.get("remittance_date", payload["purchase_date"]),
+        field_name="remittance date",
+    )
 
     try:
         registration_order = (
@@ -235,6 +242,7 @@ def _apply_currency_purchase_create(
         amount=amount,
         currency=currency,
         purchase_date=purchase_date,
+        remittance_date=remittance_date,
     )
 
 
@@ -263,23 +271,27 @@ def _apply_currency_purchase_correction(
     before = payload["before"]
     proposed = payload["proposed"]
 
+    correction_expected_keys = {
+        "amount",
+        "currency",
+        "purchase_date",
+    }
+    before_expected_keys = set(correction_expected_keys)
+    proposed_expected_keys = set(correction_expected_keys)
+    if "remittance_date" in before:
+        before_expected_keys.add("remittance_date")
+    if "remittance_date" in proposed:
+        proposed_expected_keys.add("remittance_date")
+
     _validate_exact_keys(
         before,
-        expected_keys={
-            "amount",
-            "currency",
-            "purchase_date",
-        },
+        expected_keys=before_expected_keys,
         field_name="before snapshot",
     )
 
     _validate_exact_keys(
         proposed,
-        expected_keys={
-            "amount",
-            "currency",
-            "purchase_date",
-        },
+        expected_keys=proposed_expected_keys,
         field_name="proposed correction",
     )
 
@@ -303,6 +315,10 @@ def _apply_currency_purchase_correction(
         before["purchase_date"],
         field_name="before purchase date",
     )
+    before_remittance_date = _parse_date(
+        before.get("remittance_date", before["purchase_date"]),
+        field_name="before remittance date",
+    )
 
     proposed_amount = _parse_decimal(
         proposed["amount"],
@@ -319,6 +335,10 @@ def _apply_currency_purchase_correction(
     proposed_purchase_date = _parse_date(
         proposed["purchase_date"],
         field_name="proposed purchase date",
+    )
+    proposed_remittance_date = _parse_date(
+        proposed.get("remittance_date", proposed["purchase_date"]),
+        field_name="proposed remittance date",
     )
 
     try:
@@ -371,6 +391,10 @@ def _apply_currency_purchase_correction(
         or locked_purchase.currency != before_currency
         or locked_purchase.purchase_date
         != before_purchase_date
+        or (
+            locked_purchase.remittance_date
+            or locked_purchase.purchase_date
+        ) != before_remittance_date
     ):
         raise ValidationError(
             "The currency purchase no longer matches "
@@ -393,6 +417,7 @@ def _apply_currency_purchase_correction(
         purchase=locked_purchase,
         amount=proposed_amount,
         purchase_date=proposed_purchase_date,
+        remittance_date=proposed_remittance_date,
     )
 
 def _apply_currency_purchase_void(

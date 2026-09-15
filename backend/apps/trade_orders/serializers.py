@@ -28,6 +28,9 @@ class RegistrationOrderSerializer(serializers.ModelSerializer):
             "order_number",
             "registered_amount",
             "currency",
+            "activity_type",
+            "shipment_deadline_months",
+            "regulatory_rule_reference",
             "is_active",
             "created_at",
             "updated_at",
@@ -39,6 +42,14 @@ class RegistrationOrderSerializer(serializers.ModelSerializer):
             "created_at",
             "updated_at",
         )
+
+    def create(self, validated_data):
+        company = validated_data["company"]
+        validated_data.setdefault(
+            "activity_type",
+            company.company_type,
+        )
+        return super().create(validated_data)
 
     def validate_registered_amount(self, value):
         if value <= Decimal("0"):
@@ -93,6 +104,34 @@ class RegistrationOrderSerializer(serializers.ModelSerializer):
                     "registered_amount": (
                         "Registered amount cannot be lower "
                         "than the total currency purchases."
+                    )
+                }
+            )
+
+        activity_type = attrs.get(
+            "activity_type",
+            instance.activity_type,
+        )
+        deadline_months = attrs.get(
+            "shipment_deadline_months",
+            instance.shipment_deadline_months,
+        )
+        rule_reference = attrs.get(
+            "regulatory_rule_reference",
+            instance.regulatory_rule_reference,
+        )
+
+        if has_purchase_history and (
+            activity_type != instance.activity_type
+            or deadline_months != instance.shipment_deadline_months
+            or rule_reference != instance.regulatory_rule_reference
+        ):
+            raise serializers.ValidationError(
+                {
+                    "activity_type": (
+                        "Regulatory classification cannot be changed after "
+                        "currency-purchase history exists. Create a formal "
+                        "correction/exception workflow instead."
                     )
                 }
             )
@@ -170,6 +209,18 @@ class CurrencyPurchaseSerializer(serializers.ModelSerializer):
     registration_order_amount = serializers.SerializerMethodField()
     order_total_purchased = serializers.SerializerMethodField()
     order_remaining_to_purchase = serializers.SerializerMethodField()
+    regulatory_rule_reference = serializers.CharField(
+        source="registration_order.regulatory_rule_reference",
+        read_only=True,
+    )
+    shipment_deadline_months = serializers.IntegerField(
+        source="registration_order.shipment_deadline_months",
+        read_only=True,
+    )
+    activity_type = serializers.CharField(
+        source="registration_order.activity_type",
+        read_only=True,
+    )
 
     class Meta:
         model = CurrencyPurchase
@@ -188,8 +239,15 @@ class CurrencyPurchaseSerializer(serializers.ModelSerializer):
             "currency",
             "purchase_date",
             "purchase_date_dual",
+            "remittance_date",
+            "original_deadline",
             "deadline",
             "deadline_dual",
+            "deadline_extension_reference",
+            "deadline_extension_reason",
+            "regulatory_rule_reference",
+            "shipment_deadline_months",
+            "activity_type",
             "is_void",
             "voided_at",
             "voided_by",
@@ -206,7 +264,13 @@ class CurrencyPurchaseSerializer(serializers.ModelSerializer):
             "registration_order_amount",
             "order_total_purchased",
             "order_remaining_to_purchase",
+            "original_deadline",
             "deadline",
+            "deadline_extension_reference",
+            "deadline_extension_reason",
+            "regulatory_rule_reference",
+            "shipment_deadline_months",
+            "activity_type",
             "purchase_date_dual",
             "deadline_dual",
             "is_void",
