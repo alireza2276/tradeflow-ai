@@ -247,23 +247,6 @@ function DashboardLayout({
             </NavLink>
           )}
 
-          {hasPermission(
-            user,
-            'trade_orders.view_shipmentpart'
-          ) && (
-            <NavLink
-              to="/shipment-parts"
-              className={({ isActive }) =>
-                isActive
-                  ? 'sidebar-link active'
-                  : 'sidebar-link'
-              }
-            >
-              {t(
-                'navigation.shipmentParts'
-              )}
-            </NavLink>
-          )}
 
           {hasPermission(
             user,

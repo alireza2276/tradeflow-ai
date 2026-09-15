@@ -40,7 +40,7 @@ class OrderInvoiceAggregationTests(TestCase):
             submission_date=date(2026, 9, 10),
         )
 
-    def test_existing_invoice_remaining_updates_when_new_purchase_is_added(self):
+    def test_existing_invoice_remaining_stays_with_its_purchase(self):
         first_purchase = create_currency_purchase(
             registration_order=self.order,
             amount=Decimal("145000"),
@@ -66,10 +66,10 @@ class OrderInvoiceAggregationTests(TestCase):
 
         after = InvoiceSerializer(first_invoice).data
         self.assertEqual(after["order_total_purchased"], "150000.0000")
-        self.assertEqual(after["remaining_amount"], "5000.0000")
+        self.assertEqual(after["remaining_amount"], "0.0000")
         self.assertNotEqual(first_purchase.deadline, second_purchase.deadline)
 
-    def test_document_parts_are_numbered_across_the_whole_order(self):
+    def test_document_parts_are_numbered_per_currency_purchase(self):
         first_purchase = create_currency_purchase(
             registration_order=self.order,
             amount=Decimal("145000"),
@@ -100,8 +100,8 @@ class OrderInvoiceAggregationTests(TestCase):
         ).data
 
         self.assertEqual(data[0]["document_part_number"], 1)
-        self.assertEqual(data[0]["remaining_amount"], "5000.0000")
-        self.assertEqual(data[1]["document_part_number"], 2)
+        self.assertEqual(data[0]["remaining_amount"], "0.0000")
+        self.assertEqual(data[1]["document_part_number"], 1)
         self.assertEqual(data[1]["remaining_amount"], "0.0000")
         self.assertEqual(data[0]["order_total_purchased"], "150000.0000")
         self.assertEqual(data[1]["order_total_purchased"], "150000.0000")

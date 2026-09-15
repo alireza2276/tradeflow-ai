@@ -1,8 +1,11 @@
 import {
+  useMemo,
   useState,
 } from 'react'
 
-import { useTranslation } from 'react-i18next'
+import {
+  useTranslation,
+} from 'react-i18next'
 
 
 function InvoiceFormModal({
@@ -46,6 +49,64 @@ function InvoiceFormModal({
     useState('')
 
 
+  const isCreateMode =
+    mode === 'create'
+
+
+  const selectedShipmentPart =
+    useMemo(
+      () =>
+        shipmentParts.find(
+          (shipmentPart) =>
+            String(shipmentPart.id) ===
+            String(formData.shipment_part)
+        ) || null,
+      [
+        shipmentParts,
+        formData.shipment_part,
+      ]
+    )
+
+
+  const totalAmount = useMemo(() => {
+    const fob =
+      Number(formData.fob_amount) || 0
+
+    const freight =
+      Number(formData.freight_amount) || 0
+
+    return fob + freight
+  }, [
+    formData.fob_amount,
+    formData.freight_amount,
+  ])
+
+
+  function formatAmount(value) {
+    if (
+      value === null ||
+      value === undefined ||
+      value === ''
+    ) {
+      return '-'
+    }
+
+    const numericValue = Number(value)
+
+    if (!Number.isFinite(numericValue)) {
+      return value
+    }
+
+    return numericValue.toLocaleString(
+      undefined,
+      {
+        minimumFractionDigits: 0,
+        maximumFractionDigits: 4,
+      }
+    )
+  }
+
+
   function handleChange(event) {
     const {
       name,
@@ -56,6 +117,10 @@ function InvoiceFormModal({
       ...current,
       [name]: value,
     }))
+
+    if (submitError) {
+      setSubmitError('')
+    }
   }
 
 
@@ -67,7 +132,7 @@ function InvoiceFormModal({
     }
 
     if (
-      mode === 'create' &&
+      isCreateMode &&
       !formData.shipment_part
     ) {
       setSubmitError(
@@ -121,7 +186,7 @@ function InvoiceFormModal({
         formData.submission_date,
     }
 
-    if (mode === 'create') {
+    if (isCreateMode) {
       payload.shipment_part =
         formData.shipment_part
     }
@@ -137,10 +202,6 @@ function InvoiceFormModal({
       setSubmitting(false)
     }
   }
-
-
-  const isCreateMode =
-    mode === 'create'
 
 
   return (
@@ -222,13 +283,23 @@ function InvoiceFormModal({
                       {shipmentPart.order_number}
                       {' | '}
                       {
+                        shipmentPart.payment_instrument_number ||
+                        shipmentPart.instrument_number ||
+                        '-'
+                      }
+                      {' | '}
+                      {
                         shipmentPart.reference_number ||
                         t('invoiceForm.noReference')
                       }
                       {' | '}
-                      {shipmentPart.amount}
+                      {formatAmount(
+                        shipmentPart.amount
+                      )}
                       {' '}
-                      {shipmentPart.purchase_currency}
+                      {
+                        shipmentPart.purchase_currency
+                      }
                     </option>
                   )
                 )}
@@ -239,6 +310,7 @@ function InvoiceFormModal({
                 value={[
                   invoice?.company_name,
                   invoice?.order_number,
+                  invoice?.payment_instrument_number,
                 ]
                   .filter(Boolean)
                   .join(' | ')}
@@ -246,6 +318,88 @@ function InvoiceFormModal({
               />
             )}
           </label>
+
+
+          {isCreateMode && selectedShipmentPart && (
+            <div className="invoice-purchase-summary">
+              <div>
+                <span>
+                  {t(
+                    'invoiceForm.paymentInstrument'
+                  )}
+                </span>
+
+                <strong>
+                  {
+                    selectedShipmentPart
+                      .payment_instrument_number ||
+                    selectedShipmentPart
+                      .instrument_number ||
+                    '-'
+                  }
+                </strong>
+              </div>
+
+              <div>
+                <span>
+                  {t(
+                    'invoiceForm.purchaseAmount'
+                  )}
+                </span>
+
+                <strong>
+                  {formatAmount(
+                    selectedShipmentPart
+                      .currency_purchase_amount ||
+                    selectedShipmentPart
+                      .purchase_amount ||
+                    selectedShipmentPart.amount
+                  )}
+                  {' '}
+                  {
+                    selectedShipmentPart
+                      .purchase_currency || ''
+                  }
+                </strong>
+              </div>
+
+              <div>
+                <span>
+                  {t(
+                    'invoiceForm.purchaseDate'
+                  )}
+                </span>
+
+                <strong>
+                  {
+                    selectedShipmentPart
+                      .purchase_date_dual ||
+                    selectedShipmentPart
+                      .purchase_date ||
+                    '-'
+                  }
+                </strong>
+              </div>
+
+              <div>
+                <span>
+                  {t(
+                    'invoiceForm.deadline'
+                  )}
+                </span>
+
+                <strong>
+                  {
+                    selectedShipmentPart
+                      .deadline_dual ||
+                    selectedShipmentPart
+                      .deadline ||
+                    '-'
+                  }
+                </strong>
+              </div>
+            </div>
+          )}
 
 
           <label>
@@ -278,6 +432,24 @@ function InvoiceFormModal({
               disabled={submitting}
             />
           </label>
+
+
+          <div className="invoice-live-total">
+            <span>
+              {t('invoiceForm.totalAmount')}
+            </span>
+
+            <strong>
+              {formatAmount(totalAmount)}
+              {' '}
+              {
+                selectedShipmentPart
+                  ?.purchase_currency ||
+                invoice?.order_currency ||
+                ''
+              }
+            </strong>
+          </div>
 
 
           <label>

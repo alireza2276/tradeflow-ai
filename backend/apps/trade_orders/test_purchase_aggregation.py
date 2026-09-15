@@ -45,9 +45,9 @@ class CurrencyPurchaseAggregationTests(TestCase):
         self.assertEqual(data[0]["purchase_sequence"], 1)
         self.assertEqual(data[1]["purchase_sequence"], 2)
         self.assertEqual(data[0]["registration_order_amount"], "150000.0000")
-        self.assertEqual(data[0]["order_total_purchased"], "150000.0000")
+        self.assertEqual(data[0]["order_total_purchased"], "145000.0000")
         self.assertEqual(data[1]["order_total_purchased"], "150000.0000")
-        self.assertEqual(data[0]["order_remaining_to_purchase"], "0.0000")
+        self.assertEqual(data[0]["order_remaining_to_purchase"], "5000.0000")
         self.assertEqual(data[1]["order_remaining_to_purchase"], "0.0000")
 
         self.assertEqual(first.deadline, date(2027, 1, 1))

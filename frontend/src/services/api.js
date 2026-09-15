@@ -558,9 +558,18 @@ export async function updatePaymentInstrument(
   return response.json()
 }
 
-export async function getCurrencyPurchases() {
+export async function getCurrencyPurchases(filters = {}) {
+  const params = new URLSearchParams()
+
+  Object.entries(filters).forEach(([key, value]) => {
+    if (value !== undefined && value !== null && String(value).trim() !== '') {
+      params.set(key, value)
+    }
+  })
+
+  const query = params.toString()
   const response = await apiFetch(
-    '/trade/currency-purchases/'
+    `/trade/currency-purchases/${query ? `?${query}` : ''}`
   )
 
   if (!response.ok) {
@@ -570,6 +579,32 @@ export async function getCurrencyPurchases() {
   }
 
   return response.json()
+}
+
+
+export async function exportCurrencyPurchasesXlsx(filters = {}) {
+  const params = new URLSearchParams()
+  Object.entries(filters).forEach(([key, value]) => {
+    if (value !== undefined && value !== null && String(value).trim() !== '') {
+      params.set(key, value)
+    }
+  })
+  const query = params.toString()
+  const response = await apiFetch(
+    `/trade/currency-purchases/export-xlsx/${query ? `?${query}` : ''}`
+  )
+  if (!response.ok) {
+    throw new Error('Failed to export currency purchases.')
+  }
+  const blob = await response.blob()
+  const url = URL.createObjectURL(blob)
+  const link = document.createElement('a')
+  link.href = url
+  link.download = 'currency-purchases.xlsx'
+  document.body.appendChild(link)
+  link.click()
+  link.remove()
+  URL.revokeObjectURL(url)
 }
 
 
@@ -696,9 +731,16 @@ export async function updateShipmentPart(
   return response.json()
 }
 
-export async function getInvoices() {
+export async function getInvoices(filters = {}) {
+  const params = new URLSearchParams()
+  Object.entries(filters).forEach(([key, value]) => {
+    if (value !== undefined && value !== null && String(value).trim() !== '') {
+      params.set(key, value)
+    }
+  })
+  const query = params.toString()
   const response = await apiFetch(
-    '/documents/invoices/'
+    `/documents/invoices/${query ? `?${query}` : ''}`
   )
 
   if (!response.ok) {
@@ -708,6 +750,32 @@ export async function getInvoices() {
   }
 
   return response.json()
+}
+
+
+export async function exportInvoicesXlsx(filters = {}) {
+  const params = new URLSearchParams()
+  Object.entries(filters).forEach(([key, value]) => {
+    if (value !== undefined && value !== null && String(value).trim() !== '') {
+      params.set(key, value)
+    }
+  })
+  const query = params.toString()
+  const response = await apiFetch(
+    `/documents/invoices/export-xlsx/${query ? `?${query}` : ''}`
+  )
+  if (!response.ok) {
+    throw new Error('Failed to export invoices.')
+  }
+  const blob = await response.blob()
+  const url = URL.createObjectURL(blob)
+  const link = document.createElement('a')
+  link.href = url
+  link.download = 'invoices.xlsx'
+  document.body.appendChild(link)
+  link.click()
+  link.remove()
+  URL.revokeObjectURL(url)
 }
 
 

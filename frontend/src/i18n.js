@@ -326,6 +326,36 @@ const resources = {
       },
 
       currencyPurchases: {
+        paymentInstrument: 'Payment Instrument No.',
+        advancedSearch: 'Advanced Search',
+        exportExcel: 'Export Excel',
+        nationalId: 'National ID',
+        amountMin: 'Minimum Purchase Amount',
+        amountMax: 'Maximum Purchase Amount',
+        purchaseDateFrom: 'Purchase Date From',
+        purchaseDateTo: 'Purchase Date To',
+        deadlineFrom: 'Deadline From',
+        deadlineTo: 'Deadline To',
+        status: 'Status',
+        allStatuses: 'All Statuses',
+        active: 'Active',
+        search: 'Search',
+        reset: 'Clear Filters',
+        paymentInstrument: 'شماره ابزار پرداخت',
+        advancedSearch: 'جستجوی پیشرفته',
+        exportExcel: 'خروجی Excel',
+        nationalId: 'شناسه ملی',
+        amountMin: 'حداقل مبلغ خرید',
+        amountMax: 'حداکثر مبلغ خرید',
+        purchaseDateFrom: 'تاریخ خرید از',
+        purchaseDateTo: 'تاریخ خرید تا',
+        deadlineFrom: 'سررسید از',
+        deadlineTo: 'سررسید تا',
+        status: 'وضعیت',
+        allStatuses: 'همه وضعیت‌ها',
+        active: 'فعال',
+        search: 'جستجو',
+        reset: 'پاک کردن فیلترها',
         title: 'خریدهای ارز',
         description:
           'مدیریت خریدهای ارز و سررسیدهای مرتبط با آن‌ها',
@@ -573,6 +603,46 @@ const resources = {
       },
 
       invoices: {
+        unifiedTitle: 'Shipping Documents & Invoices',
+        unifiedDescription: 'Unified entry and tracking of shipping documents and invoices linked to currency purchases.',
+        paymentInstrument: 'Payment Instrument No.',
+        shipmentReference: 'Shipping Document Reference',
+        purchaseDate: 'Currency Purchase Date',
+        deadline: 'Deadline',
+        advancedSearch: 'Advanced Search',
+        exportExcel: 'Export Excel',
+        addShippingDocument: 'Add Shipping Document',
+        shipmentApprovalNotice: 'The shipping document request was submitted. After Checker approval, you can complete its invoice.',
+        awaitingInvoice: '{{count}} approved shipping document(s) are awaiting an invoice.',
+        nationalId: 'National ID',
+        purchaseDateFrom: 'Purchase Date From',
+        purchaseDateTo: 'Purchase Date To',
+        deadlineFrom: 'Deadline From',
+        deadlineTo: 'Deadline To',
+        submissionDateFrom: 'Submission Date From',
+        submissionDateTo: 'Submission Date To',
+        search: 'Search',
+        reset: 'Clear Filters',
+        unifiedTitle: 'اسناد حمل و اینوویس',
+        unifiedDescription: 'ثبت و پیگیری یکپارچه اسناد حمل و اینوویس‌های مرتبط با خرید ارز.',
+        paymentInstrument: 'شماره ابزار پرداخت',
+        shipmentReference: 'شماره مرجع سند حمل',
+        purchaseDate: 'تاریخ خرید ارز',
+        deadline: 'تاریخ سررسید',
+        advancedSearch: 'جستجوی پیشرفته',
+        exportExcel: 'خروجی Excel',
+        addShippingDocument: 'ثبت سند حمل',
+        shipmentApprovalNotice: 'درخواست سند حمل ثبت شد. پس از تأیید Checker می‌توانید اینوویس آن را تکمیل کنید.',
+        awaitingInvoice: '{{count}} سند حمل تأییدشده در انتظار ثبت اینوویس است.',
+        nationalId: 'شناسه ملی',
+        purchaseDateFrom: 'تاریخ خرید ارز از',
+        purchaseDateTo: 'تاریخ خرید ارز تا',
+        deadlineFrom: 'سررسید از',
+        deadlineTo: 'سررسید تا',
+        submissionDateFrom: 'تاریخ ارائه از',
+        submissionDateTo: 'تاریخ ارائه تا',
+        search: 'جستجو',
+        reset: 'پاک کردن فیلترها',
         title:
           'فاکتورها',
 
@@ -691,6 +761,18 @@ const resources = {
 
         saveError:
           'ذخیره فاکتور انجام نشد.',
+
+        paymentInstrument:
+            'شماره ابزار پرداخت',
+
+        purchaseAmount:
+            'مبلغ خرید ارز',
+        purchaseDate:
+            'تاریخ خرید ارز',
+        deadline:
+            'تاریخ سررسید',
+        totalAmount:
+            'مبلغ کل',
       },
 
       paymentInstruments: {
@@ -1697,6 +1779,16 @@ const resources = {
 
         saveError:
           'Failed to save invoice.',
+        paymentInstrument:
+            'Payment Instrument No.',
+        purchaseAmount:
+            'Currency Purchase Amount',
+        purchaseDate:
+            'Currency Purchase Date',
+        deadline:
+            'Deadline',
+        totalAmount:
+            'Total Amount',
       },
 
       paymentInstruments: {

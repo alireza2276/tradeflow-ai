@@ -156,6 +156,13 @@ class CurrencyPurchaseSerializer(serializers.ModelSerializer):
         source="registration_order.company.name",
         read_only=True,
     )
+    payment_instrument_number = serializers.CharField(
+        source="registration_order.payment_instrument.instrument_number",
+        read_only=True,
+        allow_null=True,
+        default=None,
+    )
+
 
     purchase_date_dual = serializers.SerializerMethodField()
     deadline_dual = serializers.SerializerMethodField()
@@ -172,6 +179,7 @@ class CurrencyPurchaseSerializer(serializers.ModelSerializer):
             "registration_order",
             "order_number",
             "company_name",
+            "payment_instrument_number",
             "purchase_sequence",
             "amount",
             "registration_order_amount",
@@ -229,23 +237,22 @@ class CurrencyPurchaseSerializer(serializers.ModelSerializer):
                 .order_by("purchase_date", "created_at", "id")
             )
 
-            total_purchased = sum(
-                (purchase.amount for purchase in purchases),
-                Decimal("0"),
-            )
+            running_total = Decimal("0")
+            position_by_id = {}
 
-            sequence_by_id = {
-                purchase.pk: index
-                for index, purchase in enumerate(purchases, start=1)
-            }
+            for index, purchase in enumerate(purchases, start=1):
+                running_total += purchase.amount
+                position_by_id[purchase.pk] = {
+                    "sequence": index,
+                    "total_purchased": running_total,
+                    "remaining_to_purchase": max(
+                        order.registered_amount - running_total,
+                        Decimal("0"),
+                    ),
+                }
 
             self._order_purchase_summary_cache[order_id] = {
-                "total_purchased": total_purchased,
-                "remaining_to_purchase": max(
-                    order.registered_amount - total_purchased,
-                    Decimal("0"),
-                ),
-                "sequence_by_id": sequence_by_id,
+                "position_by_id": position_by_id,
             }
 
         return self._order_purchase_summary_cache[order_id]
@@ -255,18 +262,29 @@ class CurrencyPurchaseSerializer(serializers.ModelSerializer):
             return None
 
         summary = self._get_order_purchase_summary(obj)
-        return summary["sequence_by_id"].get(obj.pk)
+        position = summary["position_by_id"].get(obj.pk)
+        return position["sequence"] if position else None
 
     def get_registration_order_amount(self, obj):
         return format(obj.registration_order.registered_amount, "f")
 
     def get_order_total_purchased(self, obj):
         summary = self._get_order_purchase_summary(obj)
-        return format(summary["total_purchased"], "f")
+        position = summary["position_by_id"].get(obj.pk)
+
+        if position is None:
+            return format(Decimal("0"), "f")
+
+        return format(position["total_purchased"], "f")
 
     def get_order_remaining_to_purchase(self, obj):
         summary = self._get_order_purchase_summary(obj)
-        return format(summary["remaining_to_purchase"], "f")
+        position = summary["position_by_id"].get(obj.pk)
+
+        if position is None:
+            return format(obj.registration_order.registered_amount, "f")
+
+        return format(position["remaining_to_purchase"], "f")
 
     def get_purchase_date_dual(self, obj):
         return format_dual_date(
@@ -295,6 +313,38 @@ class ShipmentPartSerializer(serializers.ModelSerializer):
         read_only=True,
     )
 
+    currency_purchase_amount = serializers.DecimalField(
+        source="currency_purchase.amount",
+        max_digits=20,
+        decimal_places=4,
+        read_only=True,
+    )
+
+    payment_instrument_number = serializers.CharField(
+        source=(
+            "currency_purchase.registration_order."
+            "payment_instrument.instrument_number"
+        ),
+        read_only=True,
+        allow_null=True,
+        default=None,
+    )
+
+    purchase_date = serializers.DateField(
+        source="currency_purchase.purchase_date",
+        read_only=True,
+    )
+
+    purchase_date_dual = serializers.SerializerMethodField()
+
+    deadline = serializers.DateField(
+        source="currency_purchase.deadline",
+        read_only=True,
+    )
+
+    deadline_dual = serializers.SerializerMethodField()
+
+
     class Meta:
         model = ShipmentPart
 
@@ -303,7 +353,13 @@ class ShipmentPartSerializer(serializers.ModelSerializer):
             "currency_purchase",
             "order_number",
             "company_name",
+            "payment_instrument_number",
             "purchase_currency",
+            "currency_purchase_amount",
+            "purchase_date",
+            "purchase_date_dual",
+            "deadline",
+            "deadline_dual",
             "amount",
             "shipment_date",
             "received_date",
@@ -321,7 +377,25 @@ class ShipmentPartSerializer(serializers.ModelSerializer):
             "id",
             "order_number",
             "company_name",
+            "payment_instrument_number",
             "purchase_currency",
+            "currency_purchase_amount",
+            "purchase_date",
+            "purchase_date_dual",
+            "deadline",
+            "deadline_dual",
             "created_at",
             "updated_at",
+        )
+
+
+    def get_purchase_date_dual(self, obj):
+        return format_dual_date(
+            obj.currency_purchase.purchase_date,
+        )
+
+
+    def get_deadline_dual(self, obj):
+        return format_dual_date(
+            obj.currency_purchase.deadline,
         )

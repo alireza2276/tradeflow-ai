@@ -48,6 +48,13 @@ from apps.workflows.services.submission_service import (
 )
 
 import csv
+from decimal import Decimal, InvalidOperation
+from io import BytesIO
+
+from django.http import HttpResponse
+from openpyxl import Workbook
+from openpyxl.styles import Font, Alignment
+from openpyxl.utils import get_column_letter
 
 from django.http import StreamingHttpResponse
 from rest_framework.decorators import action
@@ -380,6 +387,7 @@ class CurrencyPurchaseViewSet(viewsets.ModelViewSet):
         .select_related(
             "registration_order",
             "registration_order__company",
+            "registration_order__payment_instrument",
         )
         .all()
     )
@@ -390,6 +398,7 @@ class CurrencyPurchaseViewSet(viewsets.ModelViewSet):
         "registration_order__order_number",
         "registration_order__company__name",
         "registration_order__company__national_id",
+        "registration_order__payment_instrument__instrument_number",
         "currency",
     )
 
@@ -399,6 +408,120 @@ class CurrencyPurchaseViewSet(viewsets.ModelViewSet):
         "amount",
         "created_at",
     )
+
+    def get_queryset(self):
+        queryset = super().get_queryset()
+        params = self.request.query_params
+
+        text_filters = (
+            ("company", "registration_order__company__name__icontains"),
+            ("national_id", "registration_order__company__national_id__icontains"),
+            ("order_number", "registration_order__order_number__icontains"),
+            ("instrument_number", "registration_order__payment_instrument__instrument_number__icontains"),
+        )
+        for param, lookup in text_filters:
+            value = params.get(param, "").strip()
+            if value:
+                queryset = queryset.filter(**{lookup: value})
+
+        currency = params.get("currency", "").strip().upper()
+        if currency:
+            queryset = queryset.filter(currency=currency)
+
+        date_filters = (
+            ("purchase_date_from", "purchase_date__gte"),
+            ("purchase_date_to", "purchase_date__lte"),
+            ("deadline_from", "deadline__gte"),
+            ("deadline_to", "deadline__lte"),
+        )
+        for param, lookup in date_filters:
+            value = params.get(param, "").strip()
+            if value:
+                queryset = queryset.filter(**{lookup: value})
+
+        status_value = params.get("status", "").strip().lower()
+        if status_value == "active":
+            queryset = queryset.filter(is_void=False)
+        elif status_value == "void":
+            queryset = queryset.filter(is_void=True)
+
+        for param, lookup in (
+            ("amount_min", "amount__gte"),
+            ("amount_max", "amount__lte"),
+        ):
+            value = params.get(param, "").strip()
+            if value:
+                try:
+                    queryset = queryset.filter(
+                        **{lookup: Decimal(value)}
+                    )
+                except InvalidOperation:
+                    raise DRFValidationError(
+                        {"detail": "Amount filters must be valid numbers."}
+                    )
+        return queryset
+
+    @action(detail=False, methods=["get"], url_path="export-xlsx")
+    def export_xlsx(self, request):
+        queryset = self.filter_queryset(self.get_queryset())
+        serializer = self.get_serializer(queryset, many=True)
+
+        workbook = Workbook()
+        worksheet = workbook.active
+        worksheet.title = "Currency Purchases"
+        headers = [
+            "Company", "National ID", "Registration Order",
+            "Payment Instrument", "Purchase Sequence",
+            "Registered Amount", "Purchase Amount", "Total Purchased",
+            "Remaining To Purchase", "Currency", "Purchase Date",
+            "Deadline", "Status", "Void Reason",
+        ]
+        worksheet.freeze_panes = "A2"
+        worksheet.auto_filter.ref = "A1:N1"
+
+        for column, header in enumerate(headers, 1):
+            cell = worksheet.cell(1, column, header)
+            cell.font = Font(bold=True)
+            cell.alignment = Alignment(horizontal="center")
+
+        objects = list(queryset)
+        serialized = self.get_serializer(objects, many=True).data
+        for row_index, (obj, item) in enumerate(zip(objects, serialized), 2):
+            values = [
+                item.get("company_name"),
+                obj.registration_order.company.national_id,
+                item.get("order_number"),
+                item.get("payment_instrument_number") or "",
+                item.get("purchase_sequence") or "",
+                float(item.get("registration_order_amount") or 0),
+                float(item.get("amount") or 0),
+                float(item.get("order_total_purchased") or 0),
+                float(item.get("order_remaining_to_purchase") or 0),
+                item.get("currency"),
+                item.get("purchase_date"),
+                item.get("deadline"),
+                "VOID" if item.get("is_void") else "ACTIVE",
+                item.get("void_reason") or "",
+            ]
+            for column, value in enumerate(values, 1):
+                worksheet.cell(row_index, column, value)
+
+        for column in range(1, len(headers) + 1):
+            width = max(
+                len(str(worksheet.cell(row, column).value or ""))
+                for row in range(1, worksheet.max_row + 1)
+            )
+            worksheet.column_dimensions[get_column_letter(column)].width = min(max(width + 2, 12), 35)
+
+        output = BytesIO()
+        workbook.save(output)
+        response = HttpResponse(
+            output.getvalue(),
+            content_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        )
+        response["Content-Disposition"] = 'attachment; filename="currency-purchases.xlsx"'
+        response["X-Content-Type-Options"] = "nosniff"
+        return response
 
     def destroy(self, request, *args, **kwargs):
         return Response(

@@ -1,3 +1,11 @@
+from io import BytesIO
+
+from django.http import HttpResponse
+from openpyxl import Workbook
+from openpyxl.styles import Font, Alignment
+from openpyxl.utils import get_column_letter
+from rest_framework.decorators import action
+
 from django.core.exceptions import ValidationError as DjangoValidationError
 from rest_framework import status, viewsets
 from rest_framework.exceptions import ValidationError as DRFValidationError
@@ -26,6 +34,7 @@ class InvoiceViewSet(viewsets.ModelViewSet):
             "shipment_part__currency_purchase",
             "shipment_part__currency_purchase__registration_order",
             "shipment_part__currency_purchase__registration_order__company",
+            "shipment_part__currency_purchase__registration_order__payment_instrument",
         )
         .all()
     )
@@ -37,6 +46,7 @@ class InvoiceViewSet(viewsets.ModelViewSet):
         "shipment_part__currency_purchase__registration_order__order_number",
         "shipment_part__currency_purchase__registration_order__company__name",
         "shipment_part__currency_purchase__registration_order__company__national_id",
+        "shipment_part__currency_purchase__registration_order__payment_instrument__instrument_number",
     )
 
     ordering_fields = (
@@ -44,6 +54,81 @@ class InvoiceViewSet(viewsets.ModelViewSet):
         "total_amount",
         "created_at",
     )
+
+    def get_queryset(self):
+        queryset = super().get_queryset()
+        params = self.request.query_params
+        text_filters = (
+            ("company", "shipment_part__currency_purchase__registration_order__company__name__icontains"),
+            ("national_id", "shipment_part__currency_purchase__registration_order__company__national_id__icontains"),
+            ("order_number", "shipment_part__currency_purchase__registration_order__order_number__icontains"),
+            ("instrument_number", "shipment_part__currency_purchase__registration_order__payment_instrument__instrument_number__icontains"),
+            ("reference_number", "shipment_part__reference_number__icontains"),
+        )
+        for param, lookup in text_filters:
+            value = params.get(param, "").strip()
+            if value:
+                queryset = queryset.filter(**{lookup: value})
+
+        for param, lookup in (
+            ("purchase_date_from", "shipment_part__currency_purchase__purchase_date__gte"),
+            ("purchase_date_to", "shipment_part__currency_purchase__purchase_date__lte"),
+            ("deadline_from", "shipment_part__currency_purchase__deadline__gte"),
+            ("deadline_to", "shipment_part__currency_purchase__deadline__lte"),
+            ("submission_date_from", "submission_date__gte"),
+            ("submission_date_to", "submission_date__lte"),
+        ):
+            value = params.get(param, "").strip()
+            if value:
+                queryset = queryset.filter(**{lookup: value})
+        return queryset
+
+    @action(detail=False, methods=["get"], url_path="export-xlsx")
+    def export_xlsx(self, request):
+        objects = list(self.filter_queryset(self.get_queryset()))
+        data = self.get_serializer(objects, many=True).data
+        workbook = Workbook()
+        worksheet = workbook.active
+        worksheet.title = "Invoices"
+        headers = [
+            "Company", "Registration Order", "Payment Instrument",
+            "Document Part", "Shipment Reference", "Purchase Date",
+            "Deadline", "Purchase Tranche Amount", "Total Purchased",
+            "FOB", "Freight", "Invoice Total", "Remaining Documents",
+            "Currency", "Submission Date",
+        ]
+        worksheet.freeze_panes = "A2"
+        worksheet.auto_filter.ref = "A1:O1"
+        for column, header in enumerate(headers, 1):
+            cell = worksheet.cell(1, column, header)
+            cell.font = Font(bold=True)
+            cell.alignment = Alignment(horizontal="center")
+        for row_index, item in enumerate(data, 2):
+            values = [
+                item.get("company_name"), item.get("order_number"),
+                item.get("payment_instrument_number") or "",
+                item.get("document_part_number"),
+                item.get("shipment_reference_number") or "",
+                item.get("purchase_date"), item.get("deadline"),
+                float(item.get("currency_purchase_amount") or 0),
+                float(item.get("order_total_purchased") or 0),
+                float(item.get("fob_amount") or 0),
+                float(item.get("freight_amount") or 0),
+                float(item.get("total_amount") or 0),
+                float(item.get("remaining_amount") or 0),
+                item.get("order_currency"), item.get("submission_date"),
+            ]
+            for column, value in enumerate(values, 1):
+                worksheet.cell(row_index, column, value)
+        for column in range(1, len(headers) + 1):
+            width = max(len(str(worksheet.cell(row, column).value or "")) for row in range(1, worksheet.max_row + 1))
+            worksheet.column_dimensions[get_column_letter(column)].width = min(max(width + 2, 12), 35)
+        output = BytesIO()
+        workbook.save(output)
+        response = HttpResponse(output.getvalue(), content_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+        response["Content-Disposition"] = 'attachment; filename="invoices.xlsx"'
+        response["X-Content-Type-Options"] = "nosniff"
+        return response
 
     def create(self, request, *args, **kwargs):
         serializer = self.get_serializer(
