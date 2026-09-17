@@ -19,6 +19,9 @@ ROLE_PERMISSIONS = {
         "trade_orders.view_paymentinstrument",
         "trade_orders.view_registrationorder",
         "trade_orders.view_shipmentpart",
+        "trade_orders.view_customsclearance",
+        "trade_orders.view_deadlineextension",
+        "trade_orders.view_regulatorydeadline",
     ),
 
     "TRADE_OPERATOR": (
@@ -39,6 +42,10 @@ ROLE_PERMISSIONS = {
         "trade_orders.add_shipmentpart",
         "trade_orders.change_shipmentpart",
         "trade_orders.void_shipmentpart",
+        "trade_orders.view_customsclearance",
+        "trade_orders.add_customsclearance",
+        "trade_orders.change_customsclearance",
+        "trade_orders.view_regulatorydeadline",
     ),
 
     "TRADE_SUPERVISOR": (
@@ -61,6 +68,13 @@ ROLE_PERMISSIONS = {
         "trade_orders.view_shipmentpart",
         "trade_orders.add_shipmentpart",
         "trade_orders.change_shipmentpart",
+        "trade_orders.view_customsclearance",
+        "trade_orders.add_customsclearance",
+        "trade_orders.change_customsclearance",
+        "trade_orders.view_deadlineextension",
+        "trade_orders.extend_currencypurchase_deadline",
+        "trade_orders.view_regulatorydeadline",
+        "trade_orders.view_regulatoryrule",
         "workflows.review_approvalrequest",
         "audit.view_sensitive_audit",
 
@@ -68,6 +82,10 @@ ROLE_PERMISSIONS = {
 
     "SECURITY_ADMIN": (
         "audit.view_sensitive_audit",
+        "trade_orders.view_regulatoryrule",
+        "trade_orders.add_regulatoryrule",
+        "trade_orders.change_regulatoryrule",
+        "trade_orders.view_regulatorydeadline",
     ),
 }
 

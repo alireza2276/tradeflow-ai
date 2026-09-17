@@ -26,8 +26,7 @@ from apps.trade_orders.services.deadline_service import (
     get_deadline_status,
 )
 from apps.trade_orders.services.purchase_service import (
-    create_currency_purchase,
-    create_currency_purchase,
+    create_currency_purchase as _create_currency_purchase,
     update_currency_purchase,
 )
 
@@ -49,6 +48,7 @@ from apps.trade_orders.models import (
     CurrencyPurchase,
     PaymentInstrument,
     RegistrationOrder,
+    RegulatoryRule,
     ShipmentPart,
 )
 
@@ -62,6 +62,50 @@ from apps.trade_orders.services.validation import (
     get_total_purchased_amount,
     get_total_shipment_amount,
 )
+
+# Test-only compatibility fixture for legacy service tests.
+# Production code remains fail-closed: a purchase still requires a payment
+# instrument and a verified RegulatoryRule. These synthetic rules exist only
+# inside the isolated Django test database.
+def create_currency_purchase(*, registration_order, amount, currency, purchase_date, remittance_date=None, funding_source_code=""):
+    activity_type = registration_order.activity_type or registration_order.company.company_type
+
+    PaymentInstrument.objects.get_or_create(
+        registration_order=registration_order,
+        defaults={
+            "instrument_number": f"TEST-PI-{registration_order.pk}",
+            "operation_type": PaymentInstrument.OperationType.REMITTANCE,
+            "issue_date": purchase_date,
+        },
+    )
+
+    # Synthetic durations preserve historical test expectations only. They are
+    # deliberately not seeded into production and are not regulatory claims.
+    test_months = 9 if activity_type == Company.CompanyType.PRODUCTION else 6
+    RegulatoryRule.objects.get_or_create(
+        code=f"TEST-{activity_type}-IMPORT-CLEARANCE",
+        defaults={
+            "operation_type": PaymentInstrument.OperationType.REMITTANCE,
+            "activity_type": activity_type,
+            "deadline_kind": RegulatoryRule.DeadlineKind.IMPORT_CLEARANCE,
+            "deadline_basis": RegulatoryRule.DeadlineBasis.PURCHASE_DATE,
+            "deadline_months": test_months,
+            "effective_from": date(2000, 1, 1),
+            "priority": 100,
+            "is_active": True,
+            "internal_reference": "TEST-ONLY-NOT-A-REGULATORY-SOURCE",
+        },
+    )
+
+    return _create_currency_purchase(
+        registration_order=registration_order,
+        amount=amount,
+        currency=currency,
+        purchase_date=purchase_date,
+        remittance_date=remittance_date,
+        funding_source_code=funding_source_code,
+    )
+
 
 class PaymentInstrumentServiceTests(TestCase):
 
@@ -635,45 +679,26 @@ class InvoiceServiceTests(TestCase):
 
 class DeadlineServiceTests(TestCase):
 
-    def test_commercial_company_gets_six_month_deadline(self):
+    def test_configured_month_deadline(self):
         deadline = calculate_purchase_deadline(
             purchase_date=date(2026, 8, 22),
-            company_type="COMMERCIAL",
+            configured_months=6,
         )
+        self.assertEqual(deadline, date(2027, 2, 22))
 
-        self.assertEqual(
-            deadline,
-            date(2027, 2, 22),
-        )
-
-    def test_production_company_gets_nine_month_deadline(self):
-        deadline = calculate_purchase_deadline(
-            purchase_date=date(2026, 8, 22),
-            company_type="PRODUCTION",
-        )
-
-        self.assertEqual(
-            deadline,
-            date(2027, 5, 22),
-        )
-
-    def test_invalid_company_type_is_rejected(self):
+    def test_missing_configured_deadline_is_rejected(self):
         with self.assertRaises(ValueError):
             calculate_purchase_deadline(
                 purchase_date=date(2026, 8, 22),
-                company_type="UNKNOWN",
+                configured_months=0,
             )
 
     def test_end_of_month_is_handled_correctly(self):
         deadline = calculate_purchase_deadline(
             purchase_date=date(2026, 8, 31),
-            company_type="COMMERCIAL",
+            configured_months=6,
         )
-
-        self.assertEqual(
-            deadline,
-            date(2027, 2, 28),
-        )
+        self.assertEqual(deadline, date(2027, 2, 28))
 
 class DeadlineStatusTests(TestCase):
 
@@ -1697,6 +1722,40 @@ class CurrencyPurchaseAPITests(AuthenticatedAPITestCase):
             order_number="PURCHASE-API-001",
             registered_amount=Decimal("100000"),
             currency="USD",
+            activity_type=Company.CompanyType.COMMERCIAL,
+        )
+
+        # Rule Engine V2 test prerequisites. These records exist only in the
+        # isolated test database and are not production regulatory data.
+        PaymentInstrument.objects.create(
+            registration_order=self.order,
+            instrument_number="PURCHASE-API-PI-001",
+            operation_type=PaymentInstrument.OperationType.REMITTANCE,
+            issue_date=date(2026, 1, 1),
+        )
+        RegulatoryRule.objects.create(
+            code="TEST-API-COMMERCIAL-IMPORT-CLEARANCE",
+            operation_type=PaymentInstrument.OperationType.REMITTANCE,
+            activity_type=Company.CompanyType.COMMERCIAL,
+            deadline_kind=RegulatoryRule.DeadlineKind.IMPORT_CLEARANCE,
+            deadline_basis=RegulatoryRule.DeadlineBasis.PURCHASE_DATE,
+            deadline_months=6,
+            effective_from=date(2000, 1, 1),
+            priority=100,
+            is_active=True,
+            internal_reference="TEST-ONLY-NOT-A-REGULATORY-SOURCE",
+        )
+        RegulatoryRule.objects.create(
+            code="TEST-API-PRODUCTION-IMPORT-CLEARANCE",
+            operation_type=PaymentInstrument.OperationType.REMITTANCE,
+            activity_type=Company.CompanyType.PRODUCTION,
+            deadline_kind=RegulatoryRule.DeadlineKind.IMPORT_CLEARANCE,
+            deadline_basis=RegulatoryRule.DeadlineBasis.PURCHASE_DATE,
+            deadline_months=9,
+            effective_from=date(2000, 1, 1),
+            priority=100,
+            is_active=True,
+            internal_reference="TEST-ONLY-NOT-A-REGULATORY-SOURCE",
         )
 
         review_permission = Permission.objects.get(
@@ -1943,7 +2002,7 @@ class CurrencyPurchaseAPITests(AuthenticatedAPITestCase):
             status.HTTP_400_BAD_REQUEST,
         )
 
-    def test_commercial_deadline_is_six_months(self):
+    def test_commercial_purchase_uses_configured_test_rule(self):
         response = self.client.post(
             self.url,
             {
@@ -1975,7 +2034,7 @@ class CurrencyPurchaseAPITests(AuthenticatedAPITestCase):
             date(2027, 2, 22),
         )
 
-    def test_production_deadline_is_nine_months(self):
+    def test_production_purchase_uses_configured_test_rule(self):
         production_company = Company.objects.create(
             name="Production API Company",
             national_id="8899001122",
@@ -1987,6 +2046,13 @@ class CurrencyPurchaseAPITests(AuthenticatedAPITestCase):
             order_number="PRODUCTION-API-001",
             registered_amount=Decimal("100000"),
             currency="USD",
+            activity_type=Company.CompanyType.PRODUCTION,
+        )
+        PaymentInstrument.objects.create(
+            registration_order=production_order,
+            instrument_number="PRODUCTION-API-PI-001",
+            operation_type=PaymentInstrument.OperationType.REMITTANCE,
+            issue_date=date(2026, 1, 1),
         )
 
         response = self.client.post(

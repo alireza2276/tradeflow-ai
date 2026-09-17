@@ -43,9 +43,14 @@ const resources = {
         currencyPurchases: 'خریدهای ارز',
         shipmentParts: 'اسناد حمل',
         invoices: 'صورتحساب‌ها',
+        customsClearances: 'ترخیص گمرکی',
         notifications: 'اعلان‌ها',
         approvals: 'درخواست‌های تأیید',
         auditTrail: 'ردپای حسابرسی',
+      },
+
+      customsClearances: {
+        title: 'ترخیص گمرکی', description: 'ثبت و پیگیری اظهار و ترخیص مرتبط با هر خرید ارز', add: 'ثبت ترخیص', edit: 'ویرایش ترخیص', empty: 'هنوز ترخیصی ثبت نشده است.', loadError: 'بارگذاری اطلاعات ترخیص انجام نشد.', saveError: 'ذخیره اطلاعات ترخیص انجام نشد.', company: 'شرکت', order: 'ثبت سفارش', purchase: 'خرید ارز', selectPurchase: 'خرید ارز را انتخاب کنید', declarationNumber: 'شماره اظهارنامه / پروانه', clearanceDate: 'تاریخ ترخیص', amount: 'مبلغ / ارزش', status: 'وضعیت', notes: 'یادداشت', actions: 'عملیات', statuses: { DECLARED: 'اظهار شده', PARTIAL: 'ترخیص جزئی', FINAL: 'ترخیص نهایی', REJECTED: 'رد / نامعتبر' },
       },
 
       auditTrail: {
@@ -1107,9 +1112,14 @@ const resources = {
         currencyPurchases: 'Currency Purchases',
         shipmentParts: 'Shipment Parts',
         invoices: 'Invoices',
+        customsClearances: 'Customs Clearance',
         notifications: 'Notifications',
         approvals: 'Approval Requests',
         auditTrail: 'Audit Trail',
+      },
+
+      customsClearances: {
+        title: 'Customs Clearance', description: 'Record and track customs declarations and clearance for each currency purchase.', add: 'Add clearance', edit: 'Edit clearance', empty: 'No customs clearance has been recorded yet.', loadError: 'Failed to load customs clearances.', saveError: 'Failed to save customs clearance.', company: 'Company', order: 'Registration order', purchase: 'Currency purchase', selectPurchase: 'Select a currency purchase', declarationNumber: 'Declaration / permit number', clearanceDate: 'Clearance date', amount: 'Amount / value', status: 'Status', notes: 'Notes', actions: 'Actions', statuses: { DECLARED: 'Declared', PARTIAL: 'Partially cleared', FINAL: 'Final clearance', REJECTED: 'Rejected / invalid' },
       },
 
       auditTrail: {

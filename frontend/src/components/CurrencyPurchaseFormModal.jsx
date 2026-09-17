@@ -27,6 +27,7 @@ function CurrencyPurchaseFormModal({
     currency: '',
     purchase_date: '',
     remittance_date: '',
+    funding_source_code: '',
     reason: '',
   })
 
@@ -66,7 +67,8 @@ function CurrencyPurchaseFormModal({
         purchase_date:
           purchase.purchase_date || '',
         remittance_date:
-          purchase.remittance_date || purchase.purchase_date || '',
+          purchase.remittance_date || '',
+        funding_source_code: purchase.funding_source_code || '',
         reason: '',
       })
     } else {
@@ -76,6 +78,7 @@ function CurrencyPurchaseFormModal({
         currency: '',
         purchase_date: '',
         remittance_date: '',
+        funding_source_code: '',
         reason: '',
       })
     }
@@ -159,11 +162,6 @@ function CurrencyPurchaseFormModal({
       return
     }
 
-    if (!formData.remittance_date) {
-      setError(t('currencyPurchaseForm.remittanceDateError'))
-      return
-    }
-
     if (!formData.currency) {
       setError(
         t(
@@ -194,8 +192,8 @@ function CurrencyPurchaseFormModal({
           amount: formData.amount,
           purchase_date:
             formData.purchase_date,
-          remittance_date:
-            formData.remittance_date,
+          remittance_date: formData.remittance_date || null,
+          funding_source_code: formData.funding_source_code.trim(),
           reason: formData.reason.trim(),
         })
       } else {
@@ -206,8 +204,8 @@ function CurrencyPurchaseFormModal({
           currency: formData.currency,
           purchase_date:
             formData.purchase_date,
-          remittance_date:
-            formData.remittance_date,
+          remittance_date: formData.remittance_date || null,
+          funding_source_code: formData.funding_source_code.trim(),
         })
       }
     } catch (err) {
@@ -386,9 +384,26 @@ function CurrencyPurchaseFormModal({
               value={formData.remittance_date}
               onChange={handleChange}
               disabled={submitting}
-              required
             />
             <small>{t('currencyPurchaseForm.remittanceDateHint')}</small>
+          </div>
+
+          <div className="form-group">
+            <label htmlFor="purchase-funding-source-code">
+              {t('currencyPurchaseForm.fundingSourceCode', { defaultValue: 'FX funding/source code' })}
+            </label>
+            <input
+              id="purchase-funding-source-code"
+              name="funding_source_code"
+              type="text"
+              value={formData.funding_source_code || ''}
+              onChange={handleChange}
+              maxLength={80}
+              autoComplete="off"
+            />
+            <small>
+              {t('currencyPurchaseForm.fundingSourceHelp', { defaultValue: 'Use only a verified internal code from the regulatory matrix.' })}
+            </small>
           </div>
 
           {isEditMode && (

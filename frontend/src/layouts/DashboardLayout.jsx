@@ -250,6 +250,20 @@ function DashboardLayout({
 
           {hasPermission(
             user,
+            'trade_orders.view_customsclearance'
+          ) && (
+            <NavLink
+              to="/customs-clearances"
+              className={({ isActive }) =>
+                isActive ? 'sidebar-link active' : 'sidebar-link'
+              }
+            >
+              {t('navigation.customsClearances')}
+            </NavLink>
+          )}
+
+          {hasPermission(
+            user,
             'documents.view_invoice'
           ) && (
             <NavLink

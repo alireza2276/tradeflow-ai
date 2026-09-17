@@ -6,6 +6,10 @@ from apps.trade_orders.models import (
     PaymentInstrument,
     RegistrationOrder,
     ShipmentPart,
+    RegulatoryRule,
+    DeadlineExtension,
+    CustomsClearance,
+    RegulatoryDeadline,
 )
 from apps.trade_orders.services.balance_service import (
     get_purchase_balance,
@@ -145,3 +149,43 @@ class ShipmentPartAdmin(admin.ModelAdmin):
         "created_at",
         "updated_at",
     )
+@admin.register(RegulatoryRule)
+class RegulatoryRuleAdmin(admin.ModelAdmin):
+    list_display = ("code", "operation_type", "activity_type", "goods_category_code", "funding_source_code", "deadline_kind", "deadline_basis", "effective_from", "effective_to", "priority", "is_active")
+    list_filter = ("operation_type", "activity_type", "goods_category_code", "funding_source_code", "deadline_kind", "deadline_basis", "is_active")
+    search_fields = ("code", "internal_reference", "notes")
+
+
+@admin.register(RegulatoryDeadline)
+class RegulatoryDeadlineAdmin(admin.ModelAdmin):
+    list_display = ("currency_purchase", "deadline_kind", "basis_date", "original_deadline", "effective_deadline", "applied_rule")
+    list_filter = ("deadline_kind",)
+    search_fields = ("currency_purchase__registration_order__order_number", "applied_rule__code")
+    readonly_fields = ("id", "currency_purchase", "deadline_kind", "applied_rule", "basis_date", "original_deadline", "effective_deadline", "created_at", "updated_at")
+
+    def has_add_permission(self, request):
+        return False
+    def has_change_permission(self, request, obj=None):
+        return False
+    def has_delete_permission(self, request, obj=None):
+        return False
+
+
+@admin.register(DeadlineExtension)
+class DeadlineExtensionAdmin(admin.ModelAdmin):
+    list_display = ("currency_purchase", "previous_deadline", "new_deadline", "approved_by", "created_at")
+    readonly_fields = ("id", "currency_purchase", "previous_deadline", "new_deadline", "reason", "reference", "approved_by", "created_at")
+
+    def has_add_permission(self, request):
+        return False
+    def has_change_permission(self, request, obj=None):
+        return False
+    def has_delete_permission(self, request, obj=None):
+        return False
+
+
+@admin.register(CustomsClearance)
+class CustomsClearanceAdmin(admin.ModelAdmin):
+    list_display = ("declaration_number", "currency_purchase", "amount", "status", "clearance_date")
+    list_filter = ("status",)
+    search_fields = ("declaration_number", "currency_purchase__registration_order__order_number")

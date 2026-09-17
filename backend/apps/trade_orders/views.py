@@ -15,6 +15,10 @@ from apps.trade_orders.models import (
     PaymentInstrument,
     RegistrationOrder,
     ShipmentPart,
+    RegulatoryRule,
+    DeadlineExtension,
+    CustomsClearance,
+    RegulatoryDeadline,
 )
 
 from apps.trade_orders.serializers import (
@@ -22,6 +26,10 @@ from apps.trade_orders.serializers import (
     PaymentInstrumentSerializer,
     RegistrationOrderSerializer,
     ShipmentPartSerializer,
+    RegulatoryRuleSerializer,
+    DeadlineExtensionSerializer,
+    CustomsClearanceSerializer,
+    RegulatoryDeadlineSerializer,
 )
 
 from apps.trade_orders.services.payment_instrument_service import (
@@ -47,6 +55,11 @@ from apps.workflows.services.submission_service import (
     submit_shipment_part_void,
 )
 
+
+from apps.trade_orders.services.compliance_service import (
+    extend_deadline,
+    refresh_obligation_status,
+)
 import csv
 from decimal import Decimal, InvalidOperation
 from io import BytesIO
@@ -290,6 +303,8 @@ class PaymentInstrumentViewSet(viewsets.ModelViewSet):
         payment_instrument = create_payment_instrument(
             registration_order=registration_order,
             instrument_number=instrument_number,
+            operation_type=serializer.validated_data.get("operation_type", PaymentInstrument.OperationType.REMITTANCE),
+            issue_date=serializer.validated_data.get("issue_date"),
         )
 
         output_serializer = self.get_serializer(
@@ -349,6 +364,8 @@ class PaymentInstrumentViewSet(viewsets.ModelViewSet):
                 update_payment_instrument(
                     payment_instrument=payment_instrument,
                     instrument_number=instrument_number,
+                    operation_type=data.get("operation_type", payment_instrument.operation_type),
+                    issue_date=data.get("issue_date", payment_instrument.issue_date),
                 )
             )
         except DjangoValidationError as exc:
@@ -604,6 +621,7 @@ class CurrencyPurchaseViewSet(viewsets.ModelViewSet):
                     currency=data["currency"],
                     purchase_date=data["purchase_date"],
                     remittance_date=data.get("remittance_date"),
+                    funding_source_code=data.get("funding_source_code", ""),
                     reason=request.data.get(
                         "reason",
                         "",
@@ -710,7 +728,11 @@ class CurrencyPurchaseViewSet(viewsets.ModelViewSet):
                     ),
                     remittance_date=data.get(
                         "remittance_date",
-                        purchase.remittance_date or purchase.purchase_date,
+                        purchase.remittance_date,
+                    ),
+                    funding_source_code=data.get(
+                        "funding_source_code",
+                        purchase.funding_source_code,
                     ),
                     reason=request.data.get(
                         "reason",
@@ -994,3 +1016,60 @@ class DashboardSummaryAPIView(APIView):
             summary,
             status=status.HTTP_200_OK,
         )
+
+class RegulatoryRuleViewSet(viewsets.ModelViewSet):
+    permission_classes = (TradeFlowModelPermissions,)
+    queryset = RegulatoryRule.objects.all()
+    serializer_class = RegulatoryRuleSerializer
+    filterset_fields = ("operation_type", "activity_type", "goods_category_code", "funding_source_code", "deadline_kind", "is_active")
+    ordering_fields = ("priority", "effective_from", "code")
+
+
+class RegulatoryDeadlineViewSet(viewsets.ReadOnlyModelViewSet):
+    permission_classes = (TradeFlowModelPermissions,)
+    queryset = RegulatoryDeadline.objects.select_related(
+        "currency_purchase", "applied_rule"
+    ).all()
+    serializer_class = RegulatoryDeadlineSerializer
+    filterset_fields = ("currency_purchase", "deadline_kind")
+    ordering_fields = ("effective_deadline", "original_deadline", "deadline_kind")
+
+
+class CustomsClearanceViewSet(viewsets.ModelViewSet):
+    permission_classes = (TradeFlowModelPermissions,)
+    queryset = CustomsClearance.objects.select_related("currency_purchase").all()
+    serializer_class = CustomsClearanceSerializer
+    filterset_fields = ("currency_purchase", "status")
+    search_fields = ("declaration_number",)
+
+    def perform_create(self, serializer):
+        obj = serializer.save()
+        refresh_obligation_status(obj.currency_purchase)
+
+    def perform_update(self, serializer):
+        obj = serializer.save()
+        refresh_obligation_status(obj.currency_purchase)
+
+
+class DeadlineExtensionViewSet(viewsets.ReadOnlyModelViewSet):
+    permission_classes = (TradeFlowModelPermissions,)
+    queryset = DeadlineExtension.objects.select_related("currency_purchase", "approved_by").all()
+    serializer_class = DeadlineExtensionSerializer
+    filterset_fields = ("currency_purchase",)
+
+    @action(detail=False, methods=["post"], url_path="apply")
+    def apply_extension(self, request):
+        purchase = get_object_or_404(CurrencyPurchase, pk=request.data.get("currency_purchase"))
+        if not request.user.has_perm("trade_orders.extend_currencypurchase_deadline"):
+            return Response({"detail": "You do not have permission to extend deadlines."}, status=status.HTTP_403_FORBIDDEN)
+        serializer = DeadlineExtensionSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        event = extend_deadline(
+            purchase=purchase,
+            new_deadline=serializer.validated_data["new_deadline"],
+            reason=serializer.validated_data["reason"],
+            reference=serializer.validated_data.get("reference", ""),
+            approved_by=request.user,
+            deadline_kind=request.data.get("deadline_kind", RegulatoryRule.DeadlineKind.IMPORT_CLEARANCE),
+        )
+        return Response(self.get_serializer(event).data, status=status.HTTP_201_CREATED)

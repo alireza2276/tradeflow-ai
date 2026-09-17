@@ -19,6 +19,10 @@ from apps.trade_orders.models import (
     PaymentInstrument,
     RegistrationOrder,
     ShipmentPart,
+    RegulatoryRule,
+    DeadlineExtension,
+    CustomsClearance,
+    RegulatoryDeadline,
 )
 from apps.workflows.models import ApprovalRequest
 
@@ -30,6 +34,10 @@ TRACKED_MODELS = (
     CurrencyPurchase,
     ShipmentPart,
     Invoice,
+    RegulatoryRule,
+    DeadlineExtension,
+    CustomsClearance,
+    RegulatoryDeadline,
 )
 
 

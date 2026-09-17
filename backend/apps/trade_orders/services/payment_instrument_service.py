@@ -12,6 +12,8 @@ def create_payment_instrument(
     *,
     registration_order: RegistrationOrder,
     instrument_number: str,
+    operation_type: str = PaymentInstrument.OperationType.REMITTANCE,
+    issue_date=None,
 ) -> PaymentInstrument:
 
     instrument_number = instrument_number.strip()
@@ -47,6 +49,8 @@ def create_payment_instrument(
             return PaymentInstrument.objects.create(
                 registration_order=locked_order,
                 instrument_number=instrument_number,
+                operation_type=operation_type,
+                issue_date=issue_date,
             )
 
     except IntegrityError:
@@ -72,6 +76,8 @@ def update_payment_instrument(
     *,
     payment_instrument: PaymentInstrument,
     instrument_number: str,
+    operation_type: str | None = None,
+    issue_date=None,
 ) -> PaymentInstrument:
 
     instrument_number = instrument_number.strip()
@@ -114,12 +120,18 @@ def update_payment_instrument(
         instrument_number
     )
 
+    if operation_type is not None:
+        locked_payment_instrument.operation_type = operation_type
+    locked_payment_instrument.issue_date = issue_date
+
     try:
         with transaction.atomic():
             locked_payment_instrument.save(
                 update_fields=(
                     "registration_order",
                     "instrument_number",
+                    "operation_type",
+                    "issue_date",
                     "updated_at",
                 )
             )

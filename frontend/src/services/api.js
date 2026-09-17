@@ -995,3 +995,23 @@ export async function getAuditEvents() {
 
   return response.json()
 }
+
+
+export async function getCustomsClearances(filters = {}) {
+  const params = new URLSearchParams()
+  Object.entries(filters).forEach(([key,value])=>{if(value!==undefined&&value!==null&&String(value).trim()!=='') params.set(key,value)})
+  const query=params.toString()
+  const response=await apiFetch(`/trade/customs-clearances/${query?`?${query}`:''}`)
+  if(!response.ok) throw new Error(await parseErrorResponse(response,'Failed to load customs clearances.'))
+  return response.json()
+}
+export async function createCustomsClearance(data) {
+  const response=await apiFetch('/trade/customs-clearances/',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(data)})
+  if(!response.ok) throw new Error(await parseErrorResponse(response,'Failed to create customs clearance.'))
+  return response.json()
+}
+export async function updateCustomsClearance(id,data) {
+  const response=await apiFetch(`/trade/customs-clearances/${id}/`,{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify(data)})
+  if(!response.ok) throw new Error(await parseErrorResponse(response,'Failed to update customs clearance.'))
+  return response.json()
+}

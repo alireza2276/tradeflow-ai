@@ -6,6 +6,10 @@ from apps.trade_orders.views import (
     CurrencyPurchaseViewSet,
     ShipmentPartViewSet,
     DashboardSummaryAPIView,
+    RegulatoryRuleViewSet,
+    DeadlineExtensionViewSet,
+    CustomsClearanceViewSet,
+    RegulatoryDeadlineViewSet,
 )
 
 from django.urls import path
@@ -36,6 +40,11 @@ router.register(
     ShipmentPartViewSet,
     basename="shipment-part",
 )
+
+router.register("regulatory-rules", RegulatoryRuleViewSet, basename="regulatory-rule")
+router.register("regulatory-deadlines", RegulatoryDeadlineViewSet, basename="regulatory-deadline")
+router.register("deadline-extensions", DeadlineExtensionViewSet, basename="deadline-extension")
+router.register("customs-clearances", CustomsClearanceViewSet, basename="customs-clearance")
 
 urlpatterns = router.urls
 

@@ -3,55 +3,23 @@ from datetime import date
 from dateutil.relativedelta import relativedelta
 
 
-DEFAULT_COMMERCIAL_DEADLINE_MONTHS = 6
-DEFAULT_PRODUCTION_DEADLINE_MONTHS = 9
-
-
-def resolve_shipment_deadline_months(
-    *,
-    activity_type: str,
-    configured_months: int | None,
-) -> int:
-    """Resolve the deadline configured for the registration order.
-
-    CBI Part One rules can vary by goods/source/table. Therefore the
-    registration-order value wins. The 6/9 month values are only a
-    backward-compatible baseline for records not yet classified.
-    """
-    if configured_months is not None:
-        if configured_months <= 0:
-            raise ValueError("Shipment deadline months must be positive.")
-        return configured_months
-
-    if activity_type == "COMMERCIAL":
-        return DEFAULT_COMMERCIAL_DEADLINE_MONTHS
-    if activity_type == "PRODUCTION":
-        return DEFAULT_PRODUCTION_DEADLINE_MONTHS
-    raise ValueError(f"Unsupported activity type: {activity_type}")
-
-
 def calculate_purchase_deadline(
     *,
-    remittance_date: date | None = None,
-    activity_type: str | None = None,
-    configured_months: int | None = None,
-    # Backward-compatible aliases for existing tests/callers.
+    configured_months: int,
+    basis_date: date | None = None,
     purchase_date: date | None = None,
-    company_type: str | None = None,
 ) -> date:
-    basis_date = remittance_date or purchase_date
-    resolved_activity_type = activity_type or company_type
+    """Legacy/configured-month helper.
 
-    if basis_date is None:
-        raise ValueError("Remittance date is required.")
-    if not resolved_activity_type:
-        raise ValueError("Activity type is required.")
-
-    months = resolve_shipment_deadline_months(
-        activity_type=resolved_activity_type,
-        configured_months=configured_months,
-    )
-    return basis_date + relativedelta(months=months)
+    New purchases use regulatory_rule_service. This helper deliberately has
+    no company-type defaults so 6/9 months cannot silently become law.
+    """
+    resolved_date = basis_date or purchase_date
+    if resolved_date is None:
+        raise ValueError("A deadline basis date is required.")
+    if configured_months is None or configured_months <= 0:
+        raise ValueError("A positive configured deadline is required.")
+    return resolved_date + relativedelta(months=configured_months)
 
 from enum import Enum
 

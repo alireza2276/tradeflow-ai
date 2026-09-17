@@ -4,7 +4,7 @@ from decimal import Decimal
 from django.test import TestCase
 
 from apps.companies.models import Company
-from apps.trade_orders.models import RegistrationOrder
+from apps.trade_orders.models import PaymentInstrument, RegistrationOrder, RegulatoryRule
 from apps.trade_orders.serializers import CurrencyPurchaseSerializer
 from apps.trade_orders.services.purchase_service import create_currency_purchase
 
@@ -21,6 +21,26 @@ class CurrencyPurchaseAggregationTests(TestCase):
             order_number="AGG-ORDER-001",
             registered_amount=Decimal("150000"),
             currency="EUR",
+            activity_type=Company.CompanyType.COMMERCIAL,
+        )
+        PaymentInstrument.objects.create(
+            registration_order=self.order,
+            instrument_number="AGG-PI-001",
+            operation_type=PaymentInstrument.OperationType.REMITTANCE,
+            issue_date=date(2026, 7, 1),
+        )
+        # Synthetic test-only rule. This is not seeded production regulation.
+        RegulatoryRule.objects.create(
+            code="TEST-AGG-IMPORT-CLEARANCE",
+            operation_type=PaymentInstrument.OperationType.REMITTANCE,
+            activity_type=Company.CompanyType.COMMERCIAL,
+            deadline_kind=RegulatoryRule.DeadlineKind.IMPORT_CLEARANCE,
+            deadline_basis=RegulatoryRule.DeadlineBasis.PURCHASE_DATE,
+            deadline_months=6,
+            effective_from=date(2000, 1, 1),
+            priority=100,
+            is_active=True,
+            internal_reference="TEST-ONLY-NOT-A-REGULATORY-SOURCE",
         )
 
     def test_multiple_purchases_are_aggregated_but_keep_own_deadlines(self):
@@ -37,10 +57,7 @@ class CurrencyPurchaseAggregationTests(TestCase):
             purchase_date=date(2026, 8, 1),
         )
 
-        data = CurrencyPurchaseSerializer(
-            [first, second],
-            many=True,
-        ).data
+        data = CurrencyPurchaseSerializer([first, second], many=True).data
 
         self.assertEqual(data[0]["purchase_sequence"], 1)
         self.assertEqual(data[1]["purchase_sequence"], 2)

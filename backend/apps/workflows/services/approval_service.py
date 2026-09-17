@@ -185,6 +185,8 @@ def _apply_currency_purchase_create(
     }
     if "remittance_date" in payload:
         create_expected_keys.add("remittance_date")
+    if "funding_source_code" in payload:
+        create_expected_keys.add("funding_source_code")
     _validate_exact_keys(
         payload,
         expected_keys=create_expected_keys,
@@ -221,10 +223,14 @@ def _apply_currency_purchase_create(
         payload["purchase_date"],
         field_name="purchase date",
     )
-    remittance_date = _parse_date(
-        payload.get("remittance_date", payload["purchase_date"]),
-        field_name="remittance date",
+    remittance_raw = payload.get("remittance_date")
+    remittance_date = (
+        _parse_date(remittance_raw, field_name="remittance date")
+        if remittance_raw else None
     )
+    funding_source_code = payload.get("funding_source_code", "")
+    if not isinstance(funding_source_code, str):
+        raise ValidationError("Invalid funding source code.")
 
     try:
         registration_order = (
@@ -243,6 +249,7 @@ def _apply_currency_purchase_create(
         currency=currency,
         purchase_date=purchase_date,
         remittance_date=remittance_date,
+        funding_source_code=funding_source_code,
     )
 
 
@@ -282,6 +289,10 @@ def _apply_currency_purchase_correction(
         before_expected_keys.add("remittance_date")
     if "remittance_date" in proposed:
         proposed_expected_keys.add("remittance_date")
+    if "funding_source_code" in before:
+        before_expected_keys.add("funding_source_code")
+    if "funding_source_code" in proposed:
+        proposed_expected_keys.add("funding_source_code")
 
     _validate_exact_keys(
         before,
@@ -315,10 +326,12 @@ def _apply_currency_purchase_correction(
         before["purchase_date"],
         field_name="before purchase date",
     )
-    before_remittance_date = _parse_date(
-        before.get("remittance_date", before["purchase_date"]),
-        field_name="before remittance date",
+    before_remittance_raw = before.get("remittance_date")
+    before_remittance_date = (
+        _parse_date(before_remittance_raw, field_name="before remittance date")
+        if before_remittance_raw else None
     )
+    before_funding_source_code = before.get("funding_source_code", "")
 
     proposed_amount = _parse_decimal(
         proposed["amount"],
@@ -336,10 +349,12 @@ def _apply_currency_purchase_correction(
         proposed["purchase_date"],
         field_name="proposed purchase date",
     )
-    proposed_remittance_date = _parse_date(
-        proposed.get("remittance_date", proposed["purchase_date"]),
-        field_name="proposed remittance date",
+    proposed_remittance_raw = proposed.get("remittance_date")
+    proposed_remittance_date = (
+        _parse_date(proposed_remittance_raw, field_name="proposed remittance date")
+        if proposed_remittance_raw else None
     )
+    proposed_funding_source_code = proposed.get("funding_source_code", "")
 
     try:
         purchase_reference = (
@@ -391,10 +406,8 @@ def _apply_currency_purchase_correction(
         or locked_purchase.currency != before_currency
         or locked_purchase.purchase_date
         != before_purchase_date
-        or (
-            locked_purchase.remittance_date
-            or locked_purchase.purchase_date
-        ) != before_remittance_date
+        or locked_purchase.remittance_date != before_remittance_date
+        or locked_purchase.funding_source_code != before_funding_source_code
     ):
         raise ValidationError(
             "The currency purchase no longer matches "
@@ -418,6 +431,7 @@ def _apply_currency_purchase_correction(
         amount=proposed_amount,
         purchase_date=proposed_purchase_date,
         remittance_date=proposed_remittance_date,
+        funding_source_code=proposed_funding_source_code,
     )
 
 def _apply_currency_purchase_void(

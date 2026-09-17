@@ -20,18 +20,13 @@ function RegistrationOrderFormModal({
     registered_amount: '',
     currency: '',
     activity_type: '',
-    shipment_deadline_months: '',
+    goods_category_code: '',
     is_active: true,
   })
 
-  const [loadingCompanies, setLoadingCompanies] =
-    useState(false)
-
-  const [submitting, setSubmitting] =
-    useState(false)
-
-  const [error, setError] =
-    useState('')
+  const [loadingCompanies, setLoadingCompanies] = useState(false)
+  const [submitting, setSubmitting] = useState(false)
+  const [error, setError] = useState('')
 
   const isEditMode = Boolean(order)
 
@@ -43,20 +38,13 @@ function RegistrationOrderFormModal({
 
     if (order) {
       setFormData({
-        company:
-          order.company || '',
-        order_number:
-          order.order_number || '',
-        registered_amount:
-          order.registered_amount || '',
-        currency:
-          order.currency || '',
-        activity_type:
-          order.activity_type || '',
-        shipment_deadline_months:
-          order.shipment_deadline_months || '',
-        is_active:
-          order.is_active ?? true,
+        company: order.company || '',
+        order_number: order.order_number || '',
+        registered_amount: order.registered_amount || '',
+        currency: order.currency || '',
+        activity_type: order.activity_type || '',
+        goods_category_code: order.goods_category_code || '',
+        is_active: order.is_active ?? true,
       })
     } else {
       setFormData({
@@ -65,7 +53,7 @@ function RegistrationOrderFormModal({
         registered_amount: '',
         currency: '',
         activity_type: '',
-        shipment_deadline_months: '',
+        goods_category_code: '',
         is_active: true,
       })
     }
@@ -76,9 +64,7 @@ function RegistrationOrderFormModal({
       try {
         setLoadingCompanies(true)
 
-        const data =
-          await getCompanies()
-
+        const data = await getCompanies()
         setCompanies(data)
       } catch (err) {
         setError(err.message)
@@ -101,10 +87,9 @@ function RegistrationOrderFormModal({
 
     setFormData((current) => ({
       ...current,
-      [name]:
-        type === 'checkbox'
-          ? checked
-          : value,
+      [name]: type === 'checkbox'
+        ? checked
+        : value,
     }))
   }
 
@@ -113,15 +98,11 @@ function RegistrationOrderFormModal({
     event.preventDefault()
 
     const normalizedCurrency =
-      formData.currency
-        .trim()
-        .toUpperCase()
+      formData.currency.trim().toUpperCase()
 
     if (!formData.company) {
       setError(
-        t(
-          'registrationOrderForm.selectCompanyError'
-        )
+        t('registrationOrderForm.selectCompanyError')
       )
       return
     }
@@ -132,39 +113,23 @@ function RegistrationOrderFormModal({
       !normalizedCurrency
     ) {
       setError(
-        t(
-          'registrationOrderForm.requiredFieldsError'
-        )
+        t('registrationOrderForm.requiredFieldsError')
       )
       return
     }
 
-    const amount =
-      Number(
-        formData.registered_amount
-      )
+    const amount = Number(formData.registered_amount)
 
-    if (
-      !Number.isFinite(amount) ||
-      amount <= 0
-    ) {
+    if (!Number.isFinite(amount) || amount <= 0) {
       setError(
-        t(
-          'registrationOrderForm.invalidAmountError'
-        )
+        t('registrationOrderForm.invalidAmountError')
       )
       return
     }
 
-    if (
-      !/^[A-Z]{3}$/.test(
-        normalizedCurrency
-      )
-    ) {
+    if (!/^[A-Z]{3}$/.test(normalizedCurrency)) {
       setError(
-        t(
-          'registrationOrderForm.invalidCurrencyError'
-        )
+        t('registrationOrderForm.invalidCurrencyError')
       )
       return
     }
@@ -177,8 +142,7 @@ function RegistrationOrderFormModal({
         ...formData,
         order_number:
           formData.order_number.trim(),
-        currency:
-          normalizedCurrency,
+        currency: normalizedCurrency,
       })
     } catch (err) {
       setError(err.message)
@@ -201,12 +165,8 @@ function RegistrationOrderFormModal({
             <h2>
               {
                 isEditMode
-                  ? t(
-                      'registrationOrderForm.editTitle'
-                    )
-                  : t(
-                      'registrationOrderForm.addTitle'
-                    )
+                  ? t('registrationOrderForm.editTitle')
+                  : t('registrationOrderForm.addTitle')
               }
             </h2>
 
@@ -236,105 +196,76 @@ function RegistrationOrderFormModal({
 
 
         <form
-          onSubmit={handleSubmit}
-          noValidate
+            onSubmit={handleSubmit}
+            noValidate
         >
           <div className="form-group">
             <label htmlFor="order-company">
-              {t(
-                'registrationOrderForm.company'
-              )}
+              {t('registrationOrderForm.company')}
             </label>
 
             <select
-              id="order-company"
-              name="company"
-              value={formData.company}
-              onChange={(event) => {
-                const companyId =
-                  event.target.value
-
-                const selectedCompany =
-                  companies.find(
-                    (item) =>
-                      String(item.id) ===
-                      String(companyId)
+                id="order-company"
+                name="company"
+                value={formData.company}
+                onChange={(event) => {
+                  const companyId = event.target.value
+                  const selectedCompany = companies.find(
+                    (item) => String(item.id) === String(companyId)
                   )
-
-                const activityType =
-                  selectedCompany?.company_type ||
-                  ''
-
-                setFormData(
-                  (current) => ({
+                  const activityType = selectedCompany?.company_type || ''
+                  setFormData((current) => ({
                     ...current,
-                    company:
-                      companyId,
-                    activity_type:
-                      activityType,
-                    shipment_deadline_months:
-                      activityType ===
-                      'PRODUCTION'
-                        ? '9'
-                        : activityType ===
-                          'COMMERCIAL'
-                          ? '6'
-                          : '',
-                  })
-                )
-              }}
-              disabled={
-                loadingCompanies ||
-                submitting
-              }
-              required
+                    company: companyId,
+                    activity_type: activityType,
+                  }))
+                }}
+                disabled={
+                    loadingCompanies ||
+                    submitting
+                }
+                required
             >
               <option value="">
                 {
                   loadingCompanies
-                    ? t(
-                        'registrationOrderForm.loadingCompanies'
+                      ? t(
+                          'registrationOrderForm.loadingCompanies'
                       )
-                    : t(
-                        'registrationOrderForm.selectCompany'
+                      : t(
+                          'registrationOrderForm.selectCompany'
                       )
                 }
               </option>
 
-              {companies.map(
-                (company) => (
+              {companies.map((company) => (
                   <option
-                    key={company.id}
-                    value={company.id}
+                      key={company.id}
+                      value={company.id}
                   >
                     {company.name}
                   </option>
-                )
-              )}
+              ))}
             </select>
           </div>
 
 
           <div className="form-group">
             <label htmlFor="order-number">
-              {t(
-                'registrationOrderForm.orderNumber'
-              )}
+              {t('registrationOrderForm.orderNumber')}
             </label>
 
             <input
-              id="order-number"
-              name="order_number"
-              type="text"
-              value={
-                formData.order_number
-              }
-              onChange={handleChange}
-              placeholder={t(
-                'registrationOrderForm.orderNumberPlaceholder'
-              )}
-              disabled={submitting}
-              required
+                id="order-number"
+                name="order_number"
+                type="text"
+                value={formData.order_number}
+                onChange={handleChange}
+                placeholder={t(
+                    'registrationOrderForm.orderNumberPlaceholder'
+                )}
+                disabled={submitting}
+                required
             />
           </div>
 
@@ -342,195 +273,149 @@ function RegistrationOrderFormModal({
           <div className="form-group">
             <label htmlFor="registered-amount">
               {t(
-                'registrationOrderForm.registeredAmount'
+                  'registrationOrderForm.registeredAmount'
               )}
             </label>
 
             <input
-              id="registered-amount"
-              name="registered_amount"
-              type="number"
-              min="0.01"
-              step="0.01"
-              value={
-                formData.registered_amount
-              }
-              onChange={handleChange}
-              placeholder={t(
-                'registrationOrderForm.registeredAmountPlaceholder'
-              )}
-              disabled={submitting}
-              required
+                id="registered-amount"
+                name="registered_amount"
+                type="number"
+                min="0.01"
+                step="0.01"
+                value={formData.registered_amount}
+                onChange={handleChange}
+                placeholder={t(
+                    'registrationOrderForm.registeredAmountPlaceholder'
+                )}
+                disabled={submitting}
+                required
             />
           </div>
 
 
           <div className="form-group">
             <label htmlFor="order-currency">
-              {t(
-                'registrationOrderForm.currency'
-              )}
+              {t('registrationOrderForm.currency')}
             </label>
 
             <input
-              id="order-currency"
-              name="currency"
-              type="text"
-              maxLength="3"
-              value={formData.currency}
-              onChange={(event) => {
-                const value =
-                  event.target.value
-                    .toUpperCase()
+                id="order-currency"
+                name="currency"
+                type="text"
+                maxLength="3"
+                value={formData.currency}
+                onChange={(event) => {
+                  const value =
+                      event.target.value.toUpperCase()
 
-                setFormData(
-                  (current) => ({
+                  setFormData((current) => ({
                     ...current,
                     currency: value,
-                  })
-                )
-              }}
-              placeholder={t(
-                'registrationOrderForm.currencyPlaceholder'
-              )}
-              disabled={submitting}
-              required
+                  }))
+                }}
+                placeholder={t(
+                    'registrationOrderForm.currencyPlaceholder'
+                )}
+                disabled={submitting}
+                required
             />
           </div>
 
 
           <div className="form-group">
             <label htmlFor="order-activity-type">
-              {t(
-                'registrationOrderForm.activityType'
-              )}
+              {t('registrationOrderForm.activityType')}
             </label>
-
             <select
               id="order-activity-type"
               name="activity_type"
-              value={
-                formData.activity_type
-              }
+              value={formData.activity_type}
               onChange={handleChange}
               disabled={submitting}
               required
             >
-              <option value="">
-                {t(
-                  'registrationOrderForm.selectActivityType'
-                )}
-              </option>
-
-              <option value="COMMERCIAL">
-                {t(
-                  'registrationOrderForm.commercial'
-                )}
-              </option>
-
-              <option value="PRODUCTION">
-                {t(
-                  'registrationOrderForm.production'
-                )}
-              </option>
+              <option value="">{t('registrationOrderForm.selectActivityType')}</option>
+              <option value="COMMERCIAL">{t('registrationOrderForm.commercial')}</option>
+              <option value="PRODUCTION">{t('registrationOrderForm.production')}</option>
             </select>
           </div>
 
-
-          <div className="form-group">
-            <label htmlFor="shipment-deadline-months">
-              {t(
-                'registrationOrderForm.shipmentDeadlineMonths'
-              )}
+                    <div className="form-group">
+            <label htmlFor="order-goods-category-code">
+              {t('registrationOrderForm.goodsCategoryCode', { defaultValue: 'Regulatory goods category code' })}
             </label>
-
             <input
-              id="shipment-deadline-months"
-              name="shipment_deadline_months"
-              type="number"
-              min="1"
-              max="60"
-              value={
-                formData.shipment_deadline_months
-              }
+              id="order-goods-category-code"
+              name="goods_category_code"
+              type="text"
+              value={formData.goods_category_code || ''}
               onChange={handleChange}
-              disabled={submitting}
-              required
+              maxLength={80}
+              autoComplete="off"
             />
-
             <small>
-              {t(
-                'registrationOrderForm.deadlineRuleHint'
-              )}
+              {t('registrationOrderForm.goodsCategoryHelp', { defaultValue: 'Use only a verified internal code from the regulatory matrix. Leave blank if not classified.' })}
             </small>
           </div>
 
-
-          <div className="form-group">
+<div className="form-group">
             <label className="form-checkbox">
               <input
-                name="is_active"
-                type="checkbox"
-                checked={
-                  formData.is_active
-                }
-                onChange={handleChange}
-                disabled={submitting}
+                  name="is_active"
+                  type="checkbox"
+                  checked={formData.is_active}
+                  onChange={handleChange}
+                  disabled={submitting}
               />
 
               <span>
-                {t(
-                  'registrationOrderForm.activeOrder'
-                )}
+                {t('registrationOrderForm.activeOrder')}
               </span>
             </label>
           </div>
 
 
           {error && (
-            <div className="form-error">
-              {error}
-            </div>
+              <div className="form-error">
+                {error}
+              </div>
           )}
 
 
           <div className="modal-actions">
             <button
-              type="button"
-              className="secondary-button"
-              onClick={onClose}
-              disabled={submitting}
+                type="button"
+                className="secondary-button"
+                onClick={onClose}
+                disabled={submitting}
             >
               {t('common.cancel')}
             </button>
 
             <button
-              type="submit"
-              className="primary-button"
-              disabled={
-                submitting ||
-                loadingCompanies
-              }
+                type="submit"
+                className="primary-button"
+                disabled={
+                    submitting ||
+                    loadingCompanies
+                }
             >
               {
                 submitting
-                  ? (
-                      isEditMode
-                        ? t(
-                            'registrationOrderForm.saving'
-                          )
-                        : t(
-                            'registrationOrderForm.creating'
-                          )
+                    ? (
+                        isEditMode
+                            ? t('registrationOrderForm.saving')
+                            : t('registrationOrderForm.creating')
                     )
-                  : (
-                      isEditMode
-                        ? t(
-                            'registrationOrderForm.saveChanges'
-                          )
-                        : t(
-                            'registrationOrderForm.createOrder'
-                          )
+                    : (
+                        isEditMode
+                            ? t(
+                                'registrationOrderForm.saveChanges'
+                            )
+                            : t(
+                                'registrationOrderForm.createOrder'
+                            )
                     )
               }
             </button>

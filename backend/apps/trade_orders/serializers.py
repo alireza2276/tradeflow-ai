@@ -10,6 +10,10 @@ from apps.trade_orders.models import (
     PaymentInstrument,
     RegistrationOrder,
     ShipmentPart,
+    RegulatoryRule,
+    DeadlineExtension,
+    CustomsClearance,
+    RegulatoryDeadline,
 )
 
 class RegistrationOrderSerializer(serializers.ModelSerializer):
@@ -31,6 +35,7 @@ class RegistrationOrderSerializer(serializers.ModelSerializer):
             "activity_type",
             "shipment_deadline_months",
             "regulatory_rule_reference",
+            "goods_category_code",
             "is_active",
             "created_at",
             "updated_at",
@@ -39,6 +44,8 @@ class RegistrationOrderSerializer(serializers.ModelSerializer):
         read_only_fields = (
             "id",
             "company_name",
+            "shipment_deadline_months",
+            "regulatory_rule_reference",
             "created_at",
             "updated_at",
         )
@@ -120,11 +127,16 @@ class RegistrationOrderSerializer(serializers.ModelSerializer):
             "regulatory_rule_reference",
             instance.regulatory_rule_reference,
         )
+        goods_category_code = attrs.get(
+            "goods_category_code",
+            instance.goods_category_code,
+        )
 
         if has_purchase_history and (
             activity_type != instance.activity_type
             or deadline_months != instance.shipment_deadline_months
             or rule_reference != instance.regulatory_rule_reference
+            or goods_category_code != instance.goods_category_code
         ):
             raise serializers.ValidationError(
                 {
@@ -173,6 +185,8 @@ class PaymentInstrumentSerializer(serializers.ModelSerializer):
             "order_number",
             "company_name",
             "instrument_number",
+            "operation_type",
+            "issue_date",
             "created_at",
             "updated_at",
         )
@@ -184,6 +198,15 @@ class PaymentInstrumentSerializer(serializers.ModelSerializer):
             "created_at",
             "updated_at",
         )
+
+    def validate(self, attrs):
+        instance = self.instance
+        if instance is not None and instance.registration_order.currency_purchases.exists():
+            new_type = attrs.get("operation_type", instance.operation_type)
+            new_date = attrs.get("issue_date", instance.issue_date)
+            if new_type != instance.operation_type or new_date != instance.issue_date:
+                raise serializers.ValidationError("Operation type/date cannot be changed after currency purchases exist. Use a controlled correction workflow.")
+        return attrs
 
 class CurrencyPurchaseSerializer(serializers.ModelSerializer):
     order_number = serializers.CharField(
@@ -240,6 +263,7 @@ class CurrencyPurchaseSerializer(serializers.ModelSerializer):
             "purchase_date",
             "purchase_date_dual",
             "remittance_date",
+            "funding_source_code",
             "original_deadline",
             "deadline",
             "deadline_dual",
@@ -248,6 +272,9 @@ class CurrencyPurchaseSerializer(serializers.ModelSerializer):
             "regulatory_rule_reference",
             "shipment_deadline_months",
             "activity_type",
+            "applied_rule",
+            "obligation_status",
+            "obligation_settled_at",
             "is_void",
             "voided_at",
             "voided_by",
@@ -271,6 +298,9 @@ class CurrencyPurchaseSerializer(serializers.ModelSerializer):
             "regulatory_rule_reference",
             "shipment_deadline_months",
             "activity_type",
+            "applied_rule",
+            "obligation_status",
+            "obligation_settled_at",
             "purchase_date_dual",
             "deadline_dual",
             "is_void",
@@ -463,3 +493,42 @@ class ShipmentPartSerializer(serializers.ModelSerializer):
         return format_dual_date(
             obj.currency_purchase.deadline,
         )
+
+class RegulatoryDeadlineSerializer(serializers.ModelSerializer):
+    rule_code = serializers.CharField(source="applied_rule.code", read_only=True, allow_null=True)
+
+    class Meta:
+        model = RegulatoryDeadline
+        fields = (
+            "id", "currency_purchase", "deadline_kind", "rule_code",
+            "basis_date", "original_deadline", "effective_deadline",
+            "created_at", "updated_at",
+        )
+        read_only_fields = fields
+
+
+class RegulatoryRuleSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = RegulatoryRule
+        fields = "__all__"
+        read_only_fields = ("id", "created_at", "updated_at")
+
+
+class DeadlineExtensionSerializer(serializers.ModelSerializer):
+    approved_by_name = serializers.CharField(source="approved_by.get_full_name", read_only=True)
+    class Meta:
+        model = DeadlineExtension
+        fields = ("id", "currency_purchase", "regulatory_deadline", "previous_deadline", "new_deadline", "reason", "reference", "approved_by", "approved_by_name", "created_at")
+        read_only_fields = ("id", "previous_deadline", "approved_by", "approved_by_name", "created_at")
+
+
+class CustomsClearanceSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = CustomsClearance
+        fields = ("id", "currency_purchase", "declaration_number", "clearance_date", "amount", "status", "notes", "created_at", "updated_at")
+        read_only_fields = ("id", "created_at", "updated_at")
+
+    def validate_amount(self, value):
+        if value <= Decimal("0"):
+            raise serializers.ValidationError("Clearance amount must be greater than zero.")
+        return value

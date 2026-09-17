@@ -36,6 +36,7 @@ import Invoices from './pages/Invoices'
 
 import Notifications from './pages/Notifications'
 import AuditTrail from './pages/AuditTrail'
+import CustomsClearances from './pages/CustomsClearances'
 
 
 function App() {
@@ -207,6 +208,14 @@ function App() {
                         />
                       }
                     />
+                  </Route>
+
+                  <Route
+                    element={
+                      <PermissionRoute user={user} permission="trade_orders.view_customsclearance" />
+                    }
+                  >
+                    <Route path="/customs-clearances" element={<CustomsClearances user={user} />} />
                   </Route>
 
                   <Route

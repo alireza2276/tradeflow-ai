@@ -2,6 +2,7 @@ from apps.notifications.services.notification_service import (
     send_notification,
 )
 from apps.trade_orders.models import CurrencyPurchase
+from apps.trade_orders.services.compliance_service import refresh_obligation_status
 
 
 def process_deadline_notifications(*, today=None):
@@ -14,6 +15,7 @@ def process_deadline_notifications(*, today=None):
     sent_count = 0
 
     for purchase in purchases:
+        purchase = refresh_obligation_status(purchase)
         sent = send_notification(
             purchase=purchase,
             today=today,

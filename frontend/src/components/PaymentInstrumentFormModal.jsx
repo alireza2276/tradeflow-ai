@@ -20,6 +20,10 @@ function PaymentInstrumentFormModal({
         paymentInstrument?.registration_order || '',
       instrument_number:
         paymentInstrument?.instrument_number || '',
+      operation_type:
+        paymentInstrument?.operation_type || 'REMITTANCE',
+      issue_date:
+        paymentInstrument?.issue_date || '',
     })
   )
 
@@ -82,10 +86,14 @@ function PaymentInstrumentFormModal({
                 formData.registration_order,
               instrument_number:
                 formData.instrument_number.trim(),
+              operation_type: formData.operation_type,
+              issue_date: formData.issue_date || null,
             }
           : {
               instrument_number:
                 formData.instrument_number.trim(),
+              operation_type: formData.operation_type,
+              issue_date: formData.issue_date || null,
             }
 
       await onSubmit(payload)
@@ -242,6 +250,25 @@ function PaymentInstrumentFormModal({
             />
           </div>
 
+
+          <div className="form-group">
+            <label htmlFor="operation_type">
+              {t('paymentInstrumentForm.operationType', { defaultValue: 'نوع عملیات ارزی' })}
+            </label>
+            <select id="operation_type" name="operation_type" value={formData.operation_type} onChange={handleChange} disabled={saving} required>
+              <option value="REMITTANCE">{t('paymentInstrumentForm.remittance', { defaultValue: 'حواله ارزی' })}</option>
+              <option value="DOCUMENTARY_COLLECTION">{t('paymentInstrumentForm.documentaryCollection', { defaultValue: 'برات / وصولی اسنادی' })}</option>
+              <option value="LETTER_OF_CREDIT">{t('paymentInstrumentForm.letterOfCredit', { defaultValue: 'اعتبار اسنادی' })}</option>
+              <option value="OTHER">{t('paymentInstrumentForm.otherOperation', { defaultValue: 'سایر' })}</option>
+            </select>
+          </div>
+
+          <div className="form-group">
+            <label htmlFor="issue_date">
+              {t('paymentInstrumentForm.issueDate', { defaultValue: 'تاریخ صدور / گشایش ابزار' })}
+            </label>
+            <input id="issue_date" name="issue_date" type="date" value={formData.issue_date} onChange={handleChange} disabled={saving} />
+          </div>
 
           {error && (
             <div
