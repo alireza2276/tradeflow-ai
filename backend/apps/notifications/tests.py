@@ -14,10 +14,61 @@ from apps.notifications.services.notification_service import (
     send_notification,
     should_send_notification,
 )
-from apps.trade_orders.models import RegistrationOrder
-from apps.trade_orders.services.purchase_service import (
-    create_currency_purchase,
+from apps.trade_orders.models import (
+    PaymentInstrument,
+    RegistrationOrder,
+    RegulatoryRule,
 )
+from apps.trade_orders.services.purchase_service import (
+    create_currency_purchase as _create_currency_purchase,
+)
+# Test-only compatibility fixture for Notification tests.
+# Production code remains fail-closed. These objects live only in Django's
+# isolated test database and are NOT regulatory claims or production seed data.
+def create_currency_purchase(*, registration_order, amount, currency, purchase_date, remittance_date=None, funding_source_code=""):
+    activity_type = registration_order.activity_type or registration_order.company.company_type
+
+    PaymentInstrument.objects.get_or_create(
+        registration_order=registration_order,
+        defaults={
+            "instrument_number": f"TEST-NOTIF-PI-{registration_order.pk}",
+            "operation_type": PaymentInstrument.OperationType.REMITTANCE,
+            "issue_date": purchase_date,
+        },
+    )
+
+    # Six months preserves the historical expectations of these notification
+    # tests only. It is deliberately not a statement of current regulation.
+    RegulatoryRule.objects.get_or_create(
+        code=f"TEST-NOTIF-{activity_type}-IMPORT-CLEARANCE",
+        defaults={
+            "operation_type": PaymentInstrument.OperationType.REMITTANCE,
+            "activity_type": activity_type,
+            "goods_category_code": "",
+            "funding_source_code": "",
+            "deadline_kind": RegulatoryRule.DeadlineKind.IMPORT_CLEARANCE,
+            "deadline_basis": RegulatoryRule.DeadlineBasis.PURCHASE_DATE,
+            "deadline_months": 6,
+            "deadline_days": None,
+            "effective_from": date(2000, 1, 1),
+            "effective_to": None,
+            "priority": 999,
+            "is_active": True,
+            "internal_reference": "TEST-ONLY-NOT-A-REGULATORY-SOURCE",
+            "notes": "Notification test fixture only",
+        },
+    )
+
+    return _create_currency_purchase(
+        registration_order=registration_order,
+        amount=amount,
+        currency=currency,
+        purchase_date=purchase_date,
+        remittance_date=remittance_date,
+        funding_source_code=funding_source_code,
+    )
+
+
 from apps.notifications.services.message_service import (
     get_notification_message,
 )
@@ -81,7 +132,7 @@ class NotificationServiceTests(TestCase):
 
         self.assertFalse(result)
 
-    def test_completed_purchase_should_not_send_notification(self):
+    def test_completed_shipment_without_settlement_should_still_send_notification(self):
         create_shipment_part(
             currency_purchase=self.purchase,
             amount=Decimal("40000"),
@@ -92,7 +143,7 @@ class NotificationServiceTests(TestCase):
             today=self.purchase.deadline,
         )
 
-        self.assertFalse(result)
+        self.assertTrue(result)
 
     def test_normal_period_should_not_send_notification(self):
         result = should_send_notification(
@@ -194,7 +245,7 @@ class NotificationServiceTests(TestCase):
         )
 
         self.assertIn(
-            "مهلت ارائه اسناد: 1405/12/03 (2027/02/22)",
+            "سررسید مؤثر: 1405/12/03 (2027/02/22)",
             message,
         )
 

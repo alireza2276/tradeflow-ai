@@ -20,7 +20,7 @@ class NotificationLogViewSet(viewsets.ReadOnlyModelViewSet):
             "currency_purchase__registration_order__company",
         )
         .all()
-        .order_by("-sent_at")
+        .order_by("-created_at")
     )
 
     serializer_class = NotificationLogSerializer
@@ -33,6 +33,6 @@ class NotificationLogViewSet(viewsets.ReadOnlyModelViewSet):
     )
 
     ordering_fields = (
-        "sent_at",
+        "created_at",
         "notification_type",
     )

@@ -200,3 +200,9 @@ REST_FRAMEWORK = {
     "rest_framework.filters.OrderingFilter",
 ),
 }
+
+
+# Notification / SMS
+# Safe defaults: no real SMS is sent.
+SMS_ENABLED = env.bool("SMS_ENABLED", default=False)
+SMS_PROVIDER = env("SMS_PROVIDER", default="MOCK")
