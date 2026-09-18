@@ -8,6 +8,10 @@ import {
   getCurrencyPurchases,
   updateCurrencyPurchase,
   voidCurrencyPurchase,
+  settleCurrencyPurchaseObligation,
+  reopenCurrencyPurchaseObligation,
+  applyDeadlineExtension,
+  getDeadlineExtensions,
 } from '../services/api'
 
 function formatAmount(value) {
@@ -35,6 +39,18 @@ function CurrencyPurchases({ user }) {
   const [voidReason, setVoidReason] = useState('')
   const [voidSubmitting, setVoidSubmitting] = useState(false)
   const [voidError, setVoidError] = useState('')
+  const [compliancePurchase, setCompliancePurchase] = useState(null)
+  const [complianceMode, setComplianceMode] = useState('')
+  const [complianceReason, setComplianceReason] = useState('')
+  const [complianceReference, setComplianceReference] = useState('')
+  const [extensionDate, setExtensionDate] = useState('')
+  const [deadlineKind, setDeadlineKind] = useState('IMPORT_CLEARANCE')
+  const [complianceError, setComplianceError] = useState('')
+  const [complianceSubmitting, setComplianceSubmitting] = useState(false)
+  const [historyPurchase, setHistoryPurchase] = useState(null)
+  const [deadlineHistory, setDeadlineHistory] = useState([])
+  const [historyLoading, setHistoryLoading] = useState(false)
+  const [historyError, setHistoryError] = useState('')
 
   async function loadPurchases(activeFilters = appliedFilters) {
     try {
@@ -92,9 +108,67 @@ function CurrencyPurchases({ user }) {
     } finally { setVoidSubmitting(false) }
   }
 
+  function openCompliance(purchase, mode) {
+    setCompliancePurchase(purchase)
+    setComplianceMode(mode)
+    setComplianceReason('')
+    setComplianceReference('')
+    setExtensionDate('')
+    setDeadlineKind('IMPORT_CLEARANCE')
+    setComplianceError('')
+  }
+
+  async function submitCompliance(event) {
+    event.preventDefault()
+    if (!complianceReason.trim()) {
+      setComplianceError(t('compliance.reasonRequired'))
+      return
+    }
+    setComplianceSubmitting(true)
+    setComplianceError('')
+    try {
+      if (complianceMode === 'settle') {
+        await settleCurrencyPurchaseObligation(compliancePurchase.id, { reason: complianceReason.trim(), reference: complianceReference.trim() })
+      } else if (complianceMode === 'reopen') {
+        await reopenCurrencyPurchaseObligation(compliancePurchase.id, { reason: complianceReason.trim(), reference: complianceReference.trim() })
+      } else {
+        if (!extensionDate) throw new Error(t('compliance.newDeadlineRequired'))
+        await applyDeadlineExtension({
+          currency_purchase: compliancePurchase.id,
+          new_deadline: extensionDate,
+          reason: complianceReason.trim(),
+          reference: complianceReference.trim(),
+          deadline_kind: deadlineKind,
+        })
+      }
+      setCompliancePurchase(null)
+      await loadPurchases()
+    } catch (err) {
+      setComplianceError(err.message || t('compliance.actionError'))
+    } finally {
+      setComplianceSubmitting(false)
+    }
+  }
+
+  async function openDeadlineHistory(purchase) {
+    setHistoryPurchase(purchase)
+    setDeadlineHistory([])
+    setHistoryError('')
+    setHistoryLoading(true)
+    try {
+      setDeadlineHistory(await getDeadlineExtensions(purchase.id))
+    } catch (err) {
+      setHistoryError(err.message || t('compliance.historyLoadError'))
+    } finally {
+      setHistoryLoading(false)
+    }
+  }
+
   const canEdit = hasPermission(user, 'trade_orders.change_currencypurchase')
   const canVoid = hasPermission(user, 'trade_orders.void_currencypurchase')
   const canAdd = hasPermission(user, 'trade_orders.add_currencypurchase')
+  const canSettle = hasPermission(user, 'trade_orders.settle_currencypurchase_obligation')
+  const canExtend = hasPermission(user, 'trade_orders.extend_currencypurchase_deadline')
 
   return (
     <div className="purchases-page">
@@ -143,8 +217,8 @@ function CurrencyPurchases({ user }) {
           <th>{t('currencyPurchases.registrationOrderAmount')}</th><th>{t('currencyPurchases.purchaseAmount')}</th>
           <th>{t('currencyPurchases.totalPurchased')}</th><th>{t('currencyPurchases.remainingToPurchase')}</th>
           <th>{t('currencyPurchases.currency')}</th><th>{t('currencyPurchases.purchaseDate')}</th>
-          <th>{t('currencyPurchases.deadline')}</th><th>{t('currencyPurchases.status')}</th>
-          {(canEdit || canVoid) && <th>{t('currencyPurchases.actions')}</th>}
+          <th>{t('currencyPurchases.originalDeadline')}</th><th>{t('currencyPurchases.effectiveDeadline')}</th><th>{t('compliance.obligationStatus')}</th><th>{t('currencyPurchases.status')}</th>
+          {(canEdit || canVoid || canSettle || canExtend) && <th>{t('currencyPurchases.actions')}</th>}
         </tr></thead>
         <tbody>{purchases.map((purchase) => <tr key={purchase.id}>
           <td>{purchase.company_name}</td><td>{purchase.order_number}</td>
@@ -153,11 +227,16 @@ function CurrencyPurchases({ user }) {
           <td>{formatAmount(purchase.registration_order_amount)}</td><td>{formatAmount(purchase.amount)}</td>
           <td>{formatAmount(purchase.order_total_purchased)}</td><td>{formatAmount(purchase.order_remaining_to_purchase)}</td>
           <td>{purchase.currency}</td><td>{purchase.purchase_date_dual || purchase.purchase_date}</td>
-          <td>{purchase.deadline_dual || purchase.deadline}</td>
+          <td>{purchase.original_deadline || '-'}</td>
+          <td><div>{purchase.deadline_dual || purchase.deadline || '-'}</div>{purchase.original_deadline && purchase.deadline && purchase.original_deadline !== purchase.deadline && <><div className="status-badge">{t('compliance.extended')}</div><button type="button" className="table-action-button" onClick={() => openDeadlineHistory(purchase)}>{t('compliance.extensionHistory')}</button></>}</td>
+          <td>{t(`compliance.statuses.${purchase.obligation_status}`, purchase.obligation_status || '-')}</td>
           <td>{purchase.is_void ? t('currencyPurchases.voided') : t('currencyPurchases.active')}</td>
-          {(canEdit || canVoid) && <td><div className="table-actions">
+          {(canEdit || canVoid || canSettle || canExtend) && <td><div className="table-actions">
             {canEdit && !purchase.is_void && <button className="table-action-button" onClick={() => {setSelectedPurchase(purchase);setIsModalOpen(true)}}>{t('common.edit')}</button>}
             {canVoid && !purchase.is_void && <button className="table-action-button table-action-button--danger" onClick={() => {setVoidPurchase(purchase);setVoidReason('');setVoidError('')}}>{t('currencyPurchases.requestVoid')}</button>}
+            {canExtend && !purchase.is_void && <button className="table-action-button" onClick={() => openCompliance(purchase, 'extend')}>{t('compliance.extendDeadline')}</button>}
+            {canSettle && !purchase.is_void && purchase.obligation_status === 'CLEARED' && <button className="table-action-button" onClick={() => openCompliance(purchase, 'settle')}>{t('compliance.settle')}</button>}
+            {canSettle && !purchase.is_void && purchase.obligation_status === 'SETTLED' && <button className="table-action-button" onClick={() => openCompliance(purchase, 'reopen')}>{t('compliance.reopen')}</button>}
           </div></td>}
         </tr>)}</tbody>
       </table></div>}
@@ -168,6 +247,34 @@ function CurrencyPurchases({ user }) {
         {voidError && <div className="form-error">{voidError}</div>}
         <div className="modal-actions"><button type="button" className="secondary-button" onClick={()=>setVoidPurchase(null)} disabled={voidSubmitting}>{t('common.cancel')}</button><button type="submit" className="danger-button" disabled={voidSubmitting}>{t('currencyPurchases.requestVoid')}</button></div>
       </form></div></div>}
+      {compliancePurchase && <div className="modal-backdrop"><div className="modal-card">
+        <h2>{t(`compliance.${complianceMode}Title`)}</h2>
+        <p>{compliancePurchase.company_name} | {compliancePurchase.order_number} | {formatAmount(compliancePurchase.amount)} {compliancePurchase.currency}</p>
+        <form className="modal-form" onSubmit={submitCompliance}>
+          {complianceMode === 'extend' && <>
+            <label>{t('compliance.deadlineKind')}<select value={deadlineKind} onChange={(e)=>setDeadlineKind(e.target.value)}>
+              <option value="IMPORT_CLEARANCE">{t('compliance.deadlineKinds.IMPORT_CLEARANCE')}</option>
+              <option value="SHIPPING_DOCUMENTS">{t('compliance.deadlineKinds.SHIPPING_DOCUMENTS')}</option>
+              <option value="FX_DIFFERENCE">{t('compliance.deadlineKinds.FX_DIFFERENCE')}</option>
+            </select></label>
+            <label>{t('compliance.newDeadline')}<input type="date" value={extensionDate} onChange={(e)=>setExtensionDate(e.target.value)} required /></label>
+          </>}
+          <label>{t('compliance.reason')}<textarea value={complianceReason} onChange={(e)=>setComplianceReason(e.target.value)} required /></label>
+          <label>{t('compliance.reference')}<input value={complianceReference} onChange={(e)=>setComplianceReference(e.target.value)} /></label>
+          {complianceError && <div className="form-error">{complianceError}</div>}
+          <div className="modal-actions"><button type="button" className="secondary-button" onClick={()=>setCompliancePurchase(null)} disabled={complianceSubmitting}>{t('common.cancel')}</button><button type="submit" className="primary-button" disabled={complianceSubmitting}>{t('common.save')}</button></div>
+        </form>
+      </div></div>}
+      {historyPurchase && <div className="modal-backdrop"><div className="modal-card">
+        <h2>{t('compliance.extensionHistoryTitle')}</h2>
+        <p>{historyPurchase.company_name} | {historyPurchase.order_number}</p>
+        <div className="deadline-summary">
+          <p><strong>{t('currencyPurchases.originalDeadline')}:</strong> {historyPurchase.original_deadline || '-'}</p>
+          <p><strong>{t('currencyPurchases.effectiveDeadline')}:</strong> {historyPurchase.deadline_dual || historyPurchase.deadline || '-'}</p>
+        </div>
+        {historyLoading ? <div className="page-state">{t('compliance.historyLoading')}</div> : historyError ? <div className="form-error">{historyError}</div> : deadlineHistory.length === 0 ? <div className="page-state">{t('compliance.noExtensions')}</div> : <div className="purchases-table-wrapper"><table className="purchases-table"><thead><tr><th>{t('compliance.previousDeadline')}</th><th>{t('compliance.newDeadline')}</th><th>{t('compliance.reason')}</th><th>{t('compliance.reference')}</th><th>{t('compliance.approvedBy')}</th></tr></thead><tbody>{deadlineHistory.map((item) => <tr key={item.id}><td>{item.previous_deadline}</td><td>{item.new_deadline}</td><td>{item.reason || '-'}</td><td>{item.reference || '-'}</td><td>{item.approved_by_name || '-'}</td></tr>)}</tbody></table></div>}
+        <div className="modal-actions"><button type="button" className="secondary-button" onClick={() => setHistoryPurchase(null)}>{t('common.cancel')}</button></div>
+      </div></div>}
     </div>
   )
 }

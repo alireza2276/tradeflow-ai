@@ -53,6 +53,16 @@ const resources = {
         title: 'ترخیص گمرکی', description: 'ثبت و پیگیری اظهار و ترخیص مرتبط با هر خرید ارز', add: 'ثبت ترخیص', edit: 'ویرایش ترخیص', empty: 'هنوز ترخیصی ثبت نشده است.', loadError: 'بارگذاری اطلاعات ترخیص انجام نشد.', saveError: 'ذخیره اطلاعات ترخیص انجام نشد.', company: 'شرکت', order: 'ثبت سفارش', purchase: 'خرید ارز', selectPurchase: 'خرید ارز را انتخاب کنید', declarationNumber: 'شماره اظهارنامه / پروانه', clearanceDate: 'تاریخ ترخیص', amount: 'مبلغ / ارزش', status: 'وضعیت', notes: 'یادداشت', actions: 'عملیات', statuses: { DECLARED: 'اظهار شده', PARTIAL: 'ترخیص جزئی', FINAL: 'ترخیص نهایی', REJECTED: 'رد / نامعتبر' },
       },
 
+      compliance: {
+        obligationStatus: 'وضعیت تعهد', extendDeadline: 'تمدید مهلت', settle: 'رفع تعهد نهایی', reopen: 'بازگشایی تعهد',
+        extended: 'تمدید شده', extensionHistory: 'تاریخچه تمدید', extensionHistoryTitle: 'تاریخچه تمدید مهلت', historyLoading: 'در حال بارگذاری تاریخچه تمدید...', historyLoadError: 'بارگذاری تاریخچه تمدید انجام نشد.', noExtensions: 'تمدیدی برای این خرید ثبت نشده است.', previousDeadline: 'مهلت قبلی', approvedBy: 'تأییدکننده',
+        settleTitle: 'رفع تعهد ارزی نهایی', reopenTitle: 'بازگشایی تعهد ارزی', extendTitle: 'تمدید مهلت',
+        reason: 'دلیل', reference: 'شماره/مرجع مصوبه یا مستند', reasonRequired: 'ثبت دلیل الزامی است.',
+        newDeadline: 'مهلت جدید', newDeadlineRequired: 'مهلت جدید الزامی است.', deadlineKind: 'نوع مهلت', actionError: 'انجام عملیات ناموفق بود.',
+        deadlineKinds: { IMPORT_CLEARANCE: 'ورود/ترخیص', SHIPPING_DOCUMENTS: 'اسناد حمل', FX_DIFFERENCE: 'مابه‌التفاوت ارزی' },
+        statuses: { OPEN: 'باز', DOCUMENTS_COMPLETE: 'مدارک کامل', CLEARANCE_PENDING: 'در انتظار ترخیص', PARTIALLY_CLEARED: 'ترخیص جزئی', CLEARED: 'ترخیص کامل، منتظر رفع تعهد', SETTLED: 'رفع تعهد شده', OVERDUE: 'سررسید گذشته' },
+      },
+
       auditTrail: {
         title: 'ردپای حسابرسی',
         description: 'ثبت غیرقابل‌تغییر عملیات حساس، تغییرات داده و تصمیم‌های Maker-Checker',
@@ -397,6 +407,12 @@ const resources = {
 
         deadline:
           'سررسید',
+
+        originalDeadline:
+          'مهلت اولیه',
+
+        effectiveDeadline:
+          'مهلت مؤثر فعلی',
 
         actions:
           'عملیات',
@@ -1122,6 +1138,16 @@ const resources = {
         title: 'Customs Clearance', description: 'Record and track customs declarations and clearance for each currency purchase.', add: 'Add clearance', edit: 'Edit clearance', empty: 'No customs clearance has been recorded yet.', loadError: 'Failed to load customs clearances.', saveError: 'Failed to save customs clearance.', company: 'Company', order: 'Registration order', purchase: 'Currency purchase', selectPurchase: 'Select a currency purchase', declarationNumber: 'Declaration / permit number', clearanceDate: 'Clearance date', amount: 'Amount / value', status: 'Status', notes: 'Notes', actions: 'Actions', statuses: { DECLARED: 'Declared', PARTIAL: 'Partially cleared', FINAL: 'Final clearance', REJECTED: 'Rejected / invalid' },
       },
 
+      compliance: {
+        obligationStatus: 'Obligation status', extendDeadline: 'Extend deadline', settle: 'Settle obligation', reopen: 'Reopen obligation',
+        extended: 'Extended', extensionHistory: 'Extension history', extensionHistoryTitle: 'Deadline extension history', historyLoading: 'Loading extension history...', historyLoadError: 'Failed to load extension history.', noExtensions: 'No extension has been recorded for this purchase.', previousDeadline: 'Previous deadline', approvedBy: 'Approved by',
+        settleTitle: 'Final FX obligation settlement', reopenTitle: 'Reopen FX obligation', extendTitle: 'Deadline extension',
+        reason: 'Reason', reference: 'Approval/document reference', reasonRequired: 'Reason is required.',
+        newDeadline: 'New deadline', newDeadlineRequired: 'New deadline is required.', deadlineKind: 'Deadline type', actionError: 'Action failed.',
+        deadlineKinds: { IMPORT_CLEARANCE: 'Import / clearance', SHIPPING_DOCUMENTS: 'Shipping documents', FX_DIFFERENCE: 'FX difference' },
+        statuses: { OPEN: 'Open', DOCUMENTS_COMPLETE: 'Documents complete', CLEARANCE_PENDING: 'Clearance pending', PARTIALLY_CLEARED: 'Partially cleared', CLEARED: 'Fully cleared, settlement pending', SETTLED: 'FX obligation settled', OVERDUE: 'Overdue' },
+      },
+
       auditTrail: {
         title: 'Audit Trail',
         description: 'Immutable history of sensitive operations, data changes, and Maker-Checker decisions.',
@@ -1451,6 +1477,12 @@ const resources = {
 
         deadline:
           'Deadline',
+
+        originalDeadline:
+          'Original deadline',
+
+        effectiveDeadline:
+          'Current effective deadline',
 
         actions:
           'Actions',

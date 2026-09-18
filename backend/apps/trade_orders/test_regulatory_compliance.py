@@ -10,7 +10,7 @@ from apps.trade_orders.models import (
     CurrencyPurchase, CustomsClearance, PaymentInstrument, RegistrationOrder,
     RegulatoryDeadline, RegulatoryRule,
 )
-from apps.trade_orders.services.compliance_service import derive_obligation_status, extend_deadline
+from apps.trade_orders.services.compliance_service import derive_obligation_status, extend_deadline, mark_obligation_settled
 from apps.trade_orders.services.purchase_service import create_currency_purchase
 from apps.trade_orders.services.regulatory_rule_service import resolve_purchase_deadlines
 
@@ -98,3 +98,54 @@ class RegulatoryComplianceTests(TestCase):
         )
         self.assertEqual(derive_obligation_status(purchase), CurrencyPurchase.ObligationStatus.CLEARED)
         self.assertIsNone(purchase.obligation_settled_at)
+    def test_final_settlement_requires_full_clearance_and_reason(self):
+        user = get_user_model().objects.create_user(username="settler", password="x")
+        purchase = create_currency_purchase(
+            registration_order=self.order, amount=Decimal("100"), currency="EUR",
+            purchase_date=date(2026, 9, 10), remittance_date=date(2026, 9, 15),
+            funding_source_code="TEST_SOURCE",
+        )
+        CustomsClearance.objects.create(
+            currency_purchase=purchase, declaration_number="C-SETTLE", clearance_date=date(2026, 10, 1),
+            amount=Decimal("100"), status="FINAL",
+        )
+        with self.assertRaises(ValidationError):
+            mark_obligation_settled(purchase=purchase, actor=user, reason="")
+        settled = mark_obligation_settled(
+            purchase=purchase, actor=user, reason="Documents verified", reference="SET-1"
+        )
+        self.assertEqual(settled.obligation_status, CurrencyPurchase.ObligationStatus.SETTLED)
+        self.assertEqual(settled.obligation_settled_by, user)
+        self.assertEqual(settled.obligation_settlement_reference, "SET-1")
+
+    def test_settlement_rejected_before_full_clearance(self):
+        user = get_user_model().objects.create_user(username="settler2", password="x")
+        purchase = create_currency_purchase(
+            registration_order=self.order, amount=Decimal("100"), currency="EUR",
+            purchase_date=date(2026, 9, 10), remittance_date=date(2026, 9, 15),
+            funding_source_code="TEST_SOURCE",
+        )
+        CustomsClearance.objects.create(
+            currency_purchase=purchase, declaration_number="C-PART", clearance_date=date(2026, 10, 1),
+            amount=Decimal("40"), status="PARTIAL",
+        )
+        with self.assertRaises(ValidationError):
+            mark_obligation_settled(purchase=purchase, actor=user, reason="Too early")
+
+    def test_reopen_settled_obligation_returns_to_derived_status(self):
+        user = get_user_model().objects.create_user(username="settler3", password="x")
+        purchase = create_currency_purchase(
+            registration_order=self.order, amount=Decimal("100"), currency="EUR",
+            purchase_date=date(2026, 9, 10), remittance_date=date(2026, 9, 15),
+            funding_source_code="TEST_SOURCE",
+        )
+        CustomsClearance.objects.create(
+            currency_purchase=purchase, declaration_number="C-REOPEN", clearance_date=date(2026, 10, 1),
+            amount=Decimal("100"), status="FINAL",
+        )
+        mark_obligation_settled(purchase=purchase, actor=user, reason="Verified")
+        reopened = mark_obligation_settled(
+            purchase=purchase, settled=False, actor=user, reason="Correction required", reference="REOPEN-1"
+        )
+        self.assertEqual(reopened.obligation_status, CurrencyPurchase.ObligationStatus.CLEARED)
+        self.assertIsNone(reopened.obligation_settled_at)

@@ -241,6 +241,17 @@ class CurrencyPurchase(models.Model):
         blank=True,
     )
 
+    obligation_settled_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.PROTECT,
+        null=True,
+        blank=True,
+        related_name="settled_currency_purchase_obligations",
+    )
+
+    obligation_settlement_reason = models.TextField(blank=True)
+    obligation_settlement_reference = models.CharField(max_length=160, blank=True)
+
     created_at = models.DateTimeField(
         auto_now_add=True,
     )
@@ -301,6 +312,10 @@ class CurrencyPurchase(models.Model):
             (
                 "void_currencypurchase",
                 "Can submit currency purchase void request",
+            ),
+            (
+                "settle_currencypurchase_obligation",
+                "Can settle or reopen currency purchase FX obligation",
             ),
         ]
 

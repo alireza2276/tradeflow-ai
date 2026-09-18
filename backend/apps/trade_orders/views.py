@@ -59,6 +59,7 @@ from apps.workflows.services.submission_service import (
 from apps.trade_orders.services.compliance_service import (
     extend_deadline,
     refresh_obligation_status,
+    mark_obligation_settled,
 )
 import csv
 from decimal import Decimal, InvalidOperation
@@ -383,6 +384,42 @@ class PaymentInstrumentViewSet(viewsets.ModelViewSet):
             output_serializer.data
         )
 
+    @action(detail=True, methods=["post"], url_path="settle-obligation")
+    def settle_obligation(self, request, *args, **kwargs):
+        purchase = self.get_object()
+        if not request.user.has_perm("trade_orders.settle_currencypurchase_obligation"):
+            return Response(
+                {"detail": "You do not have permission to settle FX obligations."},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+        try:
+            updated = mark_obligation_settled(
+                purchase=purchase, settled=True, actor=request.user,
+                reason=request.data.get("reason", ""),
+                reference=request.data.get("reference", ""),
+            )
+        except DjangoValidationError as exc:
+            raise DRFValidationError({"detail": exc.messages})
+        return Response(self.get_serializer(updated).data, status=status.HTTP_200_OK)
+
+    @action(detail=True, methods=["post"], url_path="reopen-obligation")
+    def reopen_obligation(self, request, *args, **kwargs):
+        purchase = self.get_object()
+        if not request.user.has_perm("trade_orders.settle_currencypurchase_obligation"):
+            return Response(
+                {"detail": "You do not have permission to reopen FX obligations."},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+        try:
+            updated = mark_obligation_settled(
+                purchase=purchase, settled=False, actor=request.user,
+                reason=request.data.get("reason", ""),
+                reference=request.data.get("reference", ""),
+            )
+        except DjangoValidationError as exc:
+            raise DRFValidationError({"detail": exc.messages})
+        return Response(self.get_serializer(updated).data, status=status.HTTP_200_OK)
+
     def destroy(self, request, *args, **kwargs):
         return Response(
             {
@@ -539,6 +576,42 @@ class CurrencyPurchaseViewSet(viewsets.ModelViewSet):
         response["Content-Disposition"] = 'attachment; filename="currency-purchases.xlsx"'
         response["X-Content-Type-Options"] = "nosniff"
         return response
+
+    @action(detail=True, methods=["post"], url_path="settle-obligation")
+    def settle_obligation(self, request, *args, **kwargs):
+        purchase = self.get_object()
+        if not request.user.has_perm("trade_orders.settle_currencypurchase_obligation"):
+            return Response(
+                {"detail": "You do not have permission to settle FX obligations."},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+        try:
+            updated = mark_obligation_settled(
+                purchase=purchase, settled=True, actor=request.user,
+                reason=request.data.get("reason", ""),
+                reference=request.data.get("reference", ""),
+            )
+        except DjangoValidationError as exc:
+            raise DRFValidationError({"detail": exc.messages})
+        return Response(self.get_serializer(updated).data, status=status.HTTP_200_OK)
+
+    @action(detail=True, methods=["post"], url_path="reopen-obligation")
+    def reopen_obligation(self, request, *args, **kwargs):
+        purchase = self.get_object()
+        if not request.user.has_perm("trade_orders.settle_currencypurchase_obligation"):
+            return Response(
+                {"detail": "You do not have permission to reopen FX obligations."},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+        try:
+            updated = mark_obligation_settled(
+                purchase=purchase, settled=False, actor=request.user,
+                reason=request.data.get("reason", ""),
+                reference=request.data.get("reference", ""),
+            )
+        except DjangoValidationError as exc:
+            raise DRFValidationError({"detail": exc.messages})
+        return Response(self.get_serializer(updated).data, status=status.HTTP_200_OK)
 
     def destroy(self, request, *args, **kwargs):
         return Response(
@@ -788,6 +861,42 @@ class ShipmentPartViewSet(viewsets.ModelViewSet):
         "amount",
         "created_at",
     )
+
+    @action(detail=True, methods=["post"], url_path="settle-obligation")
+    def settle_obligation(self, request, *args, **kwargs):
+        purchase = self.get_object()
+        if not request.user.has_perm("trade_orders.settle_currencypurchase_obligation"):
+            return Response(
+                {"detail": "You do not have permission to settle FX obligations."},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+        try:
+            updated = mark_obligation_settled(
+                purchase=purchase, settled=True, actor=request.user,
+                reason=request.data.get("reason", ""),
+                reference=request.data.get("reference", ""),
+            )
+        except DjangoValidationError as exc:
+            raise DRFValidationError({"detail": exc.messages})
+        return Response(self.get_serializer(updated).data, status=status.HTTP_200_OK)
+
+    @action(detail=True, methods=["post"], url_path="reopen-obligation")
+    def reopen_obligation(self, request, *args, **kwargs):
+        purchase = self.get_object()
+        if not request.user.has_perm("trade_orders.settle_currencypurchase_obligation"):
+            return Response(
+                {"detail": "You do not have permission to reopen FX obligations."},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+        try:
+            updated = mark_obligation_settled(
+                purchase=purchase, settled=False, actor=request.user,
+                reason=request.data.get("reason", ""),
+                reference=request.data.get("reference", ""),
+            )
+        except DjangoValidationError as exc:
+            raise DRFValidationError({"detail": exc.messages})
+        return Response(self.get_serializer(updated).data, status=status.HTTP_200_OK)
 
     def destroy(self, request, *args, **kwargs):
         return Response(

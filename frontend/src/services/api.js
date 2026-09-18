@@ -662,6 +662,36 @@ export async function updateCurrencyPurchase(
   return response.json()
 }
 
+
+export async function settleCurrencyPurchaseObligation(purchaseId, data) {
+  const response = await apiFetch(`/trade/currency-purchases/${purchaseId}/settle-obligation/`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) })
+  if (!response.ok) throw new Error(await parseErrorResponse(response, 'Failed to settle FX obligation.'))
+  return response.json()
+}
+
+export async function reopenCurrencyPurchaseObligation(purchaseId, data) {
+  const response = await apiFetch(`/trade/currency-purchases/${purchaseId}/reopen-obligation/`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) })
+  if (!response.ok) throw new Error(await parseErrorResponse(response, 'Failed to reopen FX obligation.'))
+  return response.json()
+}
+
+export async function getDeadlineExtensions(purchaseId) {
+  const params = new URLSearchParams({ currency_purchase: purchaseId })
+  const response = await apiFetch(`/trade/deadline-extensions/?${params.toString()}`)
+  if (!response.ok) throw new Error(await parseErrorResponse(response, 'Failed to load deadline extension history.'))
+  return response.json()
+}
+
+export async function applyDeadlineExtension(data) {
+  const response = await apiFetch('/trade/deadline-extensions/apply/', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data),
+  })
+  if (!response.ok) throw new Error(await parseErrorResponse(response, 'Failed to extend deadline.'))
+  return response.json()
+}
+
 export async function getShipmentParts() {
   const response = await apiFetch(
     '/trade/shipment-parts/'

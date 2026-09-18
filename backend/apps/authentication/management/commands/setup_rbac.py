@@ -73,6 +73,7 @@ ROLE_PERMISSIONS = {
         "trade_orders.change_customsclearance",
         "trade_orders.view_deadlineextension",
         "trade_orders.extend_currencypurchase_deadline",
+        "trade_orders.settle_currencypurchase_obligation",
         "trade_orders.view_regulatorydeadline",
         "trade_orders.view_regulatoryrule",
         "workflows.review_approvalrequest",

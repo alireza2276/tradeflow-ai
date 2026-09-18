@@ -82,15 +82,37 @@ def extend_deadline(*, purchase, new_deadline, reason, approved_by, reference=""
 
 
 @transaction.atomic
-def mark_obligation_settled(*, purchase, settled=True):
+def mark_obligation_settled(*, purchase, settled=True, actor=None, reason="", reference=""):
     locked = CurrencyPurchase.objects.select_for_update().get(pk=purchase.pk)
+    if locked.is_void:
+        raise ValidationError("Voided currency purchases cannot be settled or reopened.")
+
     if settled:
+        if locked.obligation_settled_at:
+            raise ValidationError("FX obligation is already settled.")
         if get_clearance_total(locked) < locked.amount:
             raise ValidationError("FX obligation cannot be marked settled before the purchase amount is cleared.")
+        if not reason.strip():
+            raise ValidationError("A settlement reason is required.")
         locked.obligation_settled_at = timezone.now()
+        locked.obligation_settled_by = actor
+        locked.obligation_settlement_reason = reason.strip()
+        locked.obligation_settlement_reference = reference.strip()
         locked.obligation_status = CurrencyPurchase.ObligationStatus.SETTLED
     else:
+        if not locked.obligation_settled_at:
+            raise ValidationError("FX obligation is not settled.")
+        if not reason.strip():
+            raise ValidationError("A reopen reason is required.")
         locked.obligation_settled_at = None
+        locked.obligation_settled_by = None
+        locked.obligation_settlement_reason = f"REOPENED: {reason.strip()}"
+        locked.obligation_settlement_reference = reference.strip()
         locked.obligation_status = derive_obligation_status(locked)
-    locked.save(update_fields=("obligation_settled_at", "obligation_status", "updated_at"))
+
+    locked.save(update_fields=(
+        "obligation_settled_at", "obligation_settled_by",
+        "obligation_settlement_reason", "obligation_settlement_reference",
+        "obligation_status", "updated_at",
+    ))
     return locked
