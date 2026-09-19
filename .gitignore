@@ -26,3 +26,5 @@ Thumbs.db
 
 # Logs
 *.log
+# Local performance reports
+performance/load_test_report.json
