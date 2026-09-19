@@ -7,6 +7,7 @@ from django.core.exceptions import ValidationError
 from django.test import TestCase
 
 from apps.companies.models import Company
+from apps.common.test_regulatory_helpers import ensure_test_regulatory_context
 
 from apps.trade_orders.models import (
     CurrencyPurchase,
@@ -71,6 +72,10 @@ class CurrencyPurchaseApprovalTests(TestCase):
                 currency="USD",
                 is_active=True,
             )
+        )
+        ensure_test_regulatory_context(
+            registration_order=self.registration_order,
+            issue_date=date(2026, 9, 8),
         )
 
     def test_approval_creates_currency_purchase(self):

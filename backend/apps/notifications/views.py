@@ -1,4 +1,5 @@
 from rest_framework import viewsets
+from django.db.models import Count, Q
 
 from apps.authentication.permissions import (
     TradeFlowModelPermissions,
@@ -19,7 +20,19 @@ class NotificationLogViewSet(viewsets.ReadOnlyModelViewSet):
             "currency_purchase__registration_order",
             "currency_purchase__registration_order__company",
         )
-        .all()
+        .annotate(
+            sms_sent_count_db=Count(
+                "deliveries",
+                filter=Q(deliveries__channel="SMS", deliveries__status="SENT"),
+            ),
+            sms_failed_count_db=Count(
+                "deliveries",
+                filter=Q(
+                    deliveries__channel="SMS",
+                    deliveries__status__in=("FAILED", "SKIPPED"),
+                ),
+            ),
+        )
         .order_by("-created_at")
     )
 

@@ -90,6 +90,7 @@ WSGI_APPLICATION = 'config.wsgi.application'
 # https://docs.djangoproject.com/en/6.1/ref/settings/#databases
 
 import os
+import sys
 
 DATABASES = {
     "default": {
@@ -99,6 +100,14 @@ DATABASES = {
         "PASSWORD": env("POSTGRES_PASSWORD"),
         "HOST": env("POSTGRES_HOST", default="localhost"),
         "PORT": env("POSTGRES_PORT", default="5432"),
+        # Reuse DB connections in production instead of opening a new
+        # PostgreSQL connection for every request. Set to 0 locally if needed.
+        # Persistent DB connections improve normal request throughput, but Django's
+        # test runner must be able to drop the temporary PostgreSQL database cleanly.
+        "CONN_MAX_AGE": (
+            0 if "test" in sys.argv else env.int("POSTGRES_CONN_MAX_AGE", default=60)
+        ),
+        "CONN_HEALTH_CHECKS": True,
     }
 }
 

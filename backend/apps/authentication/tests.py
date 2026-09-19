@@ -455,6 +455,9 @@ class RBACSetupTests(TestCase):
                 "trade_orders.view_paymentinstrument",
                 "trade_orders.view_registrationorder",
                 "trade_orders.view_shipmentpart",
+                "trade_orders.view_customsclearance",
+                "trade_orders.view_regulatorydeadline",
+                "trade_orders.view_deadlineextension",
             },
             "TRADE_OPERATOR": {
                 "companies.view_company",

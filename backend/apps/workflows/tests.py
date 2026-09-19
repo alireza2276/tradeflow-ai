@@ -9,6 +9,7 @@ from datetime import date
 from decimal import Decimal
 
 from apps.companies.models import Company
+from apps.common.test_regulatory_helpers import ensure_test_regulatory_context
 from apps.trade_orders.models import (
     CurrencyPurchase,
     RegistrationOrder,
@@ -472,6 +473,10 @@ class ApprovalRequestAPITests(TestCase):
             registered_amount=Decimal("100000.0000"),
             currency="USD",
             is_active=True,
+        )
+        ensure_test_regulatory_context(
+            registration_order=self.order,
+            issue_date=date(2026, 9, 11),
         )
 
     def test_supervisor_can_list_pending_approval_requests(self):

@@ -7,7 +7,7 @@ from django.test import TestCase
 
 from apps.companies.models import Company
 from apps.trade_orders.models import RegistrationOrder, ShipmentPart
-from apps.trade_orders.services.purchase_service import create_currency_purchase
+from apps.common.test_regulatory_helpers import create_test_currency_purchase as create_currency_purchase
 from apps.workflows.models import ApprovalRequest
 from apps.workflows.services.approval_service import approve_request
 from apps.workflows.services.submission_service import (

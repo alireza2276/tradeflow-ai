@@ -331,11 +331,19 @@ class CurrencyPurchaseSerializer(serializers.ModelSerializer):
             self._order_purchase_summary_cache = {}
 
         if order_id not in self._order_purchase_summary_cache:
-            purchases = list(
-                order.currency_purchases
-                .filter(is_void=False)
-                .order_by("purchase_date", "created_at", "id")
+            prefetched_purchases = getattr(
+                order,
+                "active_currency_purchases_for_display",
+                None,
             )
+            if prefetched_purchases is None:
+                purchases = list(
+                    order.currency_purchases
+                    .filter(is_void=False)
+                    .order_by("purchase_date", "created_at", "id")
+                )
+            else:
+                purchases = prefetched_purchases
 
             running_total = Decimal("0")
             position_by_id = {}

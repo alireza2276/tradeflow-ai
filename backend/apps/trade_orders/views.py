@@ -4,6 +4,7 @@ from django.shortcuts import get_object_or_404
 from django.core.exceptions import ValidationError as DjangoValidationError
 from rest_framework.exceptions import ValidationError as DRFValidationError
 from django.db import transaction
+from django.db.models import Prefetch
 
 from rest_framework import status, viewsets
 from rest_framework.response import Response
@@ -442,6 +443,24 @@ class CurrencyPurchaseViewSet(viewsets.ModelViewSet):
             "registration_order",
             "registration_order__company",
             "registration_order__payment_instrument",
+        )
+        .prefetch_related(
+            Prefetch(
+                "registration_order__currency_purchases",
+                queryset=(
+                    CurrencyPurchase.objects
+                    .filter(is_void=False)
+                    .only(
+                        "id",
+                        "registration_order_id",
+                        "amount",
+                        "purchase_date",
+                        "created_at",
+                    )
+                    .order_by("purchase_date", "created_at", "id")
+                ),
+                to_attr="active_currency_purchases_for_display",
+            )
         )
         .all()
     )

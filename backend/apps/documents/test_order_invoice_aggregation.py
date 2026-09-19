@@ -7,7 +7,7 @@ from apps.companies.models import Company
 from apps.documents.serializers import InvoiceSerializer
 from apps.documents.services.invoice_service import create_invoice
 from apps.trade_orders.models import RegistrationOrder
-from apps.trade_orders.services.purchase_service import create_currency_purchase
+from apps.common.test_regulatory_helpers import create_test_currency_purchase as create_currency_purchase
 from apps.trade_orders.services.shipment_service import create_shipment_part
 
 

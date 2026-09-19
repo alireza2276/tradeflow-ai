@@ -32,7 +32,13 @@ class NotificationLogSerializer(serializers.ModelSerializer):
         return format_dual_date(obj.deadline_date or obj.currency_purchase.deadline)
 
     def get_sms_sent_count(self, obj):
+        annotated = getattr(obj, "sms_sent_count_db", None)
+        if annotated is not None:
+            return annotated
         return obj.deliveries.filter(channel="SMS", status="SENT").count()
 
     def get_sms_failed_count(self, obj):
+        annotated = getattr(obj, "sms_failed_count_db", None)
+        if annotated is not None:
+            return annotated
         return obj.deliveries.filter(channel="SMS", status__in=["FAILED", "SKIPPED"]).count()
