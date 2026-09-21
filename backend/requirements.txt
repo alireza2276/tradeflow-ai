@@ -13,3 +13,4 @@ django-filter==26.1
 django-cors-headers==4.9.0
 jdatetime==6.1.0
 openpyxl>=3.1,<4
+kavenegar @ git+https://github.com/kavenegar/kavenegar-python.git

@@ -212,6 +212,11 @@ REST_FRAMEWORK = {
 
 
 # Notification / SMS
-# Safe defaults: no real SMS is sent.
+# Safe defaults: no real SMS is sent unless explicitly enabled.
 SMS_ENABLED = env.bool("SMS_ENABLED", default=False)
-SMS_PROVIDER = env("SMS_PROVIDER", default="MOCK")
+SMS_PROVIDER = env("SMS_PROVIDER", default="MOCK").strip().upper()
+
+# Kavenegar credentials must live in .env and must never be committed.
+KAVENEGAR_API_KEY = env("KAVENEGAR_API_KEY", default="")
+KAVENEGAR_SENDER = env("KAVENEGAR_SENDER", default="")
+KAVENEGAR_TIMEOUT = env.int("KAVENEGAR_TIMEOUT", default=10)
