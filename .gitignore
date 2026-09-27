@@ -14,6 +14,7 @@ env/
 # Environment variables
 .env
 .env.*
+!.env.example
 
 # Django
 db.sqlite3
@@ -28,3 +29,11 @@ Thumbs.db
 *.log
 # Local performance reports
 performance/load_test_report.json
+
+# Frontend
+node_modules/
+dist/
+coverage/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
